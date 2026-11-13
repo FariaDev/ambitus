@@ -521,6 +521,16 @@
      <attribute name="action">win.paper-format</attribute>
     </item>
     <item>
+     <attribute name="label" translatable="yes">Grow Page Right (+2 cm)</attribute>
+     <attribute name="action">win.grow-page-right</attribute>
+     <attribute name="accel">&lt;Alt&gt;&lt;Shift&gt;Right</attribute>
+    </item>
+    <item>
+     <attribute name="label" translatable="yes">Grow Page Down (+2 cm)</attribute>
+     <attribute name="action">win.grow-page-down</attribute>
+     <attribute name="accel">&lt;Alt&gt;&lt;Shift&gt;Down</attribute>
+    </item>
+    <item>
      <attribute name="label" translatable="yes">Paper _Color</attribute>
      <attribute name="action">win.paper-background-color</attribute>
     </item>

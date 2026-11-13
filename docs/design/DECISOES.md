@@ -75,3 +75,13 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   qualquer lugar.
 - Correção no upstream: `Control::fileLoaded` ignorava a página pedida quando
   o caderno não tinha metadados (nunca aberto); agora rola até ela.
+
+## Crescer a página (2026-11-13)
+
+- **Jornal → Crescer a página para a direita / para baixo** (Alt+Shift+→ e
+  Alt+Shift+↓) soma 2 cm à página atual, com desfazer. É só a largura e a
+  altura da página no `.xopp`, então o Xournal++ original e o
+  `--create-img` do tutor abrem igual.
+- Página com fundo de PDF não cresce (o fundo não acompanharia).
+- Próximo pedaço: a faixa listrada com a prévia dos 2 cm e a pílula "+2 cm"
+  na borda da página, como no protótipo.

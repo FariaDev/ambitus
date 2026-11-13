@@ -204,6 +204,10 @@ public:
 
     void paperTemplate();
     void paperFormat();
+    /// Ambitus: makes the current page wider/taller by the given amount (in points), with undo.
+    /// Pages with a PDF background are left as they are.
+    void growPage(double dw, double dh);
+    static constexpr double GROW_STEP = 2.0 / 2.54 * 72.0;  ///< 2 cm in points
     void changePageBackgroundColor();
     void updateBackgroundSizeButton();
 

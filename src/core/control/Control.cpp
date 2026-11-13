@@ -1003,6 +1003,25 @@ void Control::paperFormat() {
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
+void Control::growPage(double dw, double dh) {
+    auto const& page = getCurrentPage();
+    if (!page || page->getBackgroundType().isPdfPage()) {
+        return;
+    }
+    clearSelectionEndText();
+    this->doc->lock();
+    double oldW = page->getWidth();
+    double oldH = page->getHeight();
+    Document::setPageSize(page, oldW + dw, oldH + dh);
+    size_t pageNo = this->doc->indexOf(page);
+    size_t pageCount = this->doc->getPageCount();
+    this->doc->unlock();
+    this->undoRedo->addUndoAction(std::make_unique<PageSizeChangeUndoAction>(page, oldW, oldH));
+    if (pageNo != npos && pageNo < pageCount) {
+        firePageSizeChanged(pageNo);
+    }
+}
+
 void Control::changePageBackgroundColor() {
     auto pNr = getCurrentPageNo();
     this->doc->lock_shared();

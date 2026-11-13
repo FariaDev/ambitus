@@ -102,6 +102,8 @@ enum class Action : size_t {
     CONFIGURE_PAGE_TEMPLATE,
     DELETE_PAGE,
     PAPER_FORMAT,
+    GROW_PAGE_RIGHT,  ///< Ambitus: page 2 cm wider
+    GROW_PAGE_DOWN,   ///< Ambitus: page 2 cm taller
     PAPER_BACKGROUND_COLOR,
 
     // Menu Tools

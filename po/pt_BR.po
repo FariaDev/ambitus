@@ -4947,3 +4947,9 @@ msgid "%zu notebook"
 msgid_plural "%zu notebooks"
 msgstr[0] "%zu caderno"
 msgstr[1] "%zu cadernos"
+
+msgid "Grow Page Right (+2 cm)"
+msgstr "Crescer a página para a direita (+2 cm)"
+
+msgid "Grow Page Down (+2 cm)"
+msgstr "Crescer a página para baixo (+2 cm)"

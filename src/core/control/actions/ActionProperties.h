@@ -576,6 +576,16 @@ template <>
 struct ActionProperties<Action::PAPER_FORMAT> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->paperFormat(); }
 };
+
+template <>
+struct ActionProperties<Action::GROW_PAGE_RIGHT> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->growPage(Control::GROW_STEP, 0); }
+};
+
+template <>
+struct ActionProperties<Action::GROW_PAGE_DOWN> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->growPage(0, Control::GROW_STEP); }
+};
 template <>
 struct ActionProperties<Action::PAPER_BACKGROUND_COLOR> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->changePageBackgroundColor(); }
