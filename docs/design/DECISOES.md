@@ -60,6 +60,18 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   (curvas de nível geradas do nome; "Outro desenho" troca a semente), Linho,
   Página (a miniatura embutida no `.xopp`), Lisa e imagem própria. Capa clara
   ganha tinta escura. Botão direito (ou a tecla Menu) abre o popover da capa.
-- Ainda falta: a busca dentro do texto e do LaTeX (hoje a busca filtra pelo
-  nome) e as abas (o Xournal++ tem um documento por janela, então as abas
-  pedem refatorar o `Control` para vários documentos).
+- Ainda falta: as abas (o Xournal++ tem um documento por janela, então as
+  abas pedem refatorar o `Control` para vários documentos).
+
+## Busca nos cadernos (2026-11-13)
+
+- A busca da biblioteca procura no nome, no texto digitado e no código LaTeX
+  das fórmulas; a escrita à mão fica de fora. Ignora maiúsculas e acentos.
+- O índice fica em `library-index.json` na pasta de cache do Ambitus, **nada
+  vai para o `.xopp`**. Ele é montado numa thread ao abrir a biblioteca e só
+  relê os cadernos cujo tamanho ou data mudou.
+- Cada resultado mostra a capa, a matéria, a página e o trecho com o termo
+  marcado; clicar abre o caderno na página. **Ctrl+K** leva à busca de
+  qualquer lugar.
+- Correção no upstream: `Control::fileLoaded` ignorava a página pedida quando
+  o caderno não tinha metadados (nunca aberto); agora rola até ela.

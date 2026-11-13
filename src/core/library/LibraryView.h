@@ -21,6 +21,7 @@
 #include "CoverRenderer.h"
 #include "LibraryStore.h"
 #include "NotebookScanner.h"
+#include "NotebookSearch.h"
 #include "SummaCourses.h"
 #include "filesystem.h"
 
@@ -31,11 +32,14 @@ public:
     struct Actions {
         /// open a notebook in the editor
         std::function<void(const fs::path&)> open;
+        /// open a notebook at a page (0-based), from a search hit
+        std::function<void(const fs::path&, size_t page)> openAt;
         /// new notebook; the folder is the one being shown (empty for Recent/All)
         std::function<void(const fs::path& folder)> newNotebook;
     };
 
-    LibraryView(fs::path storeFile, Actions actions);
+    /// storeFile: covers and folders (config); indexFile: the search index (cache)
+    LibraryView(fs::path storeFile, fs::path indexFile, Actions actions);
     ~LibraryView();
     LibraryView(const LibraryView&) = delete;
     LibraryView& operator=(const LibraryView&) = delete;
@@ -46,6 +50,8 @@ public:
     void refresh();
     /// Puts the keyboard in the search field.
     void focusSearch();
+    /// Brings the search index up to date in a worker thread.
+    void reindex();
 
 private:
     enum class SourceKind { Recent, All, Course, Folder };
@@ -65,6 +71,8 @@ private:
     void showSource(Source s);
     void fillGrid();
     GtkWidget* makeTile(const Entry& e);
+    void addTextHits(const std::vector<Entry>& everywhere);
+    GtkWidget* makeHit(const SearchHit& hit, const Entry& e);
     void openCoverPopover(GtkWidget* tile, const Entry& e);
     void addFolderDialog();
 
@@ -94,6 +102,13 @@ private:
     GtkWidget* title = nullptr;
     GtkWidget* body = nullptr;
     GtkWidget* scroller = nullptr;
+    GtkWidget* subtitle = nullptr;
+
+    fs::path indexFile;
+    std::shared_ptr<SearchIndex> index;                          ///< null until the first indexing ends
+    std::shared_ptr<bool> alive = std::make_shared<bool>(true);  ///< false once this view is gone
+    bool indexing = false;
+    bool indexAgain = false;
 };
 
 }  // namespace ambitus::library

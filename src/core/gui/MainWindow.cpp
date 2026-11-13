@@ -91,6 +91,9 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
         ambitus::library::LibraryView::Actions actions;
         actions.open = [control](const fs::path& p) { control->openFile(p); };
+        actions.openAt = [control](const fs::path& p, size_t page) {
+            control->openFile(p, [](bool) {}, static_cast<int>(page));
+        };
         actions.newNotebook = [this, control](const fs::path& folder) {
             fs::path file;
             if (!folder.empty()) {
@@ -103,8 +106,8 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
             showEditor();
             control->newFile(file);
         };
-        library =
-                std::make_unique<ambitus::library::LibraryView>(Util::getConfigFile("library.ini"), std::move(actions));
+        library = std::make_unique<ambitus::library::LibraryView>(
+                Util::getConfigFile("library.ini"), Util::getCacheFile("library-index.json"), std::move(actions));
         gtk_stack_add_named(GTK_STACK(viewStack), library->getWidget(), "library");
         gtk_container_add(GTK_CONTAINER(this->window), viewStack);
         gtk_widget_show(viewStack);

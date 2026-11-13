@@ -4,6 +4,7 @@
 #include <ctime>      // for time
 #include <random>     // for random_device
 #include <set>        // for set
+#include <thread>     // for thread
 
 #include <glib/gstdio.h>  // for g_stat
 
@@ -112,7 +113,8 @@ void onClicked(GtkWidget* button, F&& f) {
 }
 }  // namespace
 
-LibraryView::LibraryView(fs::path storeFile, Actions a): store(std::move(storeFile)), actions(std::move(a)) {
+LibraryView::LibraryView(fs::path storeFile, fs::path indexFile, Actions a):
+        store(std::move(storeFile)), actions(std::move(a)), indexFile(std::move(indexFile)) {
     root = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_name(root, "library");
     g_object_ref_sink(root);
@@ -125,8 +127,11 @@ LibraryView::LibraryView(fs::path storeFile, Actions a): store(std::move(storeFi
     GtkWidget* head = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
     addClass(head, "amb-lib-head");
     title = label("", "amb-lib-title");
-    gtk_widget_set_hexpand(title, true);
     gtk_container_add(GTK_CONTAINER(head), title);
+    subtitle = label("", "amb-lib-subtitle");
+    gtk_widget_set_hexpand(subtitle, true);
+    gtk_widget_set_valign(subtitle, GTK_ALIGN_CENTER);
+    gtk_container_add(GTK_CONTAINER(head), subtitle);
     GtkWidget* newBtn = iconButton("list-add-symbolic", _("New notebook"), "amb-primary");
     onClicked(newBtn, [this] {
         if (actions.newNotebook) {
@@ -151,6 +156,7 @@ LibraryView::LibraryView(fs::path storeFile, Actions a): store(std::move(storeFi
 }
 
 LibraryView::~LibraryView() {
+    *alive = false;
     for (auto* m: {&previews, &images}) {
         for (auto& [_, pb]: *m) {
             if (pb) {
@@ -226,9 +232,59 @@ void LibraryView::refresh() {
     }
     fillSide();
     fillGrid();
+    reindex();
 }
 
 void LibraryView::focusSearch() { gtk_widget_grab_focus(search); }
+
+void LibraryView::reindex() {
+    if (indexing) {
+        indexAgain = true;
+        return;
+    }
+    indexing = true;
+    indexAgain = false;
+    std::vector<fs::path> files;
+    auto all = entriesFor({SourceKind::All});
+    for (auto& e: all) {
+        files.push_back(e.nb.path);
+    }
+    for (auto& e: recentEntries()) {
+        files.push_back(e.nb.path);
+    }
+
+    struct Job {
+        LibraryView* self;
+        std::shared_ptr<bool> alive;
+        std::shared_ptr<SearchIndex> result;
+    };
+    auto* job = new Job{this, alive, nullptr};
+    std::thread([job, files = std::move(files), file = indexFile] {
+        auto idx = std::make_shared<SearchIndex>(file);
+        if (idx->update(files) > 0) {
+            idx->save();
+        }
+        job->result = std::move(idx);
+        g_idle_add(
+                +[](gpointer d) -> gboolean {
+                    std::unique_ptr<Job> job(static_cast<Job*>(d));
+                    if (!*job->alive) {
+                        return G_SOURCE_REMOVE;
+                    }
+                    auto* self = job->self;
+                    self->index = std::move(job->result);
+                    self->indexing = false;
+                    if (!self->filter.empty()) {
+                        self->fillGrid();
+                    }
+                    if (self->indexAgain) {
+                        self->reindex();
+                    }
+                    return G_SOURCE_REMOVE;
+                },
+                job);
+    }).detach();
+}
 
 void LibraryView::fillSide() {
     gtk_container_foreach(GTK_CONTAINER(side), [](GtkWidget* w, gpointer) { gtk_widget_destroy(w); }, nullptr);
@@ -455,6 +511,7 @@ auto LibraryView::entriesFor(Source s) const -> std::vector<Entry> {
 void LibraryView::fillGrid() {
     gtk_container_foreach(GTK_CONTAINER(body), [](GtkWidget* w, gpointer) { gtk_widget_destroy(w); }, nullptr);
     gtk_label_set_text(GTK_LABEL(title), filter.empty() ? sourceTitle(current).c_str() : ("“" + filter + "”").c_str());
+    gtk_label_set_text(GTK_LABEL(subtitle), "");
 
     // while searching, look everywhere
     auto entries = entriesFor(filter.empty() ? current : Source{SourceKind::All});
@@ -465,8 +522,31 @@ void LibraryView::fillGrid() {
             }
         }
     }
+    const auto everywhere = entries;
     entries.erase(std::remove_if(entries.begin(), entries.end(), [&](auto& e) { return !matches(e.nb.name, filter); }),
                   entries.end());
+
+    if (!filter.empty()) {
+        // notebooks whose name matches, then what is written inside
+        if (!entries.empty()) {
+            gtk_container_add(GTK_CONTAINER(body), label(_("Notebooks"), "amb-section"));
+            GtkWidget* grid = gtk_flow_box_new();
+            gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(grid), GTK_SELECTION_NONE);
+            gtk_flow_box_set_homogeneous(GTK_FLOW_BOX(grid), true);
+            gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(grid), 64);
+            gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(grid), 34);
+            gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(grid), 28);
+            gtk_widget_set_valign(grid, GTK_ALIGN_START);
+            addClass(grid, "amb-grid");
+            for (auto& e: entries) {
+                gtk_container_add(GTK_CONTAINER(grid), makeTile(e));
+            }
+            gtk_container_add(GTK_CONTAINER(body), grid);
+        }
+        addTextHits(everywhere);
+        gtk_widget_show_all(body);
+        return;
+    }
 
     if (entries.empty()) {
         GtkWidget* empty =
@@ -515,6 +595,95 @@ void LibraryView::fillGrid() {
     }
     gtk_widget_show_all(body);
     gtk_adjustment_set_value(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scroller)), 0);
+}
+
+void LibraryView::addTextHits(const std::vector<Entry>& everywhere) {
+    gtk_container_add(GTK_CONTAINER(body), label(_("In the text"), "amb-section"));
+    if (!index) {
+        gtk_container_add(GTK_CONTAINER(body), label(_("Reading the notebooks…"), "amb-empty"));
+        return;
+    }
+    std::vector<fs::path> order;
+    for (auto& e: everywhere) {
+        order.push_back(e.nb.path);
+    }
+    const auto hits = index->search(filter, order);
+    if (hits.empty()) {
+        gtk_container_add(GTK_CONTAINER(body), label(_("Nothing found in the text or the formulas."), "amb-empty"));
+        return;
+    }
+    std::set<fs::path> books;
+    GtkWidget* list = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_halign(list, GTK_ALIGN_START);
+    addClass(list, "amb-results");
+    for (auto& h: hits) {
+        books.insert(h.notebook);
+        auto it = std::find_if(everywhere.begin(), everywhere.end(), [&](auto& e) { return e.nb.path == h.notebook; });
+        if (it != everywhere.end()) {
+            gtk_container_add(GTK_CONTAINER(list), makeHit(h, *it));
+        }
+    }
+    gtk_container_add(GTK_CONTAINER(body), list);
+
+    const std::string count = std::string(g_dngettext(nullptr, "%zu result", "%zu results", hits.size())) + " · " +
+                              g_dngettext(nullptr, "%zu notebook", "%zu notebooks", books.size());
+    gchar* text = g_strdup_printf(count.c_str(), hits.size(), books.size());
+    gtk_label_set_text(GTK_LABEL(subtitle), text);
+    g_free(text);
+}
+
+auto LibraryView::makeHit(const SearchHit& h, const Entry& e) -> GtkWidget* {
+    GtkWidget* button = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
+    addClass(button, "amb-hit");
+    GtkWidget* row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 16);
+
+    const Entry entry = e;
+    GtkWidget* mini = coverArea(44, 58, [this, entry] {
+        CoverInput in = coverInput(entry);
+        in.showTitle = false;
+        return in;
+    });
+    gtk_widget_set_valign(mini, GTK_ALIGN_START);
+    gtk_container_add(GTK_CONTAINER(row), mini);
+
+    GtkWidget* text = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    gtk_container_add(GTK_CONTAINER(text), label(e.nb.name, "amb-hit-name"));
+    gchar* where = g_strdup_printf(_("page %zu"), h.page + 1);
+    std::string place = (e.place.empty() ? "" : e.place + " · ") + where + (h.latex ? " · LaTeX" : "");
+    g_free(where);
+    gtk_container_add(GTK_CONTAINER(text), label(place, "amb-hit-where"));
+
+    // the match gets a soft band of the accent colour
+    GtkWidget* top = gtk_widget_get_toplevel(root);
+    const bool dark = GTK_IS_WINDOW(top) && gtk_style_context_has_class(gtk_widget_get_style_context(top), "darkMode");
+    gchar* b = g_markup_escape_text(h.before.c_str(), -1);
+    gchar* m = g_markup_escape_text(h.match.c_str(), -1);
+    gchar* a = g_markup_escape_text(h.after.c_str(), -1);
+    gchar* markup = g_strdup_printf("%s<span background=\"%s\" bgalpha=\"%s\">%s</span>%s", b,
+                                    dark ? "#e6e6e6" : "#303030", dark ? "30%" : "18%", m, a);
+    GtkWidget* ex = gtk_label_new(nullptr);
+    gtk_label_set_markup(GTK_LABEL(ex), markup);
+    gtk_label_set_xalign(GTK_LABEL(ex), 0);
+    gtk_label_set_line_wrap(GTK_LABEL(ex), true);
+    gtk_label_set_line_wrap_mode(GTK_LABEL(ex), PANGO_WRAP_WORD_CHAR);
+    gtk_label_set_max_width_chars(GTK_LABEL(ex), 80);
+    addClass(ex, h.latex ? "amb-hit-tex" : "amb-hit-ex");
+    g_free(b), g_free(m), g_free(a), g_free(markup);
+    gtk_container_add(GTK_CONTAINER(text), ex);
+    gtk_container_add(GTK_CONTAINER(row), text);
+    gtk_container_add(GTK_CONTAINER(button), row);
+
+    const fs::path path = h.notebook;
+    const size_t page = h.page;
+    onClicked(button, [this, path, page] {
+        if (actions.openAt) {
+            actions.openAt(path, page);
+        } else if (actions.open) {
+            actions.open(path);
+        }
+    });
+    return button;
 }
 
 auto LibraryView::coverInput(const Entry& e) -> CoverInput {

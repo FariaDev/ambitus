@@ -4919,3 +4919,31 @@ msgstr "Biblioteca"
 msgctxt "cover style"
 msgid "Plain"
 msgstr "Lisa"
+
+msgid "Search notebooks"
+msgstr "Buscar nos cadernos"
+
+msgid "Notebooks"
+msgstr "Cadernos"
+
+msgid "In the text"
+msgstr "No texto"
+
+msgid "Reading the notebooks…"
+msgstr "Lendo os cadernos…"
+
+msgid "Nothing found in the text or the formulas."
+msgstr "Nada no texto nem nas fórmulas."
+
+msgid "page %zu"
+msgstr "pág. %zu"
+
+msgid "%zu result"
+msgid_plural "%zu results"
+msgstr[0] "%zu resultado"
+msgstr[1] "%zu resultados"
+
+msgid "%zu notebook"
+msgid_plural "%zu notebooks"
+msgstr[0] "%zu caderno"
+msgstr[1] "%zu cadernos"

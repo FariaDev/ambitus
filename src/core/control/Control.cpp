@@ -1846,6 +1846,10 @@ void Control::fileLoaded(int scrollToPage) {
                 md->page = scrollToPage;
             }
             loadMetadata(*md);
+        } else if (scrollToPage >= 0) {
+            // Ambitus: a notebook never opened before has no metadata; still go to the page asked for
+            Util::execInUiThread(
+                    [ctrl = this, scrollToPage]() { ctrl->scrollHandler->scrollToPage(as_unsigned(scrollToPage)); });
         }
         RecentManager::addRecentFileFilename(filepath);
 

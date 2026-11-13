@@ -95,6 +95,11 @@ struct ActionProperties<Action::LIBRARY> {
 };
 
 template <>
+struct ActionProperties<Action::SEARCH_NOTEBOOKS> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getWindow()->showLibrary(); }
+};
+
+template <>
 struct ActionProperties<Action::ANNOTATE_PDF> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
         ctrl->clearSelectionEndText();
