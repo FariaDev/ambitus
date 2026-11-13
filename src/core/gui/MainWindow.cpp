@@ -244,6 +244,21 @@ void MainWindow::applyEditorMode() {
     if (studioPalette) {
         studioPalette->setVisible(mode == ambitus::EditorMode::STUDIO);
     }
+    // the Studio mode keeps a band above the pages for the palette, in the colour of the canvas
+    gtk_widget_set_margin_top(winXournal, mode == ambitus::EditorMode::STUDIO ? 60 : 0);
+    {
+        static GtkCssProvider* band = nullptr;
+        GtkWidget* contents = get("boxContents");
+        if (!band) {
+            band = gtk_css_provider_new();
+            gtk_style_context_add_provider(gtk_widget_get_style_context(contents), GTK_STYLE_PROVIDER(band),
+                                           GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 1);
+        }
+        auto c = settings->getBackgroundColor();
+        char css[96];
+        g_snprintf(css, sizeof(css), "box { background-color: #%02x%02x%02x; }", c.red, c.green, c.blue);
+        gtk_css_provider_load_from_data(band, css, -1, nullptr);
+    }
     if (titleBar) {
         titleBar->setMode(mode);
     }
