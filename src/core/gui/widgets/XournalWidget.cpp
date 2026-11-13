@@ -18,6 +18,7 @@
 #include "gui/XournalView.h"                // for XournalView
 #include "gui/inputdevices/InputContext.h"  // for InputContext
 #include "gui/scroll/ScrollHandling.h"      // for ScrollHandling
+#include "model/XojPage.h"                  // for XojPage
 #include "util/Color.h"                     // for cairo_set_source_rgbi
 #include "util/Rectangle.h"                 // for Rectangle
 
@@ -303,13 +304,15 @@ static auto gtk_xournal_draw(GtkWidget* widget, cairo_t* cr) -> gboolean {
 
     // Draw background
     Settings* settings = xournal->view->getControl()->getSettings();
-    Util::cairo_set_source_rgbi(cr, settings->getBackgroundColor());
+    const auto& views = xournal->view->getViewPages();
+    // Ambitus: a board has no edge to show: the canvas around it is its paper, without shadow or border
+    const bool board = xournal->view->getControl()->isBoardOpen() && !views.empty();
+    Util::cairo_set_source_rgbi(cr, board ? views[0]->getPage()->getBackgroundColor() : settings->getBackgroundColor());
     cairo_paint(cr);
 
     // Add a padding for the shadow of the pages
     clip.addPadding(10);
 
-    const auto& views = xournal->view->getViewPages();
     // Store the pages to release the layout mutex ASAP
     std::vector<std::pair<size_t, xoj::util::Point<int>>> pages;
     xournal->layout->forEachEntriesIntersectingRange(
@@ -320,7 +323,9 @@ static auto gtk_xournal_draw(GtkWidget* widget, cairo_t* cr) -> gboolean {
         int pw = pv->getDisplayWidth();
         int ph = pv->getDisplayHeight();
 
-        gtk_xournal_draw_shadow(xournal, cr, pos.x, pos.y, pw, ph, pv->isSelected());
+        if (!board) {
+            gtk_xournal_draw_shadow(xournal, cr, pos.x, pos.y, pw, ph, pv->isSelected());
+        }
 
         cairo_save(cr);
         cairo_translate(cr, pos.x, pos.y);

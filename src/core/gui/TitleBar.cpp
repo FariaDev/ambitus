@@ -86,9 +86,14 @@ TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(Edito
 
 void TitleBar::setEditorShown(bool editor) {
     editorShown = editor;
-    gtk_widget_set_visible(modes, editor);
+    gtk_widget_set_visible(modes, editor && modesShown);
     gtk_widget_set_visible(undo, editor);
     updateTitle();
+}
+
+void TitleBar::setModesShown(bool shown) {
+    modesShown = shown;
+    gtk_widget_set_visible(modes, editorShown && modesShown);
 }
 
 void TitleBar::setMode(EditorMode mode) {

@@ -1188,8 +1188,10 @@ void Control::growBoardToFit() {
     Util::execInUiThread([ctrl = this]() {
         ctrl->boardGrowPending = false;
         ctrl->doc->lock();
-        if (!ambitus::board::isBoard(*ctrl->doc)) {
+        bool board = ambitus::board::isBoard(*ctrl->doc);
+        if (!board) {
             ctrl->doc->unlock();
+            ctrl->setBoardOpen(false);
             return;
         }
         PageRef page = ctrl->doc->getPage(0);
@@ -1200,10 +1202,22 @@ void Control::growBoardToFit() {
             Document::setPageSize(page, size.width, size.height);
         }
         ctrl->doc->unlock();
+        ctrl->setBoardOpen(true);
         if (grown) {
             ctrl->firePageSizeChanged(0);
         }
     });
+}
+
+void Control::setBoardOpen(bool board) {
+    if (board == boardOpen) {
+        return;
+    }
+    boardOpen = board;
+    if (win) {
+        win->applyEditorMode();
+        gtk_widget_queue_draw(win->getXournal()->getWidget());
+    }
 }
 
 void Control::undoRedoPageChanged(PageRef page) {
@@ -1927,6 +1941,11 @@ void Control::fileLoaded(int scrollToPage) {
     win->getXournal()->forceUpdatePagenumbers();
     getCursor()->updateCursor();
     updatePageActions();
+
+    this->doc->lock_shared();
+    bool board = ambitus::board::isBoard(*this->doc);
+    this->doc->unlock_shared();
+    setBoardOpen(board);
 }
 
 enum class MissingPdfDialogOptions : gint { USE_PROPOSED, SELECT_OTHER, REMOVE, CANCEL };

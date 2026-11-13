@@ -32,6 +32,8 @@
 #include "gui/widgets/SpinPageAdapter.h"                // for SpinPageAdapter
 #include "gui/widgets/XournalWidget.h"                  // for gtk_xournal_get_l...
 #include "library/LibraryView.h"                        // for LibraryView
+#include "model/Document.h"                             // for Document
+#include "model/XojPage.h"                              // for XojPage
 #include "util/GListView.h"                             // for GListView, GListV...
 #include "util/GtkUtil.h"                               // for getWidgetDPI
 #include "util/PathUtil.h"                              // for getConfigFile
@@ -244,6 +246,11 @@ void MainWindow::setEditorMode(ambitus::EditorMode mode) {
 void MainWindow::applyEditorMode() {
     auto* settings = control->getSettings();
     auto mode = static_cast<ambitus::EditorMode>(settings->getEditorMode());
+    // a board has its own layout: the palette above, no modes (the setting is left alone)
+    const bool board = control->isBoardOpen() && !isLibraryShown();
+    if (board) {
+        mode = ambitus::EditorMode::STUDIO;
+    }
     bool classic = mode == ambitus::EditorMode::CLASSIC;
     bool focus = mode == ambitus::EditorMode::FOCUS;
     // the bars are hidden here without touching the settings, so Classic comes back as it was;
@@ -276,12 +283,20 @@ void MainWindow::applyEditorMode() {
                                            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 1);
         }
         auto c = settings->getBackgroundColor();
+        if (board) {  // the band is part of the board: the colour of its paper
+            control->getDocument()->lock_shared();
+            if (auto p = control->getDocument()->getPage(0)) {
+                c = p->getBackgroundColor();
+            }
+            control->getDocument()->unlock_shared();
+        }
         char css[96];
         g_snprintf(css, sizeof(css), "box { background-color: #%02x%02x%02x; }", c.red, c.green, c.blue);
         gtk_css_provider_load_from_data(band, css, -1, nullptr);
     }
     if (titleBar) {
         titleBar->setMode(mode);
+        titleBar->setModesShown(!board);
     }
 }
 

@@ -28,6 +28,8 @@ public:
 
     /// The library hides what only makes sense in the editor
     void setEditorShown(bool editor);
+    /// A board has no screen modes
+    void setModesShown(bool shown);
     /// Marks the mode without calling back
     void setMode(EditorMode mode);
 
@@ -42,6 +44,7 @@ private:
     GtkWidget* modeButtons[3] = {};
     std::function<void(EditorMode)> onMode;
     bool editorShown = true;
+    bool modesShown = true;
     bool updating = false;
 };
 
