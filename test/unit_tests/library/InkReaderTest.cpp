@@ -147,3 +147,26 @@ TEST(InkReader, withNobodyListeningSummaIsClosed) {
     }
     EXPECT_EQ(postInk({port, "t"}, "png", std::chrono::seconds(5)).stop, InkStop::NoSumma);
 }
+
+TEST(InkReader, theAnswerToASentPageSaysWhereItWent) {
+    EXPECT_EQ(parsePageReply(200, R"({"ok": true})"), PageSend::Sent);
+    EXPECT_EQ(parsePageReply(200, R"({"reason": "not-found"})"), PageSend::NotFound);
+    EXPECT_EQ(parsePageReply(200, R"({"reason": "no-window"})"), PageSend::NoWindow);
+    EXPECT_EQ(parsePageReply(200, R"({"reason": "unavailable"})"), PageSend::OldSumma);
+    EXPECT_EQ(parsePageReply(404, R"({"error": "Rota desconhecida."})"), PageSend::OldSumma);  // a Summa from before
+    EXPECT_EQ(parsePageReply(400, R"({"reason": "bad-request"})"), PageSend::Failed);
+    EXPECT_EQ(parsePageReply(200, "lixo"), PageSend::Failed);
+}
+
+TEST(InkReader, aPageGoesToTheSideChatByItsPath) {
+    FakeBridge fake("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\n{\"ok\":true}");
+    EXPECT_EQ(sendPageToSumma({fake.port, "segredo"}, "/cadernos/Limites — aula 3.xopp", 1, "Limites — aula 3"),
+              PageSend::Sent);
+    fake.thread.join();
+    fake.thread = std::thread([] {});
+    EXPECT_NE(fake.request.find("POST /mandar-pagina HTTP/1.0\r\n"), std::string::npos);
+    EXPECT_NE(fake.request.find("x-summa-token: segredo\r\n"), std::string::npos);
+    EXPECT_NE(fake.request.find("Content-Type: application/json\r\n"), std::string::npos);
+    const std::string body = fake.request.substr(fake.request.find("\r\n\r\n") + 4);
+    EXPECT_EQ(body, R"({"caminho":"/cadernos/Limites — aula 3.xopp","pagina":2,"nome":"Limites — aula 3"})");
+}

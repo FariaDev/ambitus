@@ -34,6 +34,8 @@ struct SummaBridge {
 fs::path summaBridgePath(const fs::path& configPath, const std::string& configJson, const char* envRuntime);
 /// The bridge from the content of the file; empty when it is not a bridge of a version Ambitus knows
 std::optional<SummaBridge> parseSummaBridge(const std::string& json);
+/// The bridge of the Summa running now, from its runtime folder; empty when Summa is closed
+std::optional<SummaBridge> findSummaBridge();
 
 /// Why a page was not read
 enum class InkStop {
@@ -62,6 +64,21 @@ InkReply postInk(const SummaBridge& bridge, const std::string& png, std::chrono:
 /// The PNG of a page as Summa's tutor sees it, without the ruling: this program run with --create-img (on a board,
 /// only the written part). Empty when the export failed.
 std::optional<std::string> renderPagePng(const fs::path& notebook, size_t page);
+
+/// What happened to a page sent to Summa's side chat
+enum class PageSend {
+    Sent,      ///< it is in the draft of the side chat
+    NoSumma,   ///< Summa is closed
+    OldSumma,  ///< this Summa does not take pages yet
+    NotFound,  ///< Summa did not find the notebook on disk
+    NoWindow,  ///< Summa has no window to show it in
+    Failed,
+};
+/// The answer of the bridge to /mandar-pagina
+PageSend parsePageReply(int status, const std::string& body);
+/// Sends a page (0-based) of a saved notebook to the side chat of Summa, where the tutor reads it again by the path
+/// (blocking, but Summa answers at once)
+PageSend sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t page, const std::string& name);
 
 /// What a run of readInk did
 struct InkRun {

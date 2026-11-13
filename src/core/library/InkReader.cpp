@@ -9,6 +9,7 @@
 #include <json-glib/json-glib.h>
 
 #include "util/PathUtil.h"          // for getExePath, fromGFilename, toGFilename
+#include "util/StringUtils.h"       // for char_cast
 #include "util/raii/GObjectSPtr.h"  // for GObjectSPtr
 
 #include "SummaCourses.h"  // for summaConfigPath
@@ -163,7 +164,17 @@ auto parseInkReply(int status, const std::string& body) -> InkReply {
     return reply;
 }
 
-auto postInk(const SummaBridge& bridge, const std::string& png, std::chrono::seconds timeout) -> InkReply {
+namespace {
+/// An answer of the bridge; connected false when nobody listens on the port
+struct BridgeAnswer {
+    bool connected = false;
+    int status = 0;
+    std::optional<std::string> body;
+};
+
+auto postBridge(const SummaBridge& bridge, const char* route, const char* type, const std::string& body,
+                std::chrono::seconds timeout) -> BridgeAnswer {
+    BridgeAnswer answer;
     xoj::util::GObjectSPtr<GSocketClient> client(g_socket_client_new(), xoj::util::adopt);
     g_socket_client_set_timeout(client.get(), static_cast<guint>(timeout.count()));
     xoj::util::GObjectSPtr<GSocketConnection> conn(
@@ -171,21 +182,89 @@ auto postInk(const SummaBridge& bridge, const std::string& png, std::chrono::sec
                                             nullptr),
             xoj::util::adopt);
     if (!conn) {
-        return {InkStop::NoSumma, {}};
+        return answer;
     }
+    answer.connected = true;
     // HTTP/1.0: the answer comes whole and the connection closes after it
-    const std::string head = "POST /ler-tinta HTTP/1.0\r\nHost: 127.0.0.1:" + std::to_string(bridge.port) +
-                             "\r\nContent-Type: image/png\r\nContent-Length: " + std::to_string(png.size()) +
+    const std::string head = std::string("POST ") + route +
+                             " HTTP/1.0\r\nHost: 127.0.0.1:" + std::to_string(bridge.port) +
+                             "\r\nContent-Type: " + type + "\r\nContent-Length: " + std::to_string(body.size()) +
                              "\r\nx-summa-token: " + bridge.token + "\r\nConnection: close\r\n\r\n";
     GOutputStream* out = g_io_stream_get_output_stream(G_IO_STREAM(conn.get()));
     if (!g_output_stream_write_all(out, head.data(), head.size(), nullptr, nullptr, nullptr) ||
-        !g_output_stream_write_all(out, png.data(), png.size(), nullptr, nullptr, nullptr)) {
-        return {};
+        !g_output_stream_write_all(out, body.data(), body.size(), nullptr, nullptr, nullptr)) {
+        return answer;
     }
     auto raw = readAll(g_io_stream_get_input_stream(G_IO_STREAM(conn.get())));
-    int status = 0;
-    auto body = raw ? parseResponse(*raw, status) : std::nullopt;
-    return body ? parseInkReply(status, *body) : InkReply{};
+    answer.body = raw ? parseResponse(*raw, answer.status) : std::nullopt;
+    return answer;
+}
+}  // namespace
+
+auto postInk(const SummaBridge& bridge, const std::string& png, std::chrono::seconds timeout) -> InkReply {
+    auto answer = postBridge(bridge, "/ler-tinta", "image/png", png, timeout);
+    if (!answer.connected) {
+        return {InkStop::NoSumma, {}};
+    }
+    return answer.body ? parseInkReply(answer.status, *answer.body) : InkReply{};
+}
+
+auto findSummaBridge() -> std::optional<SummaBridge> {
+    const fs::path config = summaConfigPath();
+    auto file = readFile(summaBridgePath(config, readFile(config).value_or(""), g_getenv("LEARNING_DESK_RUNTIME")));
+    return file ? parseSummaBridge(*file) : std::nullopt;
+}
+
+auto parsePageReply(int status, const std::string& body) -> PageSend {
+    if (status == 404) {
+        return PageSend::OldSumma;  // a Summa from before the route
+    }
+    xoj::util::GObjectSPtr<JsonParser> parser;
+    JsonObject* obj = parseObject(body, parser);
+    if (status != 200 || !obj) {
+        return PageSend::Failed;
+    }
+    if (json_object_get_boolean_member_with_default(obj, "ok", false)) {
+        return PageSend::Sent;
+    }
+    auto reason = stringMember(obj, "reason").value_or("");
+    if (reason == "not-found") {
+        return PageSend::NotFound;
+    }
+    if (reason == "no-window") {
+        return PageSend::NoWindow;
+    }
+    if (reason == "unavailable") {
+        return PageSend::OldSumma;
+    }
+    return PageSend::Failed;
+}
+
+auto sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t page, const std::string& name)
+        -> PageSend {
+    xoj::util::GObjectSPtr<JsonBuilder> builder(json_builder_new(), xoj::util::adopt);
+    json_builder_begin_object(builder.get());
+    json_builder_set_member_name(builder.get(), "caminho");
+    const std::string path(char_cast(notebook.u8string()));
+    json_builder_add_string_value(builder.get(), path.c_str());
+    json_builder_set_member_name(builder.get(), "pagina");
+    json_builder_add_int_value(builder.get(), static_cast<gint64>(page + 1));
+    json_builder_set_member_name(builder.get(), "nome");
+    json_builder_add_string_value(builder.get(), name.c_str());
+    json_builder_end_object(builder.get());
+    xoj::util::GObjectSPtr<JsonGenerator> gen(json_generator_new(), xoj::util::adopt);
+    JsonNode* root = json_builder_get_root(builder.get());
+    json_generator_set_root(gen.get(), root);
+    gchar* text = json_generator_to_data(gen.get(), nullptr);
+    const std::string body = text;
+    g_free(text);
+    json_node_unref(root);
+
+    auto answer = postBridge(bridge, "/mandar-pagina", "application/json", body, std::chrono::seconds(10));
+    if (!answer.connected) {
+        return PageSend::NoSumma;
+    }
+    return answer.body ? parsePageReply(answer.status, *answer.body) : PageSend::Failed;
 }
 
 auto renderPagePng(const fs::path& notebook, size_t page) -> std::optional<std::string> {
@@ -228,9 +307,7 @@ auto renderPagePng(const fs::path& notebook, size_t page) -> std::optional<std::
 auto readInk(SearchIndex& index, const std::vector<fs::path>& order, std::chrono::steady_clock::time_point deadline,
              const std::atomic<bool>& cancel) -> InkRun {
     InkRun run;
-    const fs::path config = summaConfigPath();
-    auto file = readFile(summaBridgePath(config, readFile(config).value_or(""), g_getenv("LEARNING_DESK_RUNTIME")));
-    auto bridge = file ? parseSummaBridge(*file) : std::nullopt;
+    auto bridge = findSummaBridge();
     if (!bridge) {
         run.stop = InkStop::NoSumma;
         return run;

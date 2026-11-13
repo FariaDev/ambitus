@@ -4935,6 +4935,24 @@ msgstr "Lendo os cadernos…"
 msgid "Nothing found in the text or the formulas."
 msgstr "Nada no texto nem nas fórmulas."
 
+msgid "Send page to Summa"
+msgstr "Mandar página ao Summa"
+
+msgid "Summa is not open. Open Summa and try again."
+msgstr "O Summa não está aberto. Abra o Summa e tente de novo."
+
+msgid "This Summa does not take pages from Ambitus yet. Update Summa."
+msgstr "Este Summa ainda não recebe páginas do Ambitus. Atualize o Summa."
+
+msgid "Summa did not find the notebook on disk."
+msgstr "O Summa não achou o caderno no disco."
+
+msgid "The window of Summa is not ready. Try again."
+msgstr "A janela do Summa não está pronta. Tente de novo."
+
+msgid "The page could not be sent to Summa."
+msgstr "Não deu para mandar a página ao Summa."
+
 msgid "handwritten"
 msgstr "escrito à mão"
 

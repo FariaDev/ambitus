@@ -41,9 +41,10 @@ enum class Action : size_t {
     EXPORT_AS,
     PRINT,
     QUIT,
-    LIBRARY,           ///< Ambitus: show the notebook library
-    SEARCH_NOTEBOOKS,  ///< Ambitus: library with the keyboard in its search
-    SCRATCH_OUT,       ///< Ambitus: toggle scratch out to erase
+    LIBRARY,             ///< Ambitus: show the notebook library
+    SEARCH_NOTEBOOKS,    ///< Ambitus: library with the keyboard in its search
+    SCRATCH_OUT,         ///< Ambitus: toggle scratch out to erase
+    SEND_PAGE_TO_SUMMA,  ///< Ambitus: the page on screen to the side chat of Summa
 
     // Menu edit
     ARRANGE_SELECTION_ORDER,

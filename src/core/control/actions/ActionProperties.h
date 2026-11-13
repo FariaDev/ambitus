@@ -8,6 +8,7 @@
 
 #include <control/tools/TextEditor.h>
 
+#include "ambitus/SendPage.h"
 #include "control/AudioController.h"
 #include "control/Control.h"
 #include "control/NavigationHistory.h"
@@ -108,6 +109,11 @@ struct ActionProperties<Action::SCRATCH_OUT> {
         g_simple_action_set_state(ga, p);
         ctrl->getSettings()->setScratchOutEnabled(enabled);
     }
+};
+
+template <>
+struct ActionProperties<Action::SEND_PAGE_TO_SUMMA> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ambitus::sendPageToSumma(ctrl); }
 };
 
 template <>

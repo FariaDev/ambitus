@@ -53,6 +53,11 @@
      <attribute name="action">win.export-as</attribute>
      <attribute name="accel">&lt;Ctrl&gt;e</attribute>
     </item>
+    <item>
+     <attribute name="label" translatable="yes">Send page to Summa</attribute>
+     <attribute name="action">win.send-page-to-summa</attribute>
+     <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;m</attribute>
+    </item>
    </section>
    <section>
     <item>

@@ -72,14 +72,20 @@ Nada vai para o `.xopp`: o texto lido fica no índice do cache.
   modelo: desligada, ligada e com o Summa fechado. Ainda falta medir a taxa
   de acerto com um modelo de verdade em páginas escritas pelo Lucas.
 
+- **Mandar a página ao chat lateral** (Ctrl+Shift+M ou Arquivo → Mandar
+  página ao Summa): o Ambitus salva o caderno se for preciso e manda o
+  caminho e a página a `POST /mandar-pagina`. O Summa autoriza o caderno
+  para o `ler_caderno`, traz a janela e põe no rascunho do chat lateral o
+  caderno, a página e o caminho, sem enviar. Não depende da leitura da
+  tinta, porque nada sai até a mensagem ser enviada.
+
 Limites conhecidos:
 
 - Um quadro grande vira um PNG grande. Acima de 8 MB a ponte recusa e a
   página fica sem ler.
 - Durante uma rodada (até 90 s), uma mudança nos cadernos só reindexa
   quando a rodada acaba.
-- Ainda não existe "mandar a página ao chat solto" nem "converter a seleção
-  em texto".
+- Ainda não existe "converter a seleção em texto".
 
 ## Antes de começar
 
