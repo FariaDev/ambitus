@@ -45,6 +45,7 @@ namespace ambitus {
 class PageGrowHandle;
 class TitleBar;
 class StudioPalette;
+class RadialMenu;
 enum class EditorMode;
 }
 namespace ambitus::library {
@@ -212,6 +213,8 @@ private:
     std::unique_ptr<ambitus::PageGrowHandle> growHandle;
     /// Ambitus: palette of the Studio mode
     std::unique_ptr<ambitus::StudioPalette> studioPalette;
+    /// Ambitus: ring of tools on the right button
+    std::unique_ptr<ambitus::RadialMenu> radialMenu;
     /// Ambitus: client side title bar
     std::unique_ptr<ambitus::TitleBar> titleBar;
 };

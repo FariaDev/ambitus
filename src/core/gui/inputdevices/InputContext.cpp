@@ -175,6 +175,11 @@ auto InputContext::handle(GdkEvent* sourceEvent) -> bool {
         return false;
     }
 
+    // Ambitus: the radial menu
+    if (ambitusPreHandler && ambitusPreHandler(event)) {
+        return true;
+    }
+
     // Deactivate touchscreen when a pen event occurs
     this->handRecognition->event(event.deviceClass);
 
@@ -211,6 +216,8 @@ auto InputContext::handle(GdkEvent* sourceEvent) -> bool {
     }
     return false;
 }
+
+std::function<bool(const InputEvent&)> InputContext::ambitusPreHandler;
 
 auto InputContext::getXournal() const -> GtkXournal* { return GTK_XOURNAL(widget); }
 

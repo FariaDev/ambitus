@@ -125,3 +125,13 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   `tool-size`). **Foco**: só a
   página. O modo é salvo em `settings.xml` (`editorMode`) e as barras são
   escondidas direto nos widgets, sem mexer nas preferências do Clássico.
+
+## Menu radial (2026-11-13)
+
+- Abre no botão direito do mouse ou no segundo botão da caneta, onde está o
+  ponteiro, desde que esse botão não tenha ferramenta própria nas
+  Configurações (o padrão é não ter).
+- Anel de 208 px com o ∂ no buraco: caneta, marca-texto, borracha, laço,
+  texto, formas (caneta com reconhecimento de forma), LaTeX e desfazer.
+- Dois jeitos: apertar, levar até o item e soltar; ou clicar e depois clicar
+  no item. Clique fora ou Esc fecha.

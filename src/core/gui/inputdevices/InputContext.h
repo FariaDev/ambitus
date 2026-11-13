@@ -23,6 +23,8 @@
 
 #include "gui/widgets/XournalWidget.h"  // for GtkXournal
 
+struct InputEvent;
+
 class GeometryToolInputHandler;
 class KeyboardInputHandler;
 class MouseInputHandler;
@@ -107,6 +109,9 @@ public:
     void resetGeometryToolInputHandler();
 
     void focusWidget();
+
+    /// Ambitus: sees the events of the pages before the tools (the radial menu); returns true to keep them
+    static std::function<bool(const InputEvent&)> ambitusPreHandler;
     void blockDevice(DeviceType deviceType);
     void unblockDevice(DeviceType deviceType);
     bool isBlocked(DeviceType deviceType);

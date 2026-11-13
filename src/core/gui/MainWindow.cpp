@@ -45,6 +45,7 @@
 
 #include "GladeSearchpath.h"     // for GladeSearchpath
 #include "PageGrowHandle.h"      // for PageGrowHandle
+#include "RadialMenu.h"          // for RadialMenu
 #include "StudioPalette.h"       // for StudioPalette
 #include "TitleBar.h"            // for TitleBar
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
@@ -127,6 +128,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     initXournalWidget();
     this->growHandle = std::make_unique<ambitus::PageGrowHandle>(control, xournal.get(), overlay);
     this->studioPalette = std::make_unique<ambitus::StudioPalette>(overlay);
+    this->radialMenu = std::make_unique<ambitus::RadialMenu>(control, xournal.get(), overlay);
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
