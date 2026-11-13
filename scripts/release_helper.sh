@@ -179,9 +179,9 @@ function bump_version() {
     if [ "$replace" -eq 0 ]; then
         sed -i "1,/^    <release .*$/ {/^    <release .*$/i\
         \ \ \ \ <release date=\"$date\" version=\"$(current_version)\" />
-        }" "${SCRIPT_PATH}/../resources-templates/com.github.xournalpp.xournalpp.appdata.xml.in"
+        }" "${SCRIPT_PATH}/../resources-templates/io.github.fariadev.Ambitus.appdata.xml.in"
     else
-        sed -i "s/\ \ \ \ <release date=\".*\" version=\"${prior_version}\" \/>/\ \ \ \ <release date=\"$date\" version=\"$(current_version)\" \/>/g" "${SCRIPT_PATH}/../resources-templates/com.github.xournalpp.xournalpp.appdata.xml.in"
+        sed -i "s/\ \ \ \ <release date=\".*\" version=\"${prior_version}\" \/>/\ \ \ \ <release date=\"$date\" version=\"$(current_version)\" \/>/g" "${SCRIPT_PATH}/../resources-templates/io.github.fariadev.Ambitus.appdata.xml.in"
     fi
 
     # Update MacOS Info.plist
@@ -413,8 +413,8 @@ if ! [ -z "\$(cat debian/changelog | grep -E "\+dev|~dev")" ]; then
     exit 1
 fi
 
-if ! [ -z "\$(cat desktop/com.github.xournalpp.xournalpp.appdata.xml | grep -E "\+dev|~dev")" ]; then
-    echo "desktop/com.github.xournalpp.xournalpp.appdata.xml should not contain a development version string '[+~]dev'"
+if ! [ -z "\$(cat desktop/io.github.fariadev.Ambitus.appdata.xml | grep -E "\+dev|~dev")" ]; then
+    echo "desktop/io.github.fariadev.Ambitus.appdata.xml should not contain a development version string '[+~]dev'"
     exit 1
 fi
 
@@ -422,7 +422,7 @@ fi
 bump_version "${release_version}+dev" 0
 
 # Amend the previous commit to include the version change
-git add CMakeLists.txt CHANGELOG.md debian/changelog desktop/com.github.xournalpp.xournalpp.appdata.xml rpm/fedora/xournalpp.spec mac-setup/Info.plist
+git add CMakeLists.txt CHANGELOG.md debian/changelog desktop/io.github.fariadev.Ambitus.appdata.xml rpm/fedora/xournalpp.spec mac-setup/Info.plist
 
 # Wait for merge to finish and then amend the commit (This hack is needed since git does not allow amendments in hooks)
 bash -c "git merge HEAD &> /dev/null; while [ $? -ne 0 ]; do sleep 1; git merge HEAD &> /dev/null; done; git commit --amend -C HEAD --no-verify" &
@@ -489,8 +489,8 @@ if ! [[ "\$(sed -n "1,/xournalpp/{s/xournalpp (\([^-]*-1\)) UNRELEASED; urgency=
     exit 1
 fi
 
-if ! [[ "\$(sed -n "1,/\ \ \ \ <release /{s/\ \ \ \ <release date=\"[^\"]*\" version=\"\([^\"]*\)\" \/>/\1/p}" desktop/com.github.xournalpp.xournalpp.appdata.xml)" == "$old_version" ]]; then
-    echo "The first version in desktop/com.github.xournalpp.xournalpp.appdata.xml should be $old_version"
+if ! [[ "\$(sed -n "1,/\ \ \ \ <release /{s/\ \ \ \ <release date=\"[^\"]*\" version=\"\([^\"]*\)\" \/>/\1/p}" desktop/io.github.fariadev.Ambitus.appdata.xml)" == "$old_version" ]]; then
+    echo "The first version in desktop/io.github.fariadev.Ambitus.appdata.xml should be $old_version"
     exit 1
 fi
 

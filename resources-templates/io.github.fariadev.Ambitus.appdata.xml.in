@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2019 Tobias Mueller <tobiasmue@gnome.org>  -->
 <component type="desktop">
-  <id>com.github.xournalpp.xournalpp</id>
+  <id>io.github.fariadev.Ambitus</id>
   <translation type="gettext">xournalpp</translation>
-  <name>Xournal++</name>
+  <name>Ambitus</name>
   <summary>Take handwritten notes</summary>
-  <developer_name>Xournalpp Developers</developer_name>
+  <developer_name>FariaDev</developer_name>
   <description>
     <p>
       Xournal++ is a hand note-taking software written in C++ with the target of
@@ -69,9 +69,8 @@
     <color type="primary" scheme_preference="light">#77767b</color>
     <color type="primary" scheme_preference="dark">#241f31</color>
   </branding>
-  <launchable type="desktop-id">com.github.xournalpp.xournalpp.desktop</launchable>
+  <launchable type="desktop-id">io.github.fariadev.Ambitus.desktop</launchable>
   <provides>
-    <id>xournalpp.desktop</id>
     <binary>xournalpp</binary>
     <mediatype>application/x-xojpp</mediatype>
     <mediatype>application/x-xopp</mediatype>

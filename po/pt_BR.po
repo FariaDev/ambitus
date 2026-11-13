@@ -4823,3 +4823,13 @@ msgstr "Arquivo de nota do Xournal++"
 msgid "Xournal++ page template file"
 msgstr "Arquivo de Página de Molde do Xournal++"
 
+
+#: ../ui/about.glade:12
+msgid "About Ambitus"
+msgstr "Sobre o Ambitus"
+
+#: ../ui/about.glade:93
+msgid "<span size=\"xx-large\" weight=\"bold\">Ambitus</span>\n"
+"<i>Based on Xournal++</i>"
+msgstr "<span size=\"xx-large\" weight=\"bold\">Ambitus</span>\n"
+"<i>Baseado no Xournal++</i>"

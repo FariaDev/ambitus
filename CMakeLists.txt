@@ -398,7 +398,7 @@ if (${INSTALL_DESKTOP_FILES})
     message("Installing desktop files")
 
     # Install icons
-    install(FILES ui/pixmaps/com.github.xournalpp.xournalpp.svg
+    install(FILES ui/pixmaps/io.github.fariadev.Ambitus.svg
             DESTINATION share/icons/hicolor/scalable/apps)
     install(FILES ui/pixmaps/application-x-xopp.svg
             DESTINATION share/icons/hicolor/scalable/mimetypes/)
@@ -410,11 +410,11 @@ if (${INSTALL_DESKTOP_FILES})
             DESTINATION share/icons/hicolor/scalable/mimetypes/)
     install(FILES ui/pixmaps/gnome-mime-application-x-xopt.svg
             DESTINATION share/icons/hicolor/scalable/mimetypes/)
-    install(FILES ${CMAKE_BINARY_DIR}/generated/com.github.xournalpp.xournalpp.xml
+    install(FILES ${CMAKE_BINARY_DIR}/generated/io.github.fariadev.Ambitus.xml
             DESTINATION share/mime/packages)
-    install(FILES desktop/com.github.xournalpp.xournalpp.thumbnailer
+    install(FILES desktop/io.github.fariadev.Ambitus.thumbnailer
             DESTINATION share/thumbnailers)
-    install(FILES ${CMAKE_BINARY_DIR}/generated/com.github.xournalpp.xournalpp.appdata.xml
+    install(FILES ${CMAKE_BINARY_DIR}/generated/io.github.fariadev.Ambitus.appdata.xml
             DESTINATION share/metainfo)
 endif ()
 

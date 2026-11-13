@@ -70,7 +70,7 @@ The %{name}-ui package contains a graphical user interface for  %{name}.
 %prep
 %autosetup -n %{name}
 # We do not build nor ship the wrapper
-sed -i -e 's/xournalpp-wrapper/xournalpp/' desktop/com.github.xournalpp.xournalpp.desktop.in
+sed -i -e 's/xournalpp-wrapper/xournalpp/' desktop/io.github.fariadev.Ambitus.desktop.in
 
 %build
 %cmake \

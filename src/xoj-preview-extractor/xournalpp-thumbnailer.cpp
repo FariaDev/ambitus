@@ -80,7 +80,7 @@ void logMessage(string msg, bool error) {
 #endif
 }
 
-static const std::string iconName = "com.github.xournalpp.xournalpp";
+static const std::string iconName = "io.github.fariadev.Ambitus";
 
 /**
  * Search for Xournal++ icon based on the freedesktop icon theme specification

@@ -47,8 +47,8 @@ if [[ ! -d "$APPDIR" ]]; then
     tar xf "$TAR_NAME" --one-top-level="$APPDIR"/usr --strip=1
 fi
 
-ICON_FILE="$APPDIR"/usr/share/icons/hicolor/scalable/apps/com.github.xournalpp.xournalpp.svg
-DESKTOP_FILE="$APPDIR"/usr/share/applications/com.github.xournalpp.xournalpp.desktop
+ICON_FILE="$APPDIR"/usr/share/icons/hicolor/scalable/apps/io.github.fariadev.Ambitus.svg
+DESKTOP_FILE="$APPDIR"/usr/share/applications/io.github.fariadev.Ambitus.desktop
 echo "Use the icon file $ICON_FILE and the desktop file $DESKTOP_FILE"
 
 filename_pattern="xournalpp-*$ARCH.AppImage.zsync"

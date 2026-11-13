@@ -25,13 +25,13 @@ if (XGETTEXT_FOUND)
       "${PROJECT_SOURCE_DIR}/ui/*.glade;${PROJECT_SOURCE_DIR}/ui/*.xml"
 
     DESKTOPFILES
-      "${PROJECT_SOURCE_DIR}/desktop/com.github.xournalpp.xournalpp.desktop.in"
+      "${PROJECT_SOURCE_DIR}/desktop/io.github.fariadev.Ambitus.desktop.in"
 
     INIFILES
       "${PROJECT_SOURCE_DIR}/resources-templates/pagetemplates.ini.in;${PROJECT_SOURCE_DIR}/resources-templates/toolbar.ini.in"
 
     XMLFILES
-      "${PROJECT_SOURCE_DIR}/resources-templates/com.github.xournalpp.xournalpp.appdata.xml.in;${PROJECT_SOURCE_DIR}/resources-templates/com.github.xournalpp.xournalpp.xml.in"
+      "${PROJECT_SOURCE_DIR}/resources-templates/io.github.fariadev.Ambitus.appdata.xml.in;${PROJECT_SOURCE_DIR}/resources-templates/io.github.fariadev.Ambitus.xml.in"
   )
 
   gettext_create_translations ("${potfile}" ALL NOUPDATE)

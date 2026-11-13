@@ -131,7 +131,7 @@ def get_whitelist_not_found():
     white_list.add("ui/pixmaps/application-x-xopp.svg")
     white_list.add("ui/pixmaps/application-x-xopt.svg")
     white_list.add("ui/pixmaps/com.github.xournalpp.xournalpp.png")
-    white_list.add("ui/pixmaps/com.github.xournalpp.xournalpp.svg")
+    white_list.add("ui/pixmaps/io.github.fariadev.Ambitus.svg")
     white_list.add("ui/pixmaps/gnome-mime-application-x-xopp.svg")
     white_list.add("ui/pixmaps/gnome-mime-application-x-xopt.svg")
     white_list.add("ui/pixmaps/xopt.svg")

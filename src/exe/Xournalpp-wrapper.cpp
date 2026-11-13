@@ -233,7 +233,7 @@ auto main(int argc, char* argv[]) -> int {
 #endif
     }
 
-    GtkApplication* app = gtk_application_new("com.github.xournalpp.xournalpp", G_APPLICATION_FLAGS_NONE);
+    GtkApplication* app = gtk_application_new("io.github.fariadev.Ambitus", G_APPLICATION_FLAGS_NONE);
     g_signal_connect_data(app, "activate", xoj::util::wrap_for_g_callback_v<activate>, new std::string(errorlog.str()),
                           xoj::util::closure_notify_cb<std::string>, GConnectFlags(0));
 
