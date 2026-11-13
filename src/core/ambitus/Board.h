@@ -16,6 +16,7 @@
 #include "model/PageType.h"
 
 class Document;
+class XojPage;
 class PageTemplateSettings;
 
 namespace ambitus::board {
@@ -45,5 +46,8 @@ struct Size {
     double width, height;
 };
 Size grownToFit(Size page, double right, double bottom);
+
+/// How far right and down the content of the page reaches (0, 0 when empty). The caller locks the document.
+Size contentReach(const XojPage& page);
 
 }  // namespace ambitus::board

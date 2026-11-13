@@ -1,10 +1,13 @@
 #include "Board.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "control/settings/PageTemplateSettings.h"
 #include "model/BackgroundConfig.h"
 #include "model/Document.h"
+#include "model/Element.h"
+#include "model/Layer.h"
 #include "model/XojPage.h"
 
 namespace ambitus::board {
@@ -44,5 +47,17 @@ double grow(double size, double reach) {
 }  // namespace
 
 Size grownToFit(Size page, double right, double bottom) { return {grow(page.width, right), grow(page.height, bottom)}; }
+
+Size contentReach(const XojPage& page) {
+    Size r{0, 0};
+    for (const Layer* layer: page.getLayersView()) {
+        for (const Element* e: layer->getElementsView()) {
+            const auto& b = e->getBoundingBox();
+            r.width = std::max(r.width, b.x + b.width);
+            r.height = std::max(r.height, b.y + b.height);
+        }
+    }
+    return r;
+}
 
 }  // namespace ambitus::board

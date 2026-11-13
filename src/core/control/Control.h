@@ -94,6 +94,8 @@ public:
     void newFile(fs::path filepath = {});
     /// Ambitus: a new board, one page that grows (see ambitus/Board.h)
     void newBoard(fs::path filepath = {});
+    /// Ambitus: on a board, makes the page bigger when the writing gets near its right or bottom edge
+    void growBoardToFit();
 
     /// @brief Shows an open file dialog and opens the selected file after closing the previously opened file
     void askToOpenFile();
@@ -524,6 +526,7 @@ private:
      * The pages wihch has changed since the last update (for preview update)
      */
     std::vector<PageRef> changedPages;
+    bool boardGrowPending = false;  ///< Ambitus: growBoardToFit() already queued
 
     /**
      * DocumentListener instances that are to be updated by checkChangedDocument.

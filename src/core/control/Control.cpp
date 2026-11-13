@@ -1176,6 +1176,34 @@ void Control::undoRedoChanged() {
     win->setRedoDescription(undoRedo->redoDescription());
 
     updateWindowTitle();
+    growBoardToFit();
+}
+
+void Control::growBoardToFit() {
+    if (boardGrowPending) {
+        return;
+    }
+    boardGrowPending = true;
+    // after the action that changed the page is done with the document
+    Util::execInUiThread([ctrl = this]() {
+        ctrl->boardGrowPending = false;
+        ctrl->doc->lock();
+        if (!ambitus::board::isBoard(*ctrl->doc)) {
+            ctrl->doc->unlock();
+            return;
+        }
+        PageRef page = ctrl->doc->getPage(0);
+        auto reach = ambitus::board::contentReach(*page);
+        auto size = ambitus::board::grownToFit({page->getWidth(), page->getHeight()}, reach.width, reach.height);
+        bool grown = size.width != page->getWidth() || size.height != page->getHeight();
+        if (grown) {
+            Document::setPageSize(page, size.width, size.height);
+        }
+        ctrl->doc->unlock();
+        if (grown) {
+            ctrl->firePageSizeChanged(0);
+        }
+    });
 }
 
 void Control::undoRedoPageChanged(PageRef page) {
