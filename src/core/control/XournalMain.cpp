@@ -21,6 +21,10 @@
 #include <glib.h>         // for GOptionEntry, gchar, G_O...
 #include <libintl.h>      // for bindtextdomain, textdomain
 
+#if !defined(_WIN32) && !defined(__APPLE__)
+#include <fontconfig/fontconfig.h>  // for FcConfigAppFontAddDir
+#endif
+
 #include "control/RecentManager.h"           // for RecentManager
 #include "control/jobs/ExportParameters.h"   // for ExportBackgroundType
 #include "control/jobs/XournalScheduler.h"   // for XournalScheduler
@@ -353,6 +357,22 @@ auto findResourcePath(const fs::path& searchFile) -> fs::path {
     return {};
 }
 
+/**
+ * Ambitus: registers the fonts shipped in ui/fonts (IBM Plex, STIX Two) so the interface does not depend on the
+ * fonts installed on the system. Only with fontconfig; Windows and macOS still fall back to the system fonts.
+ */
+void registerBundledFonts(GladeSearchpath* gladePath) {
+#if !defined(_WIN32) && !defined(__APPLE__)
+    const auto dir = gladePath->getFirstSearchPath() / "fonts";
+    if (!fs::is_directory(dir)) {
+        return;
+    }
+    if (!FcConfigAppFontAddDir(nullptr, reinterpret_cast<const FcChar8*>(dir.u8string().c_str()))) {
+        g_warning("Could not register the fonts in %s", dir.u8string().c_str());
+    }
+#endif
+}
+
 void initResourcePath(GladeSearchpath* gladePath, const gchar* relativePathAndFile, bool failIfNotFound) {
     auto uiPath = findResourcePath(relativePathAndFile);  // i.e.  relativePathAndFile = "ui/about.glade"
 
@@ -432,6 +452,7 @@ void on_startup(GApplication* application, XMPtr app_data) {
     initResourcePath(app_data->gladePath.get(), "ui/about.glade");
     initResourcePath(app_data->gladePath.get(), "ui/xournalpp.css", false);
     initResourcePath(app_data->gladePath.get(), "ui/toolbar.ini", false);
+    registerBundledFonts(app_data->gladePath.get());
 
     app_data->control = std::make_unique<Control>(application, app_data->gladePath.get());
 

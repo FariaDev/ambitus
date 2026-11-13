@@ -73,6 +73,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     sidebarWidget.reset(get("sidebar"), xoj::util::ref);
 
     loadMainCSS(gladeSearchPath, "xournalpp.css");
+    loadMainCSS(gladeSearchPath, "ambitus.css");
 
     GtkOverlay* overlay = GTK_OVERLAY(get("mainOverlay"));
     this->pdfFloatingToolBox = std::make_unique<PdfFloatingToolbox>(this, overlay);

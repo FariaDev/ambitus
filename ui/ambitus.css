@@ -1,0 +1,299 @@
+/*
+ * Ambitus: visual da família do Summa sobre o tema GTK do sistema.
+ * Carregado depois de xournalpp.css. Tokens em docs/design/DECISOES.md.
+ *
+ *   claro:  fundo #ffffff, camada #f4f4f4, hover #e8e8e8, fio #e0e0e0,
+ *           texto #161616 / #525252 / #6f6f6f, acento grafite #303030
+ *   escuro: fundo #161616, camadas #262626 / #393939, hover #333333,
+ *           fio #393939, texto #f4f4f4 / #c6c6c6 / #a8a8a8, acento #e6e6e6
+ *
+ * O MainWindow põe a classe .darkMode na janela principal no tema escuro.
+ * Menus e diálogos são janelas próprias: herdam o claro/escuro do tema base
+ * (gtk-application-prefer-dark-theme) e daqui só a fonte e os cantos.
+ */
+
+@define-color amb_bg #ffffff;
+@define-color amb_layer #f4f4f4;
+@define-color amb_hover #e8e8e8;
+@define-color amb_border #e0e0e0;
+@define-color amb_text #161616;
+@define-color amb_text2 #525252;
+@define-color amb_text3 #6f6f6f;
+@define-color amb_accent #303030;
+@define-color amb_on_accent #ffffff;
+
+@define-color amb_dk_bg #161616;
+@define-color amb_dk_layer #262626;
+@define-color amb_dk_layer2 #393939;
+@define-color amb_dk_hover #333333;
+@define-color amb_dk_border #393939;
+@define-color amb_dk_text #f4f4f4;
+@define-color amb_dk_text2 #c6c6c6;
+@define-color amb_dk_text3 #a8a8a8;
+@define-color amb_dk_accent #e6e6e6;
+@define-color amb_dk_on_accent #161616;
+
+/* ---------- tipografia ---------- */
+
+window, dialog, popover, menu, tooltip {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 10.5pt;
+}
+
+/* ---------- janela principal ---------- */
+
+#mainWindow,
+#mainWindow #mainBox {
+    background-color: @amb_bg;
+    color: @amb_text;
+}
+#mainWindow.darkMode,
+#mainWindow.darkMode #mainBox {
+    background-color: @amb_dk_bg;
+    color: @amb_dk_text;
+}
+
+/* barra de menus */
+#mainWindow menubar {
+    background: @amb_bg;
+    border-bottom: 1px solid @amb_border;
+    box-shadow: none;
+    padding: 0 4px;
+}
+#mainWindow menubar > menuitem {
+    padding: 6px 10px;
+    border-radius: 4px;
+    color: @amb_text2;
+}
+#mainWindow menubar > menuitem:hover {
+    background: @amb_hover;
+    color: @amb_text;
+    box-shadow: none;
+}
+#mainWindow.darkMode menubar {
+    background: @amb_dk_bg;
+    border-bottom-color: @amb_dk_border;
+}
+#mainWindow.darkMode menubar > menuitem { color: @amb_dk_text2; }
+#mainWindow.darkMode menubar > menuitem:hover {
+    background: @amb_dk_hover;
+    color: @amb_dk_text;
+}
+
+/* barras de ferramentas */
+#mainWindow toolbar {
+    background: @amb_bg;
+    border: none;
+    padding: 2px 6px;
+}
+#mainWindow #tbTop1,
+#mainWindow #tbTop2 { border-bottom: 1px solid @amb_border; }
+#mainWindow.darkMode toolbar { background: @amb_dk_bg; }
+#mainWindow.darkMode #tbTop1,
+#mainWindow.darkMode #tbTop2 { border-bottom-color: @amb_dk_border; }
+
+#mainWindow toolbar button,
+#mainWindow toolbar menubutton > button {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 4px;
+    padding: 6px;
+    min-width: 20px;
+    min-height: 20px;
+    color: @amb_text2;
+    -gtk-icon-shadow: none;
+}
+#mainWindow toolbar button:hover,
+#mainWindow toolbar menubutton > button:hover {
+    background: @amb_hover;
+    color: @amb_text;
+}
+/* ferramenta ativa: camada com o sublinhado de 2px no acento */
+#mainWindow toolbar button:checked {
+    background: @amb_hover;
+    color: @amb_text;
+    box-shadow: inset 0 -2px @amb_accent;
+}
+#mainWindow toolbar button:disabled { opacity: 0.4; }
+#mainWindow.darkMode toolbar button,
+#mainWindow.darkMode toolbar menubutton > button { color: @amb_dk_text2; }
+#mainWindow.darkMode toolbar button:hover,
+#mainWindow.darkMode toolbar menubutton > button:hover {
+    background: @amb_dk_hover;
+    color: @amb_dk_text;
+}
+#mainWindow.darkMode toolbar button:checked {
+    background: @amb_dk_hover;
+    color: @amb_dk_text;
+    box-shadow: inset 0 -2px @amb_dk_accent;
+}
+#mainWindow toolbar separator {
+    background: @amb_border;
+    min-width: 1px;
+    margin: 8px 6px;
+}
+#mainWindow.darkMode toolbar separator { background: @amb_dk_border; }
+
+/* lateral de páginas e camadas */
+#mainWindow #sidebar {
+    background: @amb_layer;
+    border-right: 1px solid @amb_border;
+}
+#mainWindow.darkMode #sidebar {
+    background: @amb_dk_layer;
+    border-right-color: @amb_dk_border;
+}
+#mainWindow #bxSidebarTopActions button {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 4px;
+}
+#mainWindow #bxSidebarTopActions button:hover { background: @amb_hover; }
+#mainWindow.darkMode #bxSidebarTopActions button:hover { background: @amb_dk_hover; }
+
+#mainWindow paned > separator {
+    background: @amb_border;
+    min-width: 1px;
+    min-height: 1px;
+}
+#mainWindow.darkMode paned > separator { background: @amb_dk_border; }
+
+/* barra de status e busca */
+#mainWindow #statusbar,
+#mainWindow #searchBar {
+    background: @amb_bg;
+    color: @amb_text3;
+    border-top: 1px solid @amb_border;
+}
+#mainWindow #lbState,
+#mainWindow #statusbar label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 9pt;
+}
+#mainWindow.darkMode #statusbar,
+#mainWindow.darkMode #searchBar {
+    background: @amb_dk_bg;
+    color: @amb_dk_text3;
+    border-top-color: @amb_dk_border;
+}
+
+/* ---------- controles ---------- */
+
+/* campos preenchidos com a camada, sem fio de baixo */
+#mainWindow entry,
+#mainWindow spinbutton {
+    background: @amb_layer;
+    color: @amb_text;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    box-shadow: none;
+    min-height: 28px;
+}
+#mainWindow entry:focus,
+#mainWindow spinbutton:focus-within {
+    border-color: @amb_accent;
+}
+#mainWindow.darkMode entry,
+#mainWindow.darkMode spinbutton {
+    background: @amb_dk_layer;
+    color: @amb_dk_text;
+}
+#mainWindow.darkMode entry:focus,
+#mainWindow.darkMode spinbutton:focus-within { border-color: @amb_dk_accent; }
+
+#mainWindow scale trough { background: @amb_border; border: none; min-height: 2px; }
+#mainWindow scale highlight { background: @amb_accent; border: none; }
+#mainWindow scale slider {
+    background: @amb_bg;
+    border: 1px solid @amb_text3;
+    box-shadow: none;
+    min-width: 14px;
+    min-height: 14px;
+}
+#mainWindow.darkMode scale trough { background: @amb_dk_border; }
+#mainWindow.darkMode scale highlight { background: @amb_dk_accent; }
+#mainWindow.darkMode scale slider { background: @amb_dk_layer2; border-color: @amb_dk_text3; }
+
+/* barras de rolagem finas */
+#mainWindow scrollbar {
+    background: transparent;
+    border: none;
+}
+#mainWindow scrollbar slider {
+    background: alpha(@amb_text, 0.28);
+    border: none;
+    border-radius: 999px;
+    min-width: 6px;
+    min-height: 6px;
+}
+#mainWindow scrollbar slider:hover { background: alpha(@amb_text, 0.45); }
+#mainWindow.darkMode scrollbar slider { background: alpha(@amb_dk_text, 0.28); }
+#mainWindow.darkMode scrollbar slider:hover { background: alpha(@amb_dk_text, 0.45); }
+
+/* interruptor redondo, 40×20 */
+switch {
+    border-radius: 999px;
+    min-width: 40px;
+    min-height: 20px;
+}
+switch slider { border-radius: 999px; min-width: 14px; min-height: 14px; }
+
+/* ---------- o que flutua: 8px ---------- */
+
+popover,
+popover.background,
+menu,
+.menu,
+.context-menu {
+    border-radius: 8px;
+}
+menu menuitem,
+.menu menuitem {
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+tooltip,
+tooltip.background {
+    border-radius: 4px;
+}
+
+#mainWindow popover {
+    background: @amb_bg;
+    border: 1px solid @amb_border;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+#mainWindow.darkMode popover {
+    background: @amb_dk_layer;
+    border-color: @amb_dk_border;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* caixa flutuante de ferramentas e a do PDF, no molde do Summa */
+#floatingToolbox > box,
+#pdfFloatingToolGrid {
+    background-color: @amb_bg;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+#floatingToolbox button,
+#pdfFloatingToolGrid button {
+    background: transparent;
+    border-radius: 4px;
+}
+#floatingToolbox button:checked {
+    background: @amb_hover;
+    border-color: transparent;
+    box-shadow: inset 0 -2px @amb_accent;
+}
+.darkMode #floatingToolbox > box,
+.darkMode #pdfFloatingToolGrid {
+    background-color: @amb_dk_layer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+.darkMode #floatingToolbox button:checked {
+    background: @amb_dk_hover;
+    box-shadow: inset 0 -2px @amb_dk_accent;
+}
+
