@@ -19,7 +19,7 @@
 namespace ambitus::library {
 
 namespace {
-constexpr int INDEX_VERSION = 2;       // 2: pages remember the board mark
+constexpr int INDEX_VERSION = 3;       // 2: pages remember the board mark; 3: and their handwriting
 constexpr size_t CONTEXT_BEFORE = 40;  ///< characters of excerpt before the match
 constexpr size_t CONTEXT_AFTER = 70;   ///< and after
 
@@ -30,13 +30,42 @@ struct ParseState {
     std::vector<PageText> pages;
     bool inText = false;
     std::string text;
+    /// the strokes of the current page, for PageText::inkHash
+    GChecksum* ink = nullptr;
+    bool inStroke = false;
+
+    ~ParseState() {
+        if (ink) {
+            g_checksum_free(ink);
+        }
+    }
+    void endPage() {
+        if (ink && !pages.empty()) {
+            pages.back().inkHash = g_checksum_get_string(ink);
+        }
+        if (ink) {
+            g_checksum_free(ink);
+            ink = nullptr;
+        }
+    }
 };
 
 void onStart(GMarkupParseContext*, const gchar* name, const gchar** attrNames, const gchar** attrValues, gpointer data,
              GError**) {
     auto* st = static_cast<ParseState*>(data);
     if (!strcmp(name, "page")) {
+        st->endPage();
         st->pages.emplace_back();
+    } else if (!strcmp(name, "stroke") && !st->pages.empty()) {
+        if (!st->ink) {
+            st->ink = g_checksum_new(G_CHECKSUM_SHA1);
+        }
+        for (int i = 0; attrNames[i]; i++) {
+            g_checksum_update(st->ink, reinterpret_cast<const guchar*>(attrNames[i]), -1);
+            g_checksum_update(st->ink, reinterpret_cast<const guchar*>("="), 1);
+            g_checksum_update(st->ink, reinterpret_cast<const guchar*>(attrValues[i]), -1);
+        }
+        st->inStroke = true;
     } else if (!strcmp(name, "background") && !st->pages.empty()) {
         for (int i = 0; attrNames[i]; i++) {
             if (!strcmp(attrNames[i], "config")) {
@@ -59,6 +88,11 @@ void onStart(GMarkupParseContext*, const gchar* name, const gchar** attrNames, c
 
 void onEnd(GMarkupParseContext*, const gchar* name, gpointer data, GError**) {
     auto* st = static_cast<ParseState*>(data);
+    if (!strcmp(name, "page")) {
+        st->endPage();
+    } else if (!strcmp(name, "stroke")) {
+        st->inStroke = false;
+    }
     if (!strcmp(name, "text") && st->inText) {
         st->inText = false;
         if (!st->text.empty()) {
@@ -72,6 +106,9 @@ void onText(GMarkupParseContext*, const gchar* text, gsize len, gpointer data, G
     auto* st = static_cast<ParseState*>(data);
     if (st->inText) {
         st->text.append(text, len);
+    }
+    if (st->inStroke && st->ink) {
+        g_checksum_update(st->ink, reinterpret_cast<const guchar*>(text), static_cast<gssize>(len));
     }
 }
 
@@ -254,6 +291,9 @@ SearchIndex::SearchIndex(fs::path cacheFile): file(std::move(cacheFile)) {
                 if (JSON_NODE_HOLDS_OBJECT(pn)) {
                     JsonObject* po = json_node_get_object(pn);
                     pt.board = json_object_get_boolean_member_with_default(po, "board", false);
+                    pt.inkHash = json_object_get_string_member_with_default(po, "inkHash", "");
+                    pt.ink = json_object_get_string_member_with_default(po, "ink", "");
+                    pt.inkRead = !pt.inkHash.empty() && json_object_has_member(po, "ink");
                     for (auto [key, vec]: {std::pair{"text", &pt.texts}, std::pair{"latex", &pt.latex}}) {
                         if (!json_object_has_member(po, key)) {
                             continue;
@@ -278,6 +318,24 @@ SearchIndex::SearchIndex(fs::path cacheFile): file(std::move(cacheFile)) {
     g_object_unref(parser);
 }
 
+namespace {
+/// What was read of strokes that did not change stays, even when the page moved
+void keepReadInk(const std::vector<PageText>& before, std::vector<PageText>& after) {
+    std::map<std::string, const PageText*> read;
+    for (const auto& pt: before) {
+        if (pt.inkRead) {
+            read.emplace(pt.inkHash, &pt);
+        }
+    }
+    for (auto& pt: after) {
+        if (auto it = read.find(pt.inkHash); !pt.inkHash.empty() && it != read.end()) {
+            pt.ink = it->second->ink;
+            pt.inkRead = true;
+        }
+    }
+}
+}  // namespace
+
 auto SearchIndex::update(const std::vector<fs::path>& notebooks) -> size_t {
     std::map<fs::path, Entry> next;
     size_t read = 0;
@@ -301,6 +359,9 @@ auto SearchIndex::update(const std::vector<fs::path>& notebooks) -> size_t {
         // an unreadable notebook is remembered as empty, so it is not read again until it changes
         if (auto pages = extractNotebookText(p)) {
             e.pages = std::move(*pages);
+        }
+        if (it != entries.end()) {
+            keepReadInk(it->second.pages, e.pages);
         }
         next[p] = std::move(e);
         read++;
@@ -337,6 +398,14 @@ auto SearchIndex::save() const -> bool {
                 json_builder_set_member_name(b, "board");
                 json_builder_add_boolean_value(b, true);
             }
+            if (!pt.inkHash.empty()) {
+                json_builder_set_member_name(b, "inkHash");
+                json_builder_add_string_value(b, pt.inkHash.c_str());
+                if (pt.inkRead) {
+                    json_builder_set_member_name(b, "ink");
+                    json_builder_add_string_value(b, pt.ink.c_str());
+                }
+            }
             for (auto [key, vec]: {std::pair{"text", &pt.texts}, std::pair{"latex", &pt.latex}}) {
                 if (vec->empty()) {
                     continue;
@@ -371,6 +440,45 @@ auto SearchIndex::save() const -> bool {
     return ok;
 }
 
+auto SearchIndex::unreadInk(const std::vector<fs::path>& order, size_t limit) const -> std::vector<InkPage> {
+    std::vector<InkPage> pages;
+    for (const auto& path: order) {
+        auto it = entries.find(path);
+        if (it == entries.end()) {
+            continue;
+        }
+        for (size_t page = 0; page < it->second.pages.size() && pages.size() < limit; page++) {
+            const auto& pt = it->second.pages[page];
+            if (!pt.inkHash.empty() && !pt.inkRead) {
+                pages.push_back({path, page, pt.inkHash});
+            }
+        }
+    }
+    return pages;
+}
+
+auto SearchIndex::setInk(const fs::path& notebook, size_t page, const std::string& hash, std::string text) -> bool {
+    auto it = entries.find(notebook);
+    if (it == entries.end() || page >= it->second.pages.size() || it->second.pages[page].inkHash != hash) {
+        return false;
+    }
+    auto& pt = it->second.pages[page];
+    pt.ink = std::move(text);
+    pt.inkRead = true;
+    return true;
+}
+
+auto SearchIndex::inkProgress() const -> std::pair<size_t, size_t> {
+    size_t withInk = 0, read = 0;
+    for (const auto& [path, e]: entries) {
+        for (const auto& pt: e.pages) {
+            withInk += !pt.inkHash.empty();
+            read += pt.inkRead;
+        }
+    }
+    return {withInk, read};
+}
+
 auto SearchIndex::search(const std::string& query, const std::vector<fs::path>& order, size_t limit) const
         -> std::vector<SearchHit> {
     std::vector<SearchHit> hits;
@@ -388,8 +496,12 @@ auto SearchIndex::search(const std::string& query, const std::vector<fs::path>& 
         }
         for (size_t page = 0; page < it->second.pages.size(); page++) {
             const auto& pt = it->second.pages[page];
-            for (bool latex: {false, true}) {
-                for (const auto& s: latex ? pt.latex : pt.texts) {
+            const std::vector<std::string> inkTexts =
+                    pt.ink.empty() ? std::vector<std::string>{} : std::vector<std::string>{pt.ink};
+            for (int source = 0; source < 3; source++) {
+                const bool latex = source == 1;
+                const bool ink = source == 2;
+                for (const auto& s: ink ? inkTexts : latex ? pt.latex : pt.texts) {
                     const Folded f = foldForSearch(s);
                     // every match in this box, but each one shown once
                     for (size_t at = f.text.find(q); at != std::string::npos; at = f.text.find(q, at + q.size())) {
@@ -397,6 +509,7 @@ auto SearchIndex::search(const std::string& query, const std::vector<fs::path>& 
                         h.notebook = path;
                         h.page = page;
                         h.latex = latex;
+                        h.ink = ink;
                         excerpt(s, f.start[at], f.end[at + q.size() - 1], h);
                         hits.push_back(std::move(h));
                         if (hits.size() >= limit) {

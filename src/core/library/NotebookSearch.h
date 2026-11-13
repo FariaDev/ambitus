@@ -1,9 +1,10 @@
 /*
  * Ambitus
  *
- * Search inside notebooks: the typed text and the LaTeX source of every page.
- * Handwriting is not searched. The index lives in the cache folder and is
- * rebuilt only for notebooks that changed; nothing is written to the .xopp.
+ * Search inside notebooks: the typed text and the LaTeX source of every page,
+ * and the handwriting once Summa has read it (see InkReader.h). The index lives
+ * in the cache folder and is rebuilt only for notebooks that changed; nothing is
+ * written to the .xopp.
  *
  * @license GNU GPLv2 or later
  */
@@ -14,6 +15,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <utility>  // for pair
 #include <vector>
 
 #include "filesystem.h"  // for path
@@ -24,6 +26,11 @@ struct PageText {
     std::vector<std::string> texts;  ///< text boxes, in file order
     std::vector<std::string> latex;  ///< LaTeX source of the formulas
     bool board = false;              ///< the background carries the board mark (see ambitus/Board.h)
+    /// fingerprint of the strokes of the page (SHA-1 of their attributes and points); empty without strokes
+    std::string inkHash;
+    /// the handwriting as Summa read it, for the strokes of inkHash; empty until read
+    std::string ink;
+    bool inkRead = false;  ///< ink holds the reading of inkHash (it may be empty: nothing legible)
     bool operator==(const PageText&) const = default;
 };
 
@@ -42,6 +49,7 @@ struct SearchHit {
     fs::path notebook;
     size_t page = 0;  ///< 0-based
     bool latex = false;
+    bool ink = false;  ///< found in the handwriting read by Summa
     /// excerpt split around the match, whitespace collapsed; before/after may start/end with "…"
     std::string before, match, after;
 };
@@ -61,6 +69,19 @@ public:
                                   size_t limit = 200) const;
 
     size_t size() const { return entries.size(); }
+
+    /// A page with strokes not read yet
+    struct InkPage {
+        fs::path notebook;
+        size_t page = 0;  ///< 0-based
+        std::string hash;
+    };
+    /// Pages whose strokes were not read yet, in the order of the notebooks given; at most limit
+    std::vector<InkPage> unreadInk(const std::vector<fs::path>& order, size_t limit) const;
+    /// Keeps what Summa read on a page; false (nothing kept) when the page changed since (another hash)
+    bool setInk(const fs::path& notebook, size_t page, const std::string& hash, std::string text);
+    /// Pages with strokes, and how many of them were read
+    std::pair<size_t, size_t> inkProgress() const;
 
     /// Whether the notebook is a board: one page, with the board mark (false when not indexed)
     bool isBoard(const fs::path& notebook) const;

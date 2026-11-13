@@ -198,3 +198,67 @@ TEST(LibrarySearch, theIndexKnowsTheBoardsAndKeepsThem) {
     EXPECT_EQ(index.update({board, notebook}), 0u);  // from the cache
     EXPECT_TRUE(index.isBoard(board));
 }
+
+TEST(LibrarySearch, aPageWithStrokesHasAFingerprintOfThem) {
+    TempDir d;
+    const auto f = d.path / "a.xopp";
+    writeGz(f, XML);
+    auto pages = extractNotebookText(f);
+    ASSERT_TRUE(pages);
+    ASSERT_EQ(pages->size(), 2u);
+    EXPECT_EQ((*pages)[0].inkHash.size(), 40u);  // SHA-1 in hex
+    EXPECT_TRUE((*pages)[1].inkHash.empty());    // no strokes
+
+    std::string moved = XML;
+    moved.replace(moved.find("10 10 20 20"), 11, "10 10 20 21");
+    writeGz(f, moved);
+    auto again = extractNotebookText(f);
+    ASSERT_TRUE(again);
+    EXPECT_NE((*again)[0].inkHash, (*pages)[0].inkHash);
+}
+
+TEST(LibrarySearch, theHandwritingReadIsSearchedAndKept) {
+    TempDir d;
+    const auto f = d.path / "a.xopp";
+    writeGz(f, XML);
+    {
+        SearchIndex index(d.path / "index.json");
+        index.update({f});
+        auto unread = index.unreadInk({f}, 10);
+        ASSERT_EQ(unread.size(), 1u);
+        EXPECT_EQ(unread[0].page, 0u);
+        EXPECT_EQ(index.inkProgress(), (std::pair<size_t, size_t>{1, 0}));
+
+        EXPECT_FALSE(index.setInk(f, 0, "outro", "não"));  // the page changed since it was sent
+        EXPECT_TRUE(index.setInk(f, 0, unread[0].hash, "Teorema do confronto"));
+        EXPECT_TRUE(index.unreadInk({f}, 10).empty());
+        auto hits = index.search("confronto", {f});
+        ASSERT_EQ(hits.size(), 1u);
+        EXPECT_TRUE(hits[0].ink);
+        EXPECT_FALSE(hits[0].latex);
+        ASSERT_TRUE(index.save());
+    }
+    SearchIndex index(d.path / "index.json");
+    EXPECT_EQ(index.search("confronto", {f}).size(), 1u);
+
+    // a text box added on another page: the file is read again, the strokes did not change, the reading stays
+    std::string more = XML;
+    more.replace(more.find("Exercício"), 9, "Exercício novo");
+    writeGz(f, more);
+    EXPECT_EQ(index.update({f}), 1u);
+    EXPECT_EQ(index.search("confronto", {f}).size(), 1u);
+    EXPECT_TRUE(index.unreadInk({f}, 10).empty());
+}
+
+TEST(LibrarySearch, aPageReadAsEmptyIsNotReadAgain) {
+    TempDir d;
+    const auto f = d.path / "a.xopp";
+    writeGz(f, XML);
+    SearchIndex index(d.path / "index.json");
+    index.update({f});
+    auto unread = index.unreadInk({f}, 10);
+    ASSERT_EQ(unread.size(), 1u);
+    EXPECT_TRUE(index.setInk(f, 0, unread[0].hash, ""));
+    EXPECT_TRUE(index.unreadInk({f}, 10).empty());
+    EXPECT_EQ(index.inkProgress(), (std::pair<size_t, size_t>{1, 1}));
+}
