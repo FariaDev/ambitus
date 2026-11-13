@@ -1,6 +1,6 @@
-# OCR da escrita à mão: plano do protótipo
+# OCR da escrita à mão: plano
 
-Estado: **plano, falta decidir o motor.** Nada instalado ainda.
+Estado: **direção escolhida (o modelo do Summa), falta o ok para começar.**
 
 ## O que se quer
 
@@ -8,42 +8,55 @@ Estado: **plano, falta decidir o motor.** Nada instalado ainda.
   digitado e o LaTeX.
 - Depois, talvez: a fórmula escrita à mão virar LaTeX para o tutor do Summa.
 
-## Regras que valem para qualquer motor
+## Direção: o Summa lê, o Ambitus busca
 
-- **Local primeiro.** Nada de nota sai da máquina sem o Lucas pedir.
-- **Nada vai para o `.xopp`.** O texto reconhecido fica no índice da busca
-  (`library-index.json` no cache), por página, refeito só quando o arquivo
-  muda (mesma regra de hoje: tamanho e data). O formato continua o do
-  Xournal++.
-- Roda numa thread de fundo, uma página por vez, sem travar a biblioteca. Um
-  resultado da busca vindo do OCR aparece marcado como "escrito à mão".
-- A imagem da página sai do próprio renderizador (como o `--create-img`); num
-  quadro, só a parte escrita (já é assim).
+Em vez de um modelo local, o OCR usa o modelo que a pessoa já usa no Summa
+(Claude ou o OpenCode, com a mesma escolha e a mesma configuração travada).
+Motivos:
 
-## Opções de motor
+- O tutor do Summa já manda a imagem das páginas para esse modelo
+  (`notebook-tool.mjs`, pelo `--create-img`), então ele já lê a letra da
+  pessoa. Um modelo local pequeno, só na CPU desta máquina, leria pior e mais
+  devagar, e pediria um download de alguns GB.
+- A chave, a escolha do modelo, a lista dos grátis com a política de dados
+  (`free-models.json`) e a trava do `opencode serve` já existem no Summa.
+  Refazer isso no Ambitus seria duplicar e manter duas vezes.
+- A regra "código do Xournal++ não entra no Summa" continua de pé: o Summa só
+  roda o `xournalpp --create-img`, como já faz, e escreve um JSON.
 
-O que há nesta máquina hoje: Ryzen com Vega integrada, 14 GB de RAM, sem
-torch, tesseract, ollama ou llama.cpp. Qualquer opção abaixo pede instalar
-coisas e baixar o modelo.
+Quem faz o quê:
 
-| Motor | Português à mão | Matemática | Tamanho | Observação |
-|---|---|---|---|---|
-| Modelo de visão pequeno pelo llama.cpp (família Qwen-VL, por exemplo) | o melhor candidato | pode devolver LaTeX | alguns GB | só CPU aqui: lento por página, tem de medir; serve para indexar em segundo plano |
-| TrOCR (ONNX) | fraco: treinado em inglês, erra acento | não | centenas de MB | precisa cortar a página em linhas antes |
-| Tesseract | fraco para escrita à mão | não | pequeno | bom só para texto impresso |
-| Reconhecimento "online" pelos traços (usa a ordem dos pontos, que o `.xopp` guarda) | bom nos motores comerciais | alguns fazem | — | não conheço motor aberto e local bom para alfabeto latino; os bons (MyScript, por exemplo) são pagos e/ou na nuvem |
+1. **Summa:** numa tarefa de fundo, pega as páginas que mudaram, exporta cada
+   uma pelo `--create-img` e pede ao modelo a transcrição (texto e LaTeX).
+2. **Arquivo ao lado do caderno**, oculto como o autosave:
+   `.Nome.ocr.json`, com o texto por página e uma impressão digital do
+   conteúdo de cada página. Página que mudou é refeita; as outras não.
+3. **Ambitus:** o índice da busca lê esse arquivo e mostra o resultado
+   marcado como "escrito à mão". Sem o arquivo, a busca continua como hoje.
 
-## Protótipo proposto (depois da escolha)
+Por que não dentro do `.xopp`: o Xournal++ ignora o que não conhece e perde
+isso ao salvar, e o Summa escrevendo num `.xopp` aberto no Ambitus brigaria
+com o salvamento dele. O arquivo ao lado viaja junto com o caderno numa
+sincronização e não muda o formato.
 
-1. Script fora do app que pega um caderno real, exporta as páginas e roda o
-   motor; mede o tempo por página e a taxa de acerto em umas 10 páginas do
-   Lucas.
-2. Se passar: o índice ganha o texto de OCR por página (versão nova do
-   índice) e a busca mostra esses resultados.
-3. Só depois: LaTeX das fórmulas para o tutor.
+## Cuidados
 
-## O que o Lucas precisa decidir
+- **As notas saem da máquina.** É uma opção a ligar no Summa, desligada por
+  padrão. Nos modelos grátis, só os que não guardam nada (`policy: zero`).
+- **O modelo precisa enxergar imagem.** Nem todo modelo da lista enxerga; o
+  Summa avisa e não indexa com um que não enxerga.
+- **Custo e limites:** é uma chamada por página. Indexa só o que mudou, em
+  segundo plano, com um teto por dia; o limite do grátis (429) só adia.
+- Sem rede, nada muda: a busca acha o que já foi indexado.
 
-- Qual motor testar primeiro (a sugestão é o modelo de visão local) e se
-  topa o download de alguns GB.
-- Em quais cadernos medir.
+## Ideia para depois: o chat do Summa junto do caderno
+
+O chat lateral do Summa ao lado da página aberta no Ambitus. Embutir a janela
+do Summa no GTK não dá; o caminho leve é um botão "Perguntar ao tutor sobre
+esta página" que abre o Summa com o caderno e a página (o tutor já sabe ler
+os dois). Fica para depois da rodada de UI.
+
+## Antes de começar
+
+- O ok para mexer no Summa (o trabalho maior é lá, em outro repositório).
+- Em quais cadernos medir a taxa de acerto (umas 10 páginas).
