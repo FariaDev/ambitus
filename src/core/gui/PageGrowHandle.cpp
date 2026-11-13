@@ -108,7 +108,7 @@ gboolean PageGrowHandle::onEvent(GSignalInvocationHint*, guint n, const GValue* 
 }
 
 void PageGrowHandle::pointerAt(double x, double y, bool pressed) {
-    if (pressed) {
+    if (pressed || control->isBoardOpen()) {  // a board grows by itself
         hide();
         return;
     }

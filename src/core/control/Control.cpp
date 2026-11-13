@@ -1206,6 +1206,9 @@ void Control::growBoardToFit() {
         if (grown) {
             ctrl->firePageSizeChanged(0);
         }
+        if (ctrl->win) {
+            ctrl->win->boardContentChanged();
+        }
     });
 }
 

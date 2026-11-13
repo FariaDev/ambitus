@@ -46,6 +46,7 @@ class PageGrowHandle;
 class TitleBar;
 class StudioPalette;
 class RadialMenu;
+class BoardNavigator;
 enum class EditorMode;
 }
 namespace ambitus::library {
@@ -122,6 +123,8 @@ public:
     /// Ambitus: Classic (all the bars), Studio (floating palette) or Focus (only the page)
     void setEditorMode(ambitus::EditorMode mode);
     void applyEditorMode();
+    /// Ambitus: the board was edited (the minimap follows)
+    void boardContentChanged();
 
     const ToolbarWidgetArray& getToolbarWidgets() const;
     const char* getToolbarName(GtkToolbar* toolbar) const;
@@ -215,6 +218,8 @@ private:
     std::unique_ptr<ambitus::StudioPalette> studioPalette;
     /// Ambitus: ring of tools on the right button
     std::unique_ptr<ambitus::RadialMenu> radialMenu;
+    /// Ambitus: minimap and zoom of a board
+    std::unique_ptr<ambitus::BoardNavigator> boardNavigator;
     /// Ambitus: client side title bar
     std::unique_ptr<ambitus::TitleBar> titleBar;
 };

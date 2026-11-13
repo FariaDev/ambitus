@@ -48,6 +48,25 @@ double grow(double size, double reach) {
 
 Size grownToFit(Size page, double right, double bottom) { return {grow(page.width, right), grow(page.height, bottom)}; }
 
+Range contentBounds(const XojPage& page) {
+    Range r;
+    for (const Layer* layer: page.getLayersView()) {
+        for (const Element* e: layer->getElementsView()) {
+            r = r.unite(Range(e->getBoundingBox()));
+        }
+    }
+    return r;
+}
+
+double zoomToFit(const Range& content, double viewWidth, double viewHeight, double maxZoom) {
+    if (!content.isValid() || viewWidth <= 0 || viewHeight <= 0) {
+        return maxZoom;
+    }
+    constexpr double AIR = 0.9;  // the content fills 90 % of the view
+    double z = std::min(viewWidth / std::max(content.getWidth(), 1.0), viewHeight / std::max(content.getHeight(), 1.0));
+    return std::min(z * AIR, maxZoom);
+}
+
 Size contentReach(const XojPage& page) {
     Size r{0, 0};
     for (const Layer* layer: page.getLayersView()) {

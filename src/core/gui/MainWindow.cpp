@@ -45,6 +45,7 @@
 #include "util/i18n.h"                                  // for FS, _F
 #include "util/raii/CStringWrapper.h"                   // for OwnedCString
 
+#include "BoardNavigator.h"      // for BoardNavigator
 #include "GladeSearchpath.h"     // for GladeSearchpath
 #include "PageGrowHandle.h"      // for PageGrowHandle
 #include "RadialMenu.h"          // for RadialMenu
@@ -150,6 +151,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     this->growHandle = std::make_unique<ambitus::PageGrowHandle>(control, xournal.get(), overlay);
     this->studioPalette = std::make_unique<ambitus::StudioPalette>(overlay);
     this->radialMenu = std::make_unique<ambitus::RadialMenu>(control, xournal.get(), overlay);
+    this->boardNavigator = std::make_unique<ambitus::BoardNavigator>(control, xournal.get(), overlay);
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
@@ -263,13 +265,16 @@ void MainWindow::applyEditorMode() {
         }
         GtkWidget* w = this->toolbarWidgets[i].get();
         bool bottom = std::string_view(TOOLBAR_DEFINITIONS[i].guiName).starts_with("tbBottom");
-        bool show = (classic || (bottom && !focus)) && settings->isToolbarVisible() &&
+        bool show = (classic || (bottom && !focus && !board)) && settings->isToolbarVisible() &&
                     gtk_toolbar_get_n_items(GTK_TOOLBAR(w)) != 0;
         gtk_widget_set_visible(w, show);
     }
     setSidebarVisible(classic && settings->isSidebarVisible());
     if (studioPalette) {
         studioPalette->setVisible(mode == ambitus::EditorMode::STUDIO);
+    }
+    if (boardNavigator) {
+        boardNavigator->setVisible(board);
     }
     // the Studio mode keeps a band above the pages for the palette, in the colour of the canvas
     gtk_widget_set_margin_top(winXournal, mode == ambitus::EditorMode::STUDIO ? 60 : 0);
@@ -296,6 +301,12 @@ void MainWindow::applyEditorMode() {
     if (titleBar) {
         titleBar->setMode(mode);
         titleBar->setModesShown(!board);
+    }
+}
+
+void MainWindow::boardContentChanged() {
+    if (boardNavigator) {
+        boardNavigator->contentChanged();
     }
 }
 

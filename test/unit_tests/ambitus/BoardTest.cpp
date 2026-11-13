@@ -34,3 +34,12 @@ TEST(Board, writingNearTheEdgeGrowsInWholeDots) {
     EXPECT_GE(g.height, START_HEIGHT + 300 + MARGIN);
     EXPECT_DOUBLE_EQ(std::fmod(g.height, RASTER), 0.0);
 }
+
+TEST(Board, zoomToFitShowsTheContentWithAir) {
+    // 2000 x 500 of content in a 1000 x 800 view: the width rules, 0.5, then 90 %
+    EXPECT_DOUBLE_EQ(zoomToFit(Range(100, 100, 2100, 600), 1000, 800, 2.0), 0.45);
+    // small content is not blown up past maxZoom
+    EXPECT_DOUBLE_EQ(zoomToFit(Range(0, 0, 10, 10), 1000, 800, 1.5), 1.5);
+    // nothing on the board
+    EXPECT_DOUBLE_EQ(zoomToFit(Range(), 1000, 800, 1.2), 1.2);
+}

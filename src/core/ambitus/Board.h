@@ -14,6 +14,7 @@
 #include <string>
 
 #include "model/PageType.h"
+#include "util/Range.h"
 
 class Document;
 class XojPage;
@@ -49,5 +50,11 @@ Size grownToFit(Size page, double right, double bottom);
 
 /// How far right and down the content of the page reaches (0, 0 when empty). The caller locks the document.
 Size contentReach(const XojPage& page);
+
+/// Box around everything on the page (an empty Range when there is nothing). The caller locks the document.
+Range contentBounds(const XojPage& page);
+/// Zoom (scale of the page) that shows `content` in a view of the given size with some air around,
+/// never above maxZoom; maxZoom when content is empty
+double zoomToFit(const Range& content, double viewWidth, double viewHeight, double maxZoom);
 
 }  // namespace ambitus::board
