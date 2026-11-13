@@ -53,6 +53,8 @@ public:
     void refresh();
     /// Puts the keyboard in the search field.
     void focusSearch();
+    /// Colour of the course the file is in ("#rrggbb"), empty when none
+    std::string colorOf(const fs::path& file) const;
     /// Brings the search index up to date in a worker thread.
     void reindex();
 

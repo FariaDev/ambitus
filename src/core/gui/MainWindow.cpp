@@ -97,10 +97,8 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
         g_object_unref(editor);
 
         ambitus::library::LibraryView::Actions actions;
-        actions.open = [control](const fs::path& p) { control->openFile(p); };
-        actions.openAt = [control](const fs::path& p, size_t page) {
-            control->openFile(p, [](bool) {}, static_cast<int>(page));
-        };
+        actions.open = [control](const fs::path& p) { control->openInTab(p); };
+        actions.openAt = [control](const fs::path& p, size_t page) { control->openInTab(p, static_cast<int>(page)); };
         actions.newNotebook = [this, control](const fs::path& folder) {
             fs::path file;
             if (!folder.empty()) {
@@ -237,7 +235,43 @@ void MainWindow::populate(GladeSearchpath* gladeSearchPath) {
                                                    [this](ambitus::EditorMode m) { setEditorMode(m); });
     gtk_window_set_titlebar(GTK_WINDOW(this->window), titleBar->getWidget());
     titleBar->setMode(static_cast<ambitus::EditorMode>(control->getSettings()->getEditorMode()));
+    titleBar->setTabCallbacks(
+            [this](size_t i) {
+                if (i < control->getTabs().size()) {
+                    control->activateTab(i);
+                } else {
+                    showEditor();
+                }
+            },
+            [this](size_t i) { control->closeTab(i); });
+    tabsChanged();
     titleBar->setEditorShown(!isLibraryShown());
+}
+
+void MainWindow::tabsChanged() {
+    if (!titleBar) {
+        return;
+    }
+    std::vector<ambitus::TabItem> items;
+    bool anyActive = false;
+    for (auto& t: control->getTabs()) {
+        ambitus::TabItem it;
+        it.title = t.path.empty() ? _("Untitled") : std::string(char_cast(t.path.stem().u8string()));
+        it.color = library ? library->colorOf(t.path) : "";
+        it.active = t.active;
+        it.modified = t.modified;
+        anyActive = anyActive || t.active;
+        items.push_back(std::move(it));
+    }
+    if (!anyActive && !isLibraryShown()) {
+        // the blank document of the start has no tab until something is written on it
+        ambitus::TabItem it;
+        it.title = _("Untitled");
+        it.active = true;
+        it.closable = false;
+        items.push_back(std::move(it));
+    }
+    titleBar->setTabs(std::move(items));
 }
 
 void MainWindow::setEditorMode(ambitus::EditorMode mode) {
@@ -318,6 +352,7 @@ void MainWindow::showLibrary() {
     library->refresh();
     gtk_stack_set_visible_child_name(GTK_STACK(viewStack), "library");
     library->focusSearch();
+    tabsChanged();
     if (titleBar) {
         titleBar->setEditorShown(false);
         applyEditorMode();
@@ -328,6 +363,7 @@ void MainWindow::showEditor() {
     if (isLibraryShown()) {
         gtk_stack_set_visible_child_name(GTK_STACK(viewStack), "editor");
     }
+    tabsChanged();
     if (titleBar) {
         titleBar->setEditorShown(true);
         applyEditorMode();

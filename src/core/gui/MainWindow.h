@@ -125,6 +125,8 @@ public:
     void applyEditorMode();
     /// Ambitus: the board was edited (the minimap follows)
     void boardContentChanged();
+    /// Ambitus: the open documents changed (opened, closed, saved, edited)
+    void tabsChanged();
 
     const ToolbarWidgetArray& getToolbarWidgets() const;
     const char* getToolbarName(GtkToolbar* toolbar) const;

@@ -1595,24 +1595,15 @@ static std::unique_ptr<Document> createNewDocument(Control* ctrl, fs::path filep
 }
 
 void Control::newFile(fs::path filepath) {
-    this->close(
-            [ctrl = this, filepath = std::move(filepath)](bool closed) {
-                if (closed) {
-                    ctrl->replaceDocument(createNewDocument(ctrl, std::move(filepath), std::nullopt), -1);
-                }
-            },
-            true);
+    // Ambitus: a new notebook gets a tab of its own; the open one waits aside
+    startNewTab();
+    replaceDocument(createNewDocument(this, std::move(filepath), std::nullopt), -1);
 }
 
 void Control::newBoard(fs::path filepath) {
-    this->close(
-            [ctrl = this, filepath = std::move(filepath)](bool closed) {
-                if (closed) {
-                    auto tpl = ambitus::board::pageTemplate(ctrl->settings->getPageTemplateSettings());
-                    ctrl->replaceDocument(createNewDocument(ctrl, std::move(filepath), tpl), -1);
-                }
-            },
-            true);
+    startNewTab();
+    auto tpl = ambitus::board::pageTemplate(settings->getPageTemplateSettings());
+    replaceDocument(createNewDocument(this, std::move(filepath), tpl), -1);
 }
 
 /**
@@ -2210,6 +2201,10 @@ void Control::updateWindowTitle() {
     title += " - Ambitus";
 
     gtk_window_set_title(getGtkWindow(), title.c_str());
+
+    // Ambitus: the title follows opening, editing and saving, and so do the tabs
+    ensureActiveTab();
+    tabsChanged();
 }
 
 static fs::path createExportFilePath(Document* doc, const Settings* settings) {
@@ -2330,6 +2325,27 @@ void Control::resetSavedStatus() {
 }
 
 void Control::quit(bool allowCancel) {
+    // Ambitus: tabs with changes, kept aside, are asked about first, one at a time
+    for (size_t i = 0; i < tabs.size(); i++) {
+        if (i != activeTab && tabs[i].undo.isChanged()) {
+            activateTab(i);
+            this->close(
+                    [this, allowCancel](bool closed) {
+                        if (!closed) {
+                            if (!allowCancel) {
+                                emergencySave();
+                            }
+                            return;
+                        }
+                        tabs.erase(tabs.begin() + static_cast<std::ptrdiff_t>(activeTab));
+                        activeTab = ambitus::NO_TAB;
+                        quit(allowCancel);
+                    },
+                    true, allowCancel);
+            return;
+        }
+    }
+
     g_message("Quitting");
     auto afterClosed = [this, allowCancel](bool closed) {
         if (!closed) {

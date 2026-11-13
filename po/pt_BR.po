@@ -4995,3 +4995,9 @@ msgstr "Ir ao conteúdo"
 
 msgid "Board"
 msgstr "Quadro"
+
+msgid "Untitled"
+msgstr "Sem título"
+
+msgid "Open another notebook"
+msgstr "Abrir outro caderno"

@@ -44,6 +44,20 @@ public:
     /// Ambitus: takes the last action out of the history (null when empty), to put it back wrapped
     UndoActionPtr takeLastUndoAction();
 
+    /// Ambitus: the history of a document kept aside while another one is in the window (tabs)
+    struct State {
+        std::deque<UndoActionPtr> undoList;
+        std::deque<UndoActionPtr> redoList;
+        UndoAction* savedUndo = nullptr;
+        UndoAction* autosavedUndo = nullptr;
+        /// whether the document had changes since it was saved
+        bool isChanged() const;
+    };
+    /// Takes the whole history out, leaving the handler empty
+    State takeState();
+    /// Puts a history taken by takeState back
+    void restoreState(State state);
+
     std::string undoDescription();
     std::string redoDescription();
 

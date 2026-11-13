@@ -246,6 +246,18 @@ void LibraryView::refresh() {
 
 void LibraryView::focusSearch() { gtk_widget_grab_focus(search); }
 
+auto LibraryView::colorOf(const fs::path& file) const -> std::string {
+    if (file.empty()) {
+        return {};
+    }
+    for (auto& c: courses) {
+        if (!c.path.empty() && Util::isChildOrEquivalent(file, c.path)) {
+            return c.color;
+        }
+    }
+    return {};
+}
+
 void LibraryView::reindex() {
     if (indexing) {
         indexAgain = true;

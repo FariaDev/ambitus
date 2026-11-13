@@ -1,9 +1,10 @@
 /*
  * Ambitus
  *
- * The title bar of the window (client side decorations): the ∂ mark, the library,
- * the name of the notebook, the screen modes (Classic, Studio, Focus), undo and a
- * menu with everything the menu bar has, for the modes where the menu bar is hidden.
+ * The title bar of the window (client side decorations): the ∂ mark, the tabs (the
+ * library, then one per open document), the screen modes (Classic, Studio, Focus),
+ * undo and a menu with everything the menu bar has, for the modes where the menu
+ * bar is hidden.
  *
  * @license GNU GPLv2 or later
  */
@@ -12,12 +13,27 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 #include <gtk/gtk.h>
 
 namespace ambitus {
 
 enum class EditorMode { CLASSIC = 0, STUDIO = 1, FOCUS = 2 };
+
+/// A tab of the strip, as shown
+struct TabItem {
+    std::string title;
+    std::string color;  ///< "#rrggbb" of the course; empty for none
+    bool active = false;
+    bool modified = false;
+    bool closable = true;
+
+    bool operator==(const TabItem& o) const {
+        return title == o.title && color == o.color && active == o.active && modified == o.modified &&
+               closable == o.closable;
+    }
+};
 
 class TitleBar {
 public:
@@ -33,12 +49,22 @@ public:
     /// Marks the mode without calling back
     void setMode(EditorMode mode);
 
+    /// The tabs of the documents; the library tab is active when none of them is
+    void setTabs(std::vector<TabItem> items);
+    /// index in the list given to setTabs
+    void setTabCallbacks(std::function<void(size_t)> activate, std::function<void(size_t)> close);
+
 private:
-    void updateTitle();
+    void rebuildTabs();
+    void closeLater(size_t index);
 
     GtkWindow* window;
     GtkWidget* bar = nullptr;
-    GtkWidget* title = nullptr;
+    GtkWidget* strip = nullptr;
+    GtkWidget* libraryTab = nullptr;
+    std::vector<TabItem> items;
+    std::function<void(size_t)> onActivate;
+    std::function<void(size_t)> onClose;
     GtkWidget* modes = nullptr;
     GtkWidget* undo = nullptr;
     GtkWidget* modeButtons[3] = {};

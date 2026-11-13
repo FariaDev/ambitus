@@ -23,24 +23,18 @@ TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(Edito
     gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(bar), true);
     addClass(bar, "amb-titlebar");
 
-    // left: the mark and the library
+    // left: the mark and the tabs
     GtkWidget* brand = gtk_label_new("∂");
     addClass(brand, "amb-brand");
     gtk_widget_set_tooltip_text(brand, "Ambitus");
     gtk_header_bar_pack_start(GTK_HEADER_BAR(bar), brand);
 
-    GtkWidget* library = gtk_button_new_with_label(_("Library"));
-    gtk_actionable_set_action_name(GTK_ACTIONABLE(library), "win.library");
-    gtk_widget_set_valign(library, GTK_ALIGN_CENTER);
-    addClass(library, "amb-tb-library");
-    gtk_header_bar_pack_start(GTK_HEADER_BAR(bar), library);
+    strip = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    addClass(strip, "amb-tabs");
+    gtk_header_bar_pack_start(GTK_HEADER_BAR(bar), strip);
 
-    // middle: the notebook
-    title = gtk_label_new("");
-    gtk_label_set_ellipsize(GTK_LABEL(title), PANGO_ELLIPSIZE_MIDDLE);
-    addClass(title, "amb-tb-title");
-    gtk_header_bar_set_custom_title(GTK_HEADER_BAR(bar), title);
-    g_signal_connect_swapped(window, "notify::title", G_CALLBACK(+[](TitleBar* self) { self->updateTitle(); }), this);
+    // no title in the middle: the active tab says it
+    gtk_header_bar_set_custom_title(GTK_HEADER_BAR(bar), gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
 
     // right (packed from the right edge): menu, undo, modes
     GtkWidget* more = gtk_menu_button_new();
@@ -81,14 +75,14 @@ TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(Edito
     gtk_header_bar_pack_end(GTK_HEADER_BAR(bar), modes);
 
     gtk_widget_show_all(bar);
-    updateTitle();
+    rebuildTabs();
 }
 
 void TitleBar::setEditorShown(bool editor) {
     editorShown = editor;
     gtk_widget_set_visible(modes, editor && modesShown);
     gtk_widget_set_visible(undo, editor);
-    updateTitle();
+    rebuildTabs();
 }
 
 void TitleBar::setModesShown(bool shown) {
@@ -102,22 +96,133 @@ void TitleBar::setMode(EditorMode mode) {
     updating = false;
 }
 
-void TitleBar::updateTitle() {
-    if (!editorShown) {
-        gtk_label_set_text(GTK_LABEL(title), _("Library"));
+void TitleBar::setTabCallbacks(std::function<void(size_t)> activate, std::function<void(size_t)> close) {
+    onActivate = std::move(activate);
+    onClose = std::move(close);
+}
+
+void TitleBar::closeLater(size_t index) {
+    if (!onClose) {
         return;
     }
-    // the window title is "<name>.xopp - Ambitus": the bar shows only the name
-    std::string t = gtk_window_get_title(window) ? gtk_window_get_title(window) : "";
-    const std::string suffix = " - Ambitus";
-    if (t.size() >= suffix.size() && t.compare(t.size() - suffix.size(), suffix.size(), suffix) == 0) {
-        t.erase(t.size() - suffix.size());
+    // after the click is done with the button: closing rebuilds the strip
+    using Call = std::pair<std::function<void(size_t)>, size_t>;
+    g_idle_add_full(
+            G_PRIORITY_DEFAULT_IDLE,
+            +[](gpointer d) -> gboolean {
+                auto* c = static_cast<Call*>(d);
+                c->first(c->second);
+                return G_SOURCE_REMOVE;
+            },
+            new Call(onClose, index), [](gpointer d) { delete static_cast<Call*>(d); });
+}
+
+void TitleBar::setTabs(std::vector<TabItem> newItems) {
+    if (newItems == items) {
+        return;  // called after every stroke (with the window title)
     }
-    const std::string ext = ".xopp";
-    if (t.size() >= ext.size() && t.compare(t.size() - ext.size(), ext.size(), ext) == 0) {
-        t.erase(t.size() - ext.size());
+    items = std::move(newItems);
+    rebuildTabs();
+}
+
+void TitleBar::rebuildTabs() {
+    gtk_container_foreach(GTK_CONTAINER(strip), [](GtkWidget* w, gpointer) { gtk_widget_destroy(w); }, nullptr);
+
+    libraryTab = gtk_button_new();
+    GtkWidget* lbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    gtk_container_add(GTK_CONTAINER(lbox), gtk_image_new_from_icon_name("view-grid-symbolic", GTK_ICON_SIZE_MENU));
+    gtk_container_add(GTK_CONTAINER(lbox), gtk_label_new(_("Library")));
+    gtk_container_add(GTK_CONTAINER(libraryTab), lbox);
+    gtk_actionable_set_action_name(GTK_ACTIONABLE(libraryTab), "win.library");
+    addClass(libraryTab, "amb-tab");
+    if (!editorShown) {
+        addClass(libraryTab, "active");
     }
-    gtk_label_set_text(GTK_LABEL(title), t.c_str());
+    gtk_box_pack_start(GTK_BOX(strip), libraryTab, false, false, 0);
+
+    for (size_t i = 0; i < items.size(); i++) {
+        const auto& it = items[i];
+        GtkWidget* tab = gtk_button_new();
+        addClass(tab, "amb-tab");
+        if (it.active && editorShown) {
+            addClass(tab, "active");
+        }
+        gtk_widget_set_tooltip_text(tab, it.title.c_str());
+        GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 7);
+
+        GtkWidget* dot = gtk_drawing_area_new();
+        gtk_widget_set_size_request(dot, 7, 7);
+        gtk_widget_set_valign(dot, GTK_ALIGN_CENTER);
+        g_object_set_data_full(G_OBJECT(dot), "amb-color", g_strdup(it.color.c_str()), g_free);
+        g_signal_connect(dot, "draw", G_CALLBACK(+[](GtkWidget* w, cairo_t* cr, gpointer) -> gboolean {
+                             const char* c = static_cast<const char*>(g_object_get_data(G_OBJECT(w), "amb-color"));
+                             GdkRGBA rgba;
+                             if (!c || !*c || !gdk_rgba_parse(&rgba, c)) {
+                                 // no course: the colour of the text, faint
+                                 gtk_style_context_get_color(gtk_widget_get_style_context(w),
+                                                             gtk_widget_get_state_flags(w), &rgba);
+                                 rgba.alpha *= .35;
+                             }
+                             gdk_cairo_set_source_rgba(cr, &rgba);
+                             cairo_arc(cr, 3.5, 3.5, 3.5, 0, 2 * G_PI);
+                             cairo_fill(cr);
+                             return false;
+                         }),
+                         nullptr);
+        gtk_container_add(GTK_CONTAINER(box), dot);
+
+        GtkWidget* label = gtk_label_new((it.modified ? it.title + " •" : it.title).c_str());
+        gtk_label_set_ellipsize(GTK_LABEL(label), PANGO_ELLIPSIZE_END);
+        gtk_label_set_max_width_chars(GTK_LABEL(label), 24);
+        gtk_container_add(GTK_CONTAINER(box), label);
+
+        if (it.closable) {
+            GtkWidget* x = gtk_button_new_from_icon_name("window-close-symbolic", GTK_ICON_SIZE_MENU);
+            addClass(x, "amb-tab-close");
+            gtk_widget_set_tooltip_text(x, _("Close"));
+            gtk_widget_set_valign(x, GTK_ALIGN_CENTER);
+            g_object_set_data(G_OBJECT(x), "amb-index", GSIZE_TO_POINTER(i));
+            g_signal_connect(x, "clicked", G_CALLBACK(+[](GtkWidget* w, TitleBar* self) {
+                                 size_t i = GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(w), "amb-index"));
+                                 self->closeLater(i);
+                             }),
+                             this);
+            gtk_container_add(GTK_CONTAINER(box), x);
+        }
+        gtk_container_add(GTK_CONTAINER(tab), box);
+
+        g_object_set_data(G_OBJECT(tab), "amb-index", GSIZE_TO_POINTER(i));
+        g_signal_connect(tab, "clicked", G_CALLBACK(+[](GtkWidget* w, TitleBar* self) {
+                             size_t i = GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(w), "amb-index"));
+                             if (self->onActivate) {
+                                 self->onActivate(i);
+                             }
+                         }),
+                         this);
+        // the middle button closes, as in a browser
+        g_signal_connect(tab, "button-release-event",
+                         G_CALLBACK(+[](GtkWidget* w, GdkEventButton* e, TitleBar* self) -> gboolean {
+                             if (e->button != GDK_BUTTON_MIDDLE || !self->onClose) {
+                                 return false;
+                             }
+                             size_t i = GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(w), "amb-index"));
+                             if (i < self->items.size() && self->items[i].closable) {
+                                 self->closeLater(i);
+                             }
+                             return true;
+                         }),
+                         this);
+        gtk_box_pack_start(GTK_BOX(strip), tab, false, false, 0);
+    }
+
+    GtkWidget* plus = gtk_button_new_from_icon_name("list-add-symbolic", GTK_ICON_SIZE_MENU);
+    gtk_actionable_set_action_name(GTK_ACTIONABLE(plus), "win.library");
+    gtk_widget_set_tooltip_text(plus, _("Open another notebook"));
+    gtk_widget_set_valign(plus, GTK_ALIGN_CENTER);
+    addClass(plus, "amb-tb-icon");
+    gtk_box_pack_start(GTK_BOX(strip), plus, false, false, 0);
+
+    gtk_widget_show_all(strip);
 }
 
 }  // namespace ambitus

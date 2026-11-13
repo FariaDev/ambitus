@@ -82,8 +82,7 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   (curvas de nível geradas do nome; "Outro desenho" troca a semente), Linho,
   Página (a miniatura embutida no `.xopp`), Lisa e imagem própria. Capa clara
   ganha tinta escura. Botão direito (ou a tecla Menu) abre o popover da capa.
-- Ainda falta: as abas (o Xournal++ tem um documento por janela, então as
-  abas pedem refatorar o `Control` para vários documentos).
+- Abas: ver a seção "Abas".
 
 ## Busca nos cadernos (2026-11-13)
 
@@ -137,7 +136,7 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
 
 - A janela usa barra de título própria (`GtkHeaderBar`, `gui/TitleBar`): ∂,
   Biblioteca, nome do caderno, modos, desfazer e **⋯** com o menu inteiro.
-  As abas vão entrar nessa barra.
+  As abas ficam nessa barra (seção "Abas").
 - A biblioteca não mostra a barra de menu; o menu fica no ⋯.
 - **Clássico**: menu, barras e lateral como a pessoa deixou nas preferências.
   **Estúdio**: sem menu, barras de cima/lados e lateral; fica a barra de baixo
@@ -157,3 +156,23 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   texto, formas (caneta com reconhecimento de forma), LaTeX e desfazer.
 - Dois jeitos: apertar, levar até o item e soltar; ou clicar e depois clicar
   no item. Clique fora ou Esc fecha.
+
+## Abas (2026-11-13)
+
+- Na barra de título, como no protótipo: **Biblioteca**, uma aba por
+  documento (ponto na cor da matéria, nome, × na ativa e ao passar o mouse,
+  "•" quando há mudança sem salvar) e **+**, que leva à biblioteca. A ativa
+  fica em negrito com um traço embaixo; o botão do meio fecha.
+- Abrir da biblioteca, "Novo caderno" e "Novo quadro" abrem em aba nova ao
+  lado da atual; abrir um arquivo que já tem aba vai até ela. **Arquivo →
+  Abrir** continua trocando o documento da aba atual, como no Xournal++.
+- Sem refatorar o `Control`: um documento fica na janela e os outros esperam
+  de lado com uma cópia do `Document` (as páginas são compartilhadas, então o
+  histórico continua apontando para elas) e o próprio histórico de desfazer.
+  A página e o zoom de cada um vão para os metadados do Xournal++ ao trocar.
+- Fechar uma aba pergunta se quer salvar, como fechar um arquivo; fechar a
+  última volta à biblioteca. Ao sair, cada aba com mudanças pergunta, uma por
+  vez.
+- Limite conhecido: o autosave e o salvamento de emergência cobrem só o
+  documento da janela; uma aba de lado com mudanças não é salva sozinha.
+

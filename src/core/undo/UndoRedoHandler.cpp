@@ -176,6 +176,29 @@ auto UndoRedoHandler::takeLastUndoAction() -> UndoActionPtr {
     return action;
 }
 
+auto UndoRedoHandler::takeState() -> State {
+    State s;
+    s.undoList = std::move(this->undoList);
+    s.redoList = std::move(this->redoList);
+    s.savedUndo = std::exchange(this->savedUndo, nullptr);
+    s.autosavedUndo = std::exchange(this->autosavedUndo, nullptr);
+    this->undoList.clear();
+    this->redoList.clear();
+    return s;
+}
+
+void UndoRedoHandler::restoreState(State state) {
+    this->undoList = std::move(state.undoList);
+    this->redoList = std::move(state.redoList);
+    this->savedUndo = state.savedUndo;
+    this->autosavedUndo = state.autosavedUndo;
+    fireUpdateUndoRedoButtons({});
+}
+
+auto UndoRedoHandler::State::isChanged() const -> bool {
+    return undoList.empty() ? savedUndo != nullptr : savedUndo != undoList.back().get();
+}
+
 auto UndoRedoHandler::undoDescription() -> string {
     if (!this->undoList.empty()) {
         UndoAction& a = *this->undoList.back();

@@ -22,6 +22,7 @@
 #include <glib.h>                   // for guint
 #include <gtk/gtk.h>                // for GtkLabel
 
+#include "ambitus/Tabs.h"                           // for Tab, TabInfo
 #include "control/ToolEnums.h"                      // for ToolSize, ToolType
 #include "control/jobs/ProgressListener.h"          // for ProgressListener
 #include "control/settings/ViewModes.h"             // for ViewModeId
@@ -90,7 +91,7 @@ public:
     void initWindow(MainWindow* win, bool disableAudio);
 
 public:
-    /// Asymchronously closes the current document and replaces it by a new file
+    /// Ambitus: a new document in a tab of its own (Xournal++ closed the current one)
     void newFile(fs::path filepath = {});
     /// Ambitus: a new board, one page that grows (see ambitus/Board.h)
     void newBoard(fs::path filepath = {});
@@ -98,6 +99,14 @@ public:
     void growBoardToFit();
     /// Ambitus: the open document is a board (cached, updated on load and after every edit)
     bool isBoardOpen() const { return boardOpen; }
+
+    /// Ambitus tabs (code in ambitus/ControlTabs.cpp). One document is in the window; the others wait aside with
+    /// their pages and undo history. Opens the file in a tab of its own, or goes to the tab that has it.
+    void openInTab(fs::path filepath, int scrollToPage = -1);
+    void activateTab(size_t index);
+    /// Asks to save when needed, like closing a file
+    void closeTab(size_t index);
+    std::vector<ambitus::TabInfo> getTabs() const;
 
     /// @brief Shows an open file dialog and opens the selected file after closing the previously opened file
     void askToOpenFile();
@@ -530,6 +539,17 @@ private:
     std::vector<PageRef> changedPages;
     bool boardGrowPending = false;
     bool boardOpen = false;
+    std::vector<ambitus::Tab> tabs;
+    size_t activeTab = ambitus::NO_TAB;
+    /// the tab next to which the file being opened by openInTab goes
+    size_t newTabAfter = ambitus::NO_TAB;
+    /// Ambitus tabs: keeps the document in the window aside, in its tab
+    void parkActiveTab();
+    /// The document in the window gets a tab, if it is a file or has changes and has none yet
+    void ensureActiveTab();
+    /// Puts the document in the window aside; the next one loaded gets a new tab next to it
+    void startNewTab();
+    void tabsChanged();
     void setBoardOpen(bool board);  ///< Ambitus: growBoardToFit() already queued
 
     /**
