@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "ambitus/ToolKeys.h"
 #include "control/ToolEnums.h"
 #include "util/Color.h"
 #include "util/GVariantTemplate.h"
@@ -99,7 +100,7 @@ StudioPalette::StudioPalette(GtkOverlay* overlay) {
             {TOOL_LATEX, "xopp-tool-math-tex", _("Add/Edit TeX")},
     };
     for (auto const& t: tools) {
-        GtkWidget* b = actionButton("win.select-tool", makeGVariant(t.type), t.tip);
+        GtkWidget* b = actionButton("win.select-tool", makeGVariant(t.type), withToolKey(t.tip, t.type).c_str());
         gtk_button_set_image(GTK_BUTTON(b), gtk_image_new_from_icon_name(t.icon, GTK_ICON_SIZE_LARGE_TOOLBAR));
         addClass(b, "amb-pal-tool");
         gtk_box_pack_start(GTK_BOX(box), b, false, false, 0);

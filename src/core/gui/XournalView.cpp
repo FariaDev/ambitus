@@ -10,6 +10,7 @@
 #include <gdk/gdkkeysyms.h>  // for GDK_KEY_Page_Down
 #include <glib-object.h>     // for g_object_ref_sink
 
+#include "ambitus/ToolKeys.h"
 #include "control/Control.h"                     // for Control
 #include "control/PdfCache.h"                    // for PdfCache
 #include "control/ScrollHandler.h"               // for ScrollHandler
@@ -324,6 +325,16 @@ auto XournalView::onKeyPressEvent(const KeyEvent& event) -> bool {
     if (keyval == GDK_KEY_Home || keyval == GDK_KEY_KP_Home) {
         control->getScrollHandler()->goToFirstPage();
         return true;
+    }
+
+    // Ambitus: one key per tool (P, M, E, S, T, X)
+    if (!state) {
+        if (auto tool = ambitus::toolForKey(keyval); tool) {
+            if (auto* db = control->getActionDatabase(); db->isActionEnabled(Action::SELECT_TOOL)) {
+                db->fireChangeActionState(Action::SELECT_TOOL, *tool);
+            }
+            return true;
+        }
     }
 
     // Switch color on number key
