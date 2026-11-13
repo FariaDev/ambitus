@@ -4992,3 +4992,6 @@ msgstr "Quadro sem título"
 
 msgid "Go to the content"
 msgstr "Ir ao conteúdo"
+
+msgid "Board"
+msgstr "Quadro"

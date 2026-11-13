@@ -13,6 +13,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -73,6 +74,9 @@ private:
     void showSource(Source s);
     void fillGrid();
     GtkWidget* makeTile(const Entry& e);
+    /// Adds the tiles to the body: boards (wide cards) in a grid of their own, then the notebooks
+    void addTiles(const std::vector<const Entry*>& entries);
+    bool isBoard(const fs::path& p) const;
     void addTextHits(const std::vector<Entry>& everywhere);
     GtkWidget* makeHit(const SearchHit& hit, const Entry& e);
     void openCoverPopover(GtkWidget* tile, const Entry& e);
@@ -107,6 +111,7 @@ private:
     GtkWidget* subtitle = nullptr;
 
     fs::path indexFile;
+    std::set<fs::path> shownBoards;                              ///< boards drawn as such by the last fillGrid
     std::shared_ptr<SearchIndex> index;                          ///< null until the first indexing ends
     std::shared_ptr<bool> alive = std::make_shared<bool>(true);  ///< false once this view is gone
     bool indexing = false;

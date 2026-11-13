@@ -18,6 +18,8 @@ namespace ambitus::library {
 namespace {
 constexpr int COVER_W = 152;
 constexpr int COVER_H = 200;
+constexpr int GRID_COLUMN_SPACING = 34;
+constexpr int BOARD_W = 2 * COVER_W + GRID_COLUMN_SPACING;  ///< a board takes two columns
 constexpr int MINI_W = 52;
 constexpr int MINI_H = 68;
 constexpr size_t MAX_RECENT = 24;
@@ -281,7 +283,15 @@ void LibraryView::reindex() {
                     auto* self = job->self;
                     self->index = std::move(job->result);
                     self->indexing = false;
-                    if (!self->filter.empty()) {
+                    // a search shows what is written; boards found for the first time get their wide card
+                    bool boardsChanged = false;
+                    for (auto& e: self->entriesFor(self->current)) {
+                        if (self->isBoard(e.nb.path) != (self->shownBoards.count(e.nb.path) > 0)) {
+                            boardsChanged = true;
+                            break;
+                        }
+                    }
+                    if (!self->filter.empty() || boardsChanged) {
                         self->fillGrid();
                     }
                     if (self->indexAgain) {
@@ -516,6 +526,7 @@ auto LibraryView::entriesFor(Source s) const -> std::vector<Entry> {
 }
 
 void LibraryView::fillGrid() {
+    shownBoards.clear();
     gtk_container_foreach(GTK_CONTAINER(body), [](GtkWidget* w, gpointer) { gtk_widget_destroy(w); }, nullptr);
     gtk_label_set_text(GTK_LABEL(title), filter.empty() ? sourceTitle(current).c_str() : ("“" + filter + "”").c_str());
     gtk_label_set_text(GTK_LABEL(subtitle), "");
@@ -537,18 +548,11 @@ void LibraryView::fillGrid() {
         // notebooks whose name matches, then what is written inside
         if (!entries.empty()) {
             gtk_container_add(GTK_CONTAINER(body), label(_("Notebooks"), "amb-section"));
-            GtkWidget* grid = gtk_flow_box_new();
-            gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(grid), GTK_SELECTION_NONE);
-            gtk_flow_box_set_homogeneous(GTK_FLOW_BOX(grid), true);
-            gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(grid), 64);
-            gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(grid), 34);
-            gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(grid), 28);
-            gtk_widget_set_valign(grid, GTK_ALIGN_START);
-            addClass(grid, "amb-grid");
+            std::vector<const Entry*> found;
             for (auto& e: entries) {
-                gtk_container_add(GTK_CONTAINER(grid), makeTile(e));
+                found.push_back(&e);
             }
-            gtk_container_add(GTK_CONTAINER(body), grid);
+            addTiles(found);
         }
         addTextHits(everywhere);
         gtk_widget_show_all(body);
@@ -587,18 +591,7 @@ void LibraryView::fillGrid() {
         if (sections && !key.empty()) {
             gtk_container_add(GTK_CONTAINER(body), label(key, "amb-section"));
         }
-        GtkWidget* grid = gtk_flow_box_new();
-        gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(grid), GTK_SELECTION_NONE);
-        gtk_flow_box_set_homogeneous(GTK_FLOW_BOX(grid), true);
-        gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(grid), 64);
-        gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(grid), 34);
-        gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(grid), 28);
-        gtk_widget_set_valign(grid, GTK_ALIGN_START);
-        addClass(grid, "amb-grid");
-        for (auto* e: groups[key]) {
-            gtk_container_add(GTK_CONTAINER(grid), makeTile(*e));
-        }
-        gtk_container_add(GTK_CONTAINER(body), grid);
+        addTiles(groups[key]);
     }
     gtk_widget_show_all(body);
     gtk_adjustment_set_value(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scroller)), 0);
@@ -742,6 +735,32 @@ auto LibraryView::imageOf(const fs::path& p) -> GdkPixbuf* {
     return pb;
 }
 
+auto LibraryView::isBoard(const fs::path& p) const -> bool { return index && index->isBoard(p); }
+
+void LibraryView::addTiles(const std::vector<const Entry*>& entries) {
+    std::vector<const Entry*> boards, notebooks;
+    for (auto* e: entries) {
+        (isBoard(e->nb.path) ? boards : notebooks).push_back(e);
+    }
+    for (auto* list: {&boards, &notebooks}) {
+        if (list->empty()) {
+            continue;
+        }
+        GtkWidget* grid = gtk_flow_box_new();
+        gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(grid), GTK_SELECTION_NONE);
+        gtk_flow_box_set_homogeneous(GTK_FLOW_BOX(grid), true);
+        gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(grid), 64);
+        gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(grid), GRID_COLUMN_SPACING);
+        gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(grid), 28);
+        gtk_widget_set_valign(grid, GTK_ALIGN_START);
+        addClass(grid, "amb-grid");
+        for (auto* e: *list) {
+            gtk_container_add(GTK_CONTAINER(grid), makeTile(*e));
+        }
+        gtk_container_add(GTK_CONTAINER(body), grid);
+    }
+}
+
 auto LibraryView::makeTile(const Entry& e) -> GtkWidget* {
     GtkWidget* button = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
@@ -752,23 +771,51 @@ auto LibraryView::makeTile(const Entry& e) -> GtkWidget* {
     const fs::path path = e.nb.path;
     const std::string courseColor = e.courseColor;
     const std::string name = e.nb.name;
-    GtkWidget* area = coverArea(COVER_W, COVER_H, [this, path, courseColor, name] {
-        Entry tmp{Notebook{path, name, "", 0}, courseColor, ""};
-        return coverInput(tmp);
-    });
+    const bool board = isBoard(path);
+    const int width = board ? BOARD_W : COVER_W;
+    GtkWidget* area = nullptr;
+    if (board) {
+        shownBoards.insert(path);
+        area = gtk_drawing_area_new();
+        gtk_widget_set_size_request(area, BOARD_W, COVER_H);
+        g_object_set_data_full(G_OBJECT(area), "amb-path", new fs::path(path),
+                               [](gpointer p) { delete static_cast<fs::path*>(p); });
+        g_object_set_data_full(G_OBJECT(area), "amb-title", g_strdup(name.c_str()), g_free);
+        g_object_set_data_full(G_OBJECT(area), "amb-color", g_strdup(courseColor.c_str()), g_free);
+        g_signal_connect(area, "draw", G_CALLBACK(+[](GtkWidget* a, cairo_t* cr, LibraryView* self) -> gboolean {
+                             const auto& p = *static_cast<fs::path*>(g_object_get_data(G_OBJECT(a), "amb-path"));
+                             CoverInput in;
+                             in.cover = self->store.cover(p);
+                             in.title = static_cast<const char*>(g_object_get_data(G_OBJECT(a), "amb-title"));
+                             in.courseColor = static_cast<const char*>(g_object_get_data(G_OBJECT(a), "amb-color"));
+                             in.preview = self->previewOf(p);
+                             gchar* kicker = g_utf8_strup(_("Board"), -1);
+                             drawBoardCover(cr, gtk_widget_get_allocated_width(a), gtk_widget_get_allocated_height(a),
+                                            in, kicker);
+                             g_free(kicker);
+                             return false;
+                         }),
+                         this);
+    } else {
+        area = coverArea(COVER_W, COVER_H, [this, path, courseColor, name] {
+            Entry tmp{Notebook{path, name, "", 0}, courseColor, ""};
+            return coverInput(tmp);
+        });
+    }
+    gtk_widget_set_halign(area, GTK_ALIGN_START);
     gtk_container_add(GTK_CONTAINER(box), area);
 
     // the page cover shows no title, so the name goes under it
     GtkWidget* nameLabel = label(e.nb.name, "amb-nb-name");
     gtk_widget_set_size_request(nameLabel, COVER_W, -1);
-    gtk_widget_set_no_show_all(nameLabel, store.cover(path).style != CoverStyle::Page);
+    gtk_widget_set_no_show_all(nameLabel, board || store.cover(path).style != CoverStyle::Page);
     gtk_container_add(GTK_CONTAINER(box), nameLabel);
     std::string meta = relativeDate(e.nb.modified);
     if (current.kind == SourceKind::Recent || current.kind == SourceKind::All || !filter.empty()) {
         meta = e.place.empty() ? meta : e.place + " · " + meta;
     }
     GtkWidget* metaLabel = label(meta, "amb-nb-meta");
-    gtk_widget_set_size_request(metaLabel, COVER_W, -1);
+    gtk_widget_set_size_request(metaLabel, width, -1);
     gtk_container_add(GTK_CONTAINER(box), metaLabel);
     gtk_container_add(GTK_CONTAINER(button), box);
 

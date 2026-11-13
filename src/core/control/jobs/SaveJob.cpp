@@ -1,10 +1,12 @@
 #include "SaveJob.h"
 
-#include <memory>  // for __shared_ptr_access
+#include <algorithm>  // for min
+#include <memory>     // for __shared_ptr_access
 
 #include <cairo.h>  // for cairo_create, cairo_destroy
 #include <glib.h>   // for g_warning, g_error
 
+#include "ambitus/Board.h"                // for isBoard, previewArea
 #include "control/Control.h"              // for Control
 #include "control/jobs/BlockingJob.h"     // for BlockingJob
 #include "control/xojfile/SaveHandler.h"  // for SaveHandler
@@ -14,6 +16,7 @@
 #include "model/XojPage.h"                // for XojPage
 #include "pdf/base/XojPdfPage.h"          // for XojPdfPageSPtr, XojPdfPage
 #include "util/PathUtil.h"                // for clearExtensions, safeRename...
+#include "util/Range.h"                   // for Range
 #include "util/XojMsgBox.h"               // for XojMsgBox
 #include "util/i18n.h"                    // for FS, _, _F
 #include "view/DocumentView.h"            // for DocumentView
@@ -57,12 +60,25 @@ void SaveJob::updatePreview(Control* control) {
         double width = page->getWidth();
         double height = page->getHeight();
 
+        // Ambitus: a board is big and mostly empty; its preview shows the written part, bigger and without the dots
+        const bool board = ambitus::board::isBoard(*doc);
+        Range area(0, 0, width, height);
+        if (board) {
+            area = ambitus::board::previewArea(ambitus::board::contentBounds(*page), width, height);
+            width = area.getWidth();
+            height = area.getHeight();
+        }
+        const double size = board ? ambitus::board::PREVIEW_SIZE : previewSize;
+
         double zoom = 1;
 
         if (width < height) {
-            zoom = previewSize / height;
+            zoom = size / height;
         } else {
-            zoom = previewSize / width;
+            zoom = size / width;
+        }
+        if (board) {
+            zoom = std::min(zoom, 1.0);
         }
         width *= zoom;
         height *= zoom;
@@ -72,8 +88,10 @@ void SaveJob::updatePreview(Control* control) {
 
         cairo_t* cr = cairo_create(crBuffer.get());
         cairo_scale(cr, zoom, zoom);
+        cairo_translate(cr, -area.minX, -area.minY);
 
-        xoj::view::BackgroundFlags flags = xoj::view::BACKGROUND_SHOW_ALL;
+        xoj::view::BackgroundFlags flags =
+                board ? xoj::view::BACKGROUND_FORCE_PAINT_BACKGROUND_COLOR_ONLY : xoj::view::BACKGROUND_SHOW_ALL;
 
         // We don't have access to a PdfCache on which DocumentView relies for PDF backgrounds.
         // We thus print the PDF background by hand.

@@ -67,6 +67,15 @@ double zoomToFit(const Range& content, double viewWidth, double viewHeight, doub
     return std::min(z * AIR, maxZoom);
 }
 
+Range previewArea(const Range& content, double pageWidth, double pageHeight) {
+    if (!content.isValid()) {
+        return Range(0, 0, pageWidth, pageHeight);
+    }
+    constexpr double AIR = 2 * RASTER;
+    return Range(std::max(content.minX - AIR, 0.0), std::max(content.minY - AIR, 0.0),
+                 std::min(content.maxX + AIR, pageWidth), std::min(content.maxY + AIR, pageHeight));
+}
+
 Size contentReach(const XojPage& page) {
     Size r{0, 0};
     for (const Layer* layer: page.getLayersView()) {

@@ -165,6 +165,55 @@ void drawSpine(cairo_t* cr, double h, double scale) {
     cairo_pattern_destroy(g);
 }
 
+/// Rounded rectangle of radius r.
+void roundedPath(cairo_t* cr, double w, double h, double r) {
+    cairo_new_path(cr);
+    cairo_arc(cr, w - r, r, r, -TAU / 4, 0);
+    cairo_arc(cr, w - r, h - r, r, 0, TAU / 4);
+    cairo_arc(cr, r, h - r, r, TAU / 4, TAU / 2);
+    cairo_arc(cr, r, r, r, TAU / 2, 3 * TAU / 4);
+    cairo_close_path(cr);
+}
+
+/// Ink of the preview as an alpha mask (paper transparent, ink opaque), cut down to the part with ink.
+/// Returns null when the preview has no ink.
+auto inkMask(GdkPixbuf* preview, int& x0, int& y0) -> cairo_surface_t* {
+    const int w = gdk_pixbuf_get_width(preview), h = gdk_pixbuf_get_height(preview);
+    const int n = gdk_pixbuf_get_n_channels(preview), stride = gdk_pixbuf_get_rowstride(preview);
+    const guchar* px = gdk_pixbuf_read_pixels(preview);
+    std::vector<unsigned char> alpha(static_cast<size_t>(w) * h);
+    int minX = w, minY = h, maxX = -1, maxY = -1;
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            const guchar* p = px + y * stride + x * n;
+            const double lum = (.2126 * p[0] + .7152 * p[1] + .0722 * p[2]) / 255;
+            const double opacity = n == 4 ? p[3] / 255.0 : 1;
+            // the paper and the faint dots of its background stay out
+            // the square root lifts the thin, antialiased strokes of a small preview
+            const double a = std::sqrt(std::clamp((.85 - lum) / .55, 0.0, 1.0)) * opacity;
+            alpha[static_cast<size_t>(y) * w + x] = static_cast<unsigned char>(a * 255);
+            if (a > .25) {
+                minX = std::min(minX, x), maxX = std::max(maxX, x);
+                minY = std::min(minY, y), maxY = std::max(maxY, y);
+            }
+        }
+    }
+    if (maxX < 0) {
+        return nullptr;
+    }
+    const int mw = maxX - minX + 1, mh = maxY - minY + 1;
+    cairo_surface_t* mask = cairo_image_surface_create(CAIRO_FORMAT_A8, mw, mh);
+    cairo_surface_flush(mask);
+    unsigned char* data = cairo_image_surface_get_data(mask);
+    const int ms = cairo_image_surface_get_stride(mask);
+    for (int y = 0; y < mh; y++) {
+        std::copy_n(&alpha[static_cast<size_t>(y + minY) * w + minX], mw, data + y * ms);
+    }
+    cairo_surface_mark_dirty(mask);
+    x0 = minX, y0 = minY;
+    return mask;
+}
+
 auto titleLayout(cairo_t* cr, const std::string& title, double sizePx, double width) -> PangoLayout* {
     PangoLayout* layout = pango_cairo_create_layout(cr);
     PangoFontDescription* font = pango_font_description_from_string("STIX Two Text");
@@ -252,6 +301,72 @@ void drawCover(cairo_t* cr, double w, double h, const CoverInput& in) {
         const double ink = !in.image && isLight(c) ? .11 : 1;
         cairo_set_source_rgb(cr, ink, ink, ink);
         cairo_move_to(cr, left, h - bottom - lh);
+        pango_cairo_show_layout(cr, layout);
+        g_object_unref(layout);
+    }
+    cairo_restore(cr);
+}
+
+void drawBoardCover(cairo_t* cr, double w, double h, const CoverInput& in, const std::string& kicker) {
+    const Rgb c = parseColor(effectiveColor(in));
+    const double ink = isLight(c) ? .11 : 1;
+    const double paper = isLight(c) ? .11 : .965;
+
+    cairo_save(cr);
+    roundedPath(cr, w, h, 8);
+    cairo_clip(cr);
+    cairo_set_source_rgb(cr, c.r, c.g, c.b);
+    cairo_paint(cr);
+
+    // the dots of the board
+    cairo_set_source_rgba(cr, ink, ink, ink, .16);
+    for (double y = 9; y < h; y += 14) {
+        for (double x = 9; x < w; x += 14) {
+            cairo_arc(cr, x, y, .9, 0, TAU);
+            cairo_fill(cr);
+        }
+    }
+
+    // the written part, between the kicker and the title
+    const double top = 34, bottom = 46, side = 18;
+    int x0 = 0, y0 = 0;
+    if (cairo_surface_t* mask = in.preview ? inkMask(in.preview, x0, y0) : nullptr) {
+        const double mw = cairo_image_surface_get_width(mask), mh = cairo_image_surface_get_height(mask);
+        const double bw = w - 2 * side, bh = h - top - bottom;
+        // small content is not blown up past twice the preview size
+        const double s = std::min({bw / mw, bh / mh, 2.0});
+        cairo_save(cr);
+        cairo_translate(cr, side + (bw - mw * s) / 2, top + (bh - mh * s) / 2);
+        cairo_scale(cr, s, s);
+        cairo_set_source_rgba(cr, paper, paper, paper * .97, .92);
+        cairo_mask_surface(cr, mask, 0, 0);
+        cairo_restore(cr);
+        cairo_surface_destroy(mask);
+    }
+
+    // kicker
+    PangoLayout* k = pango_cairo_create_layout(cr);
+    PangoFontDescription* font = pango_font_description_from_string("Sans Bold");
+    pango_font_description_set_absolute_size(font, 10 * PANGO_SCALE);
+    pango_layout_set_font_description(k, font);
+    pango_font_description_free(font);
+    PangoAttrList* attrs = pango_attr_list_new();
+    pango_attr_list_insert(attrs, pango_attr_letter_spacing_new(static_cast<int>(1.4 * PANGO_SCALE)));
+    pango_layout_set_attributes(k, attrs);
+    pango_attr_list_unref(attrs);
+    pango_layout_set_text(k, kicker.c_str(), -1);
+    cairo_set_source_rgba(cr, ink, ink, ink, .75);
+    cairo_move_to(cr, side, 14);
+    pango_cairo_show_layout(cr, k);
+    g_object_unref(k);
+
+    if (in.showTitle && !in.title.empty()) {
+        PangoLayout* layout = titleLayout(cr, in.title, 19, w - 2 * side);
+        pango_layout_set_height(layout, -1);  // one line on a board
+        int lw = 0, lh = 0;
+        pango_layout_get_pixel_size(layout, &lw, &lh);
+        cairo_set_source_rgb(cr, ink, ink, ink);
+        cairo_move_to(cr, side, h - 14 - lh);
         pango_cairo_show_layout(cr, layout);
         g_object_unref(layout);
     }

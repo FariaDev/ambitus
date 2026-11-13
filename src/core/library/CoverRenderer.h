@@ -52,6 +52,12 @@ struct CoverInput {
  */
 void drawCover(cairo_t* cr, double width, double height, const CoverInput& in);
 
+/**
+ * Draws the card of a board into (0, 0, width, height): the course colour with a dot grid, the written part of the
+ * preview in light ink, the kicker (e.g. "BOARD") at the top and the title at the bottom.
+ */
+void drawBoardCover(cairo_t* cr, double width, double height, const CoverInput& in, const std::string& kicker);
+
 /// The colour actually used: the notebook's, else the course's, else DEFAULT_COVER_COLOR.
 std::string effectiveColor(const CoverInput& in);
 

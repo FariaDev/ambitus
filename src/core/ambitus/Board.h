@@ -59,4 +59,10 @@ Range contentBounds(const XojPage& page);
 /// never above maxZoom; maxZoom when content is empty
 double zoomToFit(const Range& content, double viewWidth, double viewHeight, double maxZoom);
 
+/// Longest side, in pixels, of the preview saved in a board file
+constexpr int PREVIEW_SIZE = 384;
+/// Part of the page the saved preview shows: the content with two dots of air, inside the page;
+/// the whole page when there is no content
+Range previewArea(const Range& content, double pageWidth, double pageHeight);
+
 }  // namespace ambitus::board

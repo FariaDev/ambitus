@@ -43,3 +43,17 @@ TEST(Board, zoomToFitShowsTheContentWithAir) {
     // nothing on the board
     EXPECT_DOUBLE_EQ(zoomToFit(Range(), 1000, 800, 1.2), 1.2);
 }
+
+TEST(Board, thePreviewShowsTheContentNotTheWholeBoard) {
+    using namespace ambitus::board;
+    auto a = previewArea(Range(500, 400, 900, 600), 3000, 2000);
+    EXPECT_DOUBLE_EQ(a.minX, 464);
+    EXPECT_DOUBLE_EQ(a.maxY, 636);
+    // near the edge it stays inside the page
+    a = previewArea(Range(10, 10, 2990, 50), 3000, 2000);
+    EXPECT_DOUBLE_EQ(a.minX, 0);
+    EXPECT_DOUBLE_EQ(a.maxX, 3000);
+    // an empty board shows itself whole
+    a = previewArea(Range(), 3000, 2000);
+    EXPECT_DOUBLE_EQ(a.getWidth(), 3000);
+}
