@@ -4968,6 +4968,12 @@ msgstr "Nada legível na seleção."
 msgid "Converted. Ctrl+Z brings the strokes back."
 msgstr "Convertido. Ctrl+Z traz os traços de volta."
 
+msgid "Copy page as image"
+msgstr "Copiar página como imagem"
+
+msgid "Page copied as an image."
+msgstr "Página copiada como imagem."
+
 msgid "Send page to Summa"
 msgstr "Mandar página ao Summa"
 

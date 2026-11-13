@@ -46,6 +46,7 @@ enum class Action : size_t {
     SCRATCH_OUT,         ///< Ambitus: toggle scratch out to erase
     SEND_PAGE_TO_SUMMA,  ///< Ambitus: the page on screen to the side chat of Summa
     CONVERT_TO_TEXT,     ///< Ambitus: the selected handwriting to text, read by Summa
+    COPY_PAGE_AS_IMAGE,  ///< Ambitus: the page on screen to the clipboard, as a PNG
 
     // Menu edit
     ARRANGE_SELECTION_ORDER,
