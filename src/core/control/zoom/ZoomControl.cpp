@@ -277,6 +277,14 @@ void ZoomControl::setZoom100Value(double zoom100Val) {
     fireZoomRangeValueChanged();
 }
 
+void ZoomControl::setMinimumZoomReal(double zoomReal) {
+    this->zoomMin = zoomReal * this->zoom100Value;
+    fireZoomRangeValueChanged();
+    if (this->zoom < this->zoomMin) {
+        setZoom(this->zoomMin);
+    }
+}
+
 auto ZoomControl::updateZoomFitValue(size_t pageNo) -> bool {
     if (pageNo == 0) {
         pageNo = view->getCurrentPage();

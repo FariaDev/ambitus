@@ -99,6 +99,9 @@ public:
      */
     void setZoom100Value(double zoom100Val);
 
+    /// Ambitus: lowest zoom, relative to 100 % (a board goes far below the default 30 %)
+    void setMinimumZoomReal(double zoomReal);
+
     /**
      * @return zoom value for zoom 100% depending zoom100Value
      */

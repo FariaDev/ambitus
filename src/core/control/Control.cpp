@@ -1217,6 +1217,8 @@ void Control::setBoardOpen(bool board) {
         return;
     }
     boardOpen = board;
+    // a board is seen whole from far away; notebooks keep the usual limit
+    zoom->setMinimumZoomReal(board ? ambitus::board::MIN_ZOOM : DEFAULT_ZOOM_MIN);
     if (win) {
         win->applyEditorMode();
         gtk_widget_queue_draw(win->getXournal()->getWidget());

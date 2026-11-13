@@ -29,6 +29,8 @@ constexpr double START_WIDTH = 89 * RASTER;
 constexpr double START_HEIGHT = 56 * RASTER;
 /// Room kept free between the writing and the right and bottom edges of the page
 constexpr double MARGIN = 28 * RASTER;
+/// Lowest zoom on a board, relative to 100 %
+constexpr double MIN_ZOOM = 0.05;
 
 constexpr char KEY[] = "ambitus";
 constexpr char VALUE[] = "board";
