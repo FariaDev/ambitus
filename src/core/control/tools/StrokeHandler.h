@@ -91,6 +91,12 @@ protected:
     /// Finalizes the stroke using the provided pressure as last point
     void finalizeStroke(double pressure);
 
+    /// Ambitus: (re)starts the wait of hold-to-shape from this point of the page
+    void restartHold(double x, double y, double zoom);
+    void stopHold();
+    /// Ambitus: the pen stayed still on the page: if the stroke is a shape, it becomes the shape at once
+    void holdToShape();
+
 protected:
     Point buttonDownPoint;  // used for tapSelect and filtering - never snapped to grid.
     SnapToGridInputHandler snappingHandler;
@@ -98,6 +104,10 @@ protected:
     bool hasPressure;
 
     gint64 startedAt = 0;  ///< Ambitus: when the stroke began (monotonic, µs), for scratch out
+
+    guint holdSource = 0;  ///< Ambitus: the timeout of hold-to-shape
+    double holdX = 0;      ///< Ambitus: where the pen is held (page coordinates)
+    double holdY = 0;
 
 private:
     /**

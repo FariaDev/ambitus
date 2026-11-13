@@ -50,7 +50,7 @@ StrokeHandler::StrokeHandler(Control* control, const PageRef& page):
     snappingHandler.setPageRef(page);
 }
 
-StrokeHandler::~StrokeHandler() = default;
+StrokeHandler::~StrokeHandler() { stopHold(); }
 
 auto StrokeHandler::onKeyPressEvent(const KeyEvent&) -> bool { return false; }
 auto StrokeHandler::onKeyReleaseEvent(const KeyEvent&) -> bool { return false; }
@@ -68,8 +68,62 @@ auto StrokeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoo
         return true;
     }
 
+    restartHold(pos.x, pos.y, zoom);
     stabilizer->processEvent(pos);
     return true;
+}
+
+namespace {
+/// Ambitus: how long the pen stays still to turn the stroke into a shape, and how still (screen pixels)
+constexpr guint HOLD_MS = 550;
+constexpr double HOLD_TOLERANCE = 4.0;
+}  // namespace
+
+void StrokeHandler::restartHold(double x, double y, double zoom) {
+    x /= zoom;
+    y /= zoom;
+    if (holdSource && std::hypot(x - holdX, y - holdY) * zoom < HOLD_TOLERANCE) {
+        return;  // a tremor of the hand: still held
+    }
+    stopHold();
+    if (!stroke || stroke->getToolType() != StrokeTool::PEN ||
+        control->getToolHandler()->getDrawingType() != DRAWING_TYPE_DEFAULT) {
+        return;
+    }
+    holdX = x;
+    holdY = y;
+    holdSource = g_timeout_add(
+            HOLD_MS,
+            +[](gpointer self) -> gboolean {
+                auto* h = static_cast<StrokeHandler*>(self);
+                h->holdSource = 0;
+                h->holdToShape();
+                return G_SOURCE_REMOVE;
+            },
+            this);
+}
+
+void StrokeHandler::stopHold() {
+    if (holdSource) {
+        g_source_remove(holdSource);
+        holdSource = 0;
+    }
+}
+
+void StrokeHandler::holdToShape() {
+    if (!stroke || stroke->getPointCount() < 2) {
+        return;
+    }
+    ShapeRecognizer reco;
+    auto recognized = reco.recognizePatterns(stroke.get(), control->getSettings()->getStrokeRecognizerMinSize());
+    if (!recognized) {
+        return;  // not a shape: the stroke goes on as drawn
+    }
+    finalizeStroke(1.0);
+    Layer* layer = page->getSelectedLayer();
+    // as on release with the shape recognizer: Ctrl+Z gives the hand-drawn stroke back
+    control->getUndoRedoHandler()->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, stroke.get()));
+    strokeRecognizerDetected(std::move(recognized), layer);  // the rest of the gesture finds no stroke
 }
 
 void StrokeHandler::paintTo(Point point) {
@@ -127,6 +181,7 @@ void StrokeHandler::drawSegmentTo(const Point& point) {
 }
 
 void StrokeHandler::onSequenceCancelEvent() {
+    stopHold();
     if (this->stroke) {
         this->viewPool->dispatchAndClear(xoj::view::StrokeToolView::CANCELLATION_REQUEST,
                                          Range(this->stroke->getBoundingBox()));
@@ -163,6 +218,7 @@ void StrokeHandler::finalizeStroke(double pressure) {
 }
 
 void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zoom) {
+    stopHold();
     if (!stroke) {
         return;
     }
@@ -333,6 +389,7 @@ void StrokeHandler::onButtonPressEvent(const PositionInputData& pos, double zoom
     stroke->addPoint(Point(this->buttonDownPoint.x, this->buttonDownPoint.y, width));
 
     stabilizer->initialize(this, zoom, pos);
+    restartHold(pos.x, pos.y, zoom);
 }
 
 void StrokeHandler::onButtonDoublePressEvent(const PositionInputData&, double) {
