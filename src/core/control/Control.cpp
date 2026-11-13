@@ -12,6 +12,7 @@
 #include <utility>     // for move
 
 #include "ambitus/Board.h"                                       // for pageTemplate
+#include "ambitus/BoardShift.h"                                  // for ShiftUndoAction
 #include "control/AudioController.h"                             // for Audi...
 #include "control/ClipboardHandler.h"                            // for Clip...
 #include "control/CompassController.h"                           // for Comp...
@@ -1201,10 +1202,21 @@ void Control::growBoardToFit() {
         if (grown) {
             Document::setPageSize(page, size.width, size.height);
         }
+        auto shift = ambitus::board::shiftToFit(ambitus::board::contentBounds(*page));
         ctrl->doc->unlock();
         ctrl->setBoardOpen(true);
         if (grown) {
             ctrl->firePageSizeChanged(0);
+        }
+        // room on the left and on top: only right after a new action (not while undoing, which would clear
+        // the redo history) and not while a selection or a text box holds elements apart from the page
+        bool busy = ctrl->win && (ctrl->win->getXournal()->getSelection() || ctrl->win->getXournal()->getTextEditor());
+        if ((shift.width > 0 || shift.height > 0) && !busy && !ctrl->undoRedo->canRedo()) {
+            if (auto cause = ctrl->undoRedo->takeLastUndoAction()) {
+                ambitus::board::shiftContent(ctrl, page, shift.width, shift.height);
+                ctrl->undoRedo->addUndoAction(std::make_unique<ambitus::board::ShiftUndoAction>(
+                        page, shift.width, shift.height, std::move(cause)));
+            }
         }
         if (ctrl->win) {
             ctrl->win->boardContentChanged();

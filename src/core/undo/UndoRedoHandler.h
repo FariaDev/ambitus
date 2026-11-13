@@ -41,6 +41,8 @@ public:
     bool canRedo();
 
     void addUndoAction(UndoActionPtr action);
+    /// Ambitus: takes the last action out of the history (null when empty), to put it back wrapped
+    UndoActionPtr takeLastUndoAction();
 
     std::string undoDescription();
     std::string redoDescription();

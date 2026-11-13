@@ -57,3 +57,16 @@ TEST(Board, thePreviewShowsTheContentNotTheWholeBoard) {
     a = previewArea(Range(), 3000, 2000);
     EXPECT_DOUBLE_EQ(a.getWidth(), 3000);
 }
+
+TEST(Board, writingNearTheLeftOrTopMovesTheContentInWholeDots) {
+    using namespace ambitus::board;
+    auto s = shiftToFit(Range(MARGIN, MARGIN + 40, 2000, 900));
+    EXPECT_DOUBLE_EQ(s.width, 0);
+    EXPECT_DOUBLE_EQ(s.height, 0);
+    s = shiftToFit(Range(MARGIN - 1, 10, 2000, 900));
+    EXPECT_DOUBLE_EQ(s.width, RASTER);
+    EXPECT_DOUBLE_EQ(s.height, std::ceil((MARGIN - 10) / RASTER) * RASTER);
+    EXPECT_GE(10 + s.height, MARGIN);
+    s = shiftToFit(Range());
+    EXPECT_DOUBLE_EQ(s.width, 0);
+}

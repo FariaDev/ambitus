@@ -49,6 +49,9 @@ struct Size {
     double width, height;
 };
 Size grownToFit(Size page, double right, double bottom);
+/// How far the content must move right and down so the margin is free on the left and on top too;
+/// whole dots, (0, 0) when there is room or no content
+Size shiftToFit(const Range& content);
 
 /// How far right and down the content of the page reaches (0, 0 when empty). The caller locks the document.
 Size contentReach(const XojPage& page);

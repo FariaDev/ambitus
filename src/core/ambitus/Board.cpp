@@ -48,6 +48,14 @@ double grow(double size, double reach) {
 
 Size grownToFit(Size page, double right, double bottom) { return {grow(page.width, right), grow(page.height, bottom)}; }
 
+Size shiftToFit(const Range& content) {
+    if (!content.isValid()) {
+        return {0, 0};
+    }
+    auto room = [](double from) { return from >= MARGIN ? 0.0 : std::ceil((MARGIN - from) / RASTER) * RASTER; };
+    return {room(content.minX), room(content.minY)};
+}
+
 Range contentBounds(const XojPage& page) {
     Range r;
     for (const Layer* layer: page.getLayersView()) {
