@@ -17,6 +17,7 @@
 #include <glib.h>            // for gint, g_free, g_g...
 #include <gtk/gtk.h>         // for GtkWidget, gtk_co...
 
+#include "ambitus/RenderWindow.h"                   // for isLarge
 #include "control/AudioController.h"                // for AudioController
 #include "control/Control.h"                        // for Control
 #include "control/LatexController.h"                // for LatexController
@@ -1107,7 +1108,27 @@ auto XojPageView::paintPage(cairo_t* cr, GdkRectangle* rect) -> bool {
             return true;
         }
 
-        if (this->buffer.getZoom() != zoom) {
+        // Ambitus: a large page keeps only a window around the view; leaving it asks for a new one
+        bool large = ambitus::render::isLarge(page->getWidth(), page->getHeight(), zoom, xournal->getDpiScaleFactor());
+        bool outside = false;
+        if (large) {
+            double x1, y1, x2, y2;
+            cairo_clip_extents(cr, &x1, &y1, &x2, &y2);
+            Range shown = Range(x1, y1, x2, y2).intersect(Range(0, 0, page->getWidth(), page->getHeight()));
+            outside = shown.isValid() && !this->bufferRange.contains(xoj::util::Rectangle<double>(
+                                                 shown.minX, shown.minY, shown.getWidth(), shown.getHeight()));
+            if (outside) {
+                {
+                    std::lock_guard rl(this->repaintRectMutex);
+                    this->shownRange = shown;
+                }
+                // the part not rendered yet shows the paper colour meanwhile
+                Util::cairo_set_source_rgbi(cr, page->getBackgroundColor());
+                cairo_paint(cr);
+            }
+        }
+
+        if (this->buffer.getZoom() != zoom || outside) {
             rerenderPage();
             cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_FAST);
         }

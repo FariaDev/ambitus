@@ -263,6 +263,8 @@ private:
     bool selected = false;
 
     xoj::view::Mask buffer;
+    /// Ambitus: part of the page the buffer holds (page coordinates); the whole page unless it is large
+    Range bufferRange;
     std::mutex drawingMutex;
 
     bool inEraser = false;
@@ -284,6 +286,8 @@ private:
     std::vector<xoj::util::Rectangle<double>> rerenderRects;
     bool rerenderComplete = false;
     bool sizeChanged = false;
+    /// Ambitus: part of a large page shown when the rerender was asked (page coordinates), see ambitus/RenderWindow.h
+    Range shownRange;
 
     xoj::util::Point<int> gridCoordinates;  ///< Coordinates in the layout grid
 

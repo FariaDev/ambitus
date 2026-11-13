@@ -6,6 +6,7 @@
 
 #include <cairo.h>  // for cairo_create, cairo_destroy, cairo_...
 
+#include "ambitus/RenderWindow.h"       // for isLarge, window
 #include "control/Control.h"            // for Control
 #include "control/ToolEnums.h"          // for TOOL_PLAY_OBJECT
 #include "control/ToolHandler.h"        // for ToolHandler
@@ -66,18 +67,24 @@ void RenderJob::run() {
     bool rerenderComplete = std::exchange(this->view->rerenderComplete, false);
     bool sizeChanged = std::exchange(this->view->sizeChanged, false);
     auto rerenderRects = std::move(this->view->rerenderRects);
+    Range shown = this->view->shownRange;
 
     this->view->repaintRectMutex.unlock();
 
     if (rerenderComplete) {
-        xoj::view::Mask newMask(view->xournal->getDpiScaleFactor(),
-                                Range(0, 0, view->page->getWidth(), view->page->getHeight()), view->xournal->getZoom(),
-                                CAIRO_CONTENT_COLOR_ALPHA);
+        // Ambitus: a large page is rendered only around the part on screen
+        const double w = view->page->getWidth(), h = view->page->getHeight();
+        const double zoom = view->xournal->getZoom();
+        const int dpi = view->xournal->getDpiScaleFactor();
+        Range range = ambitus::render::isLarge(w, h, zoom, dpi) ? ambitus::render::window(shown, w, h, zoom, dpi) :
+                                                                  Range(0, 0, w, h);
+        xoj::view::Mask newMask(dpi, range, zoom, CAIRO_CONTENT_COLOR_ALPHA);
 
         renderToBuffer(newMask.get());
         {
             std::lock_guard lock(this->view->drawingMutex);
             std::swap(this->view->buffer, newMask);
+            this->view->bufferRange = range;
         }
         if (sizeChanged) {
             // We do not have any control on what portion of the widget needs to be redrawn. Redraw it all.
