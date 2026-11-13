@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light" data-accent="graphite" data-screen="biblioteca" data-cover="contorno">
+<head>
+<meta charset="utf-8">
+<title>Ambitus — rodada 1</title>
+<style>
+@font-face{font-family:"IBM Plex Sans";src:url("fonts/IBMPlexSans-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"IBM Plex Sans";src:url("fonts/IBMPlexSans-SemiBold.woff2") format("woff2");font-weight:600}
+@font-face{font-family:"IBM Plex Mono";src:url("fonts/IBMPlexMono-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"STIX Two Text";src:url("fonts/STIXTwoText.woff2") format("woff2");font-weight:400;font-style:normal}
+@font-face{font-family:"STIX Two Text";src:url("fonts/STIXTwoText-Italic.woff2") format("woff2");font-weight:400;font-style:italic}
+
+/* Tokens do Summa (carbon-r2), só grafite e violeta. */
+.win{
+  --font-ui:"IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --font-serif:"STIX Two Text",Georgia,serif;
+  --radius:4px;--radius-float:8px;
+  --bg:#ffffff;--layer-1:#f4f4f4;--layer-2:#ffffff;--layer-hover:#e8e8e8;
+  --border-subtle:#e0e0e0;--border-strong:#8d8d8d;
+  --text:#161616;--text-2:#525252;--text-3:#6f6f6f;
+  --accent:#303030;--accent-link:#303030;--on-accent:#ffffff;
+  --canvas:#e8e8e8;--paper:#ffffff;--rule:#dfe6ee;--ink:#1d2433;
+  --shadow-overlay:0 2px 6px rgba(0,0,0,.3);
+  --cover-shadow:0 1px 2px rgba(0,0,0,.18),0 4px 12px rgba(0,0,0,.08);
+}
+[data-theme="dark"] .win{
+  --bg:#161616;--layer-1:#262626;--layer-2:#393939;--layer-hover:#333333;
+  --border-subtle:#393939;--border-strong:#6f6f6f;
+  --text:#f4f4f4;--text-2:#c6c6c6;--text-3:#a8a8a8;
+  --accent:#e6e6e6;--accent-link:#e6e6e6;--on-accent:#161616;
+  --canvas:#1f1f1f;--paper:#262626;--rule:#34393f;--ink:#e8e8e8;
+  --shadow-overlay:0 2px 6px rgba(0,0,0,.6);
+  --cover-shadow:0 1px 2px rgba(0,0,0,.5),0 4px 12px rgba(0,0,0,.3);
+}
+[data-accent="violet"] .win{--accent:#8044ca;--accent-link:#8044ca;--on-accent:#fff}
+[data-theme="dark"][data-accent="violet"] .win{--accent:#8957d0;--accent-link:#b89cea;--on-accent:#fff}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+.stage{position:relative;width:100%;overflow:hidden;border-radius:8px}
+.win{position:absolute;left:0;top:0;width:1280px;height:800px;transform-origin:0 0;
+  background:var(--bg);color:var(--text);font:400 14px/20px var(--font-ui);
+  display:flex;flex-direction:column;overflow:hidden;border-radius:8px;
+  border:1px solid var(--border-subtle)}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+
+/* Barra de título (headerbar GTK, CSD) */
+.bar{height:48px;flex:none;display:flex;align-items:stretch;border-bottom:1px solid var(--border-subtle);background:var(--bg);position:relative}
+.brand{width:48px;display:grid;place-items:center;color:var(--text)}
+.brand svg{width:22px;height:22px}
+.tabs{display:flex;align-items:stretch;gap:4px;padding-left:4px}
+.tab{display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--text-2);position:relative;white-space:nowrap}
+.tab.on{color:var(--text);font-weight:600}
+.tab.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--accent)}
+.tab .x{opacity:.0;width:14px;height:14px;color:var(--text-3)}
+.tab.on .x,.tab:hover .x{opacity:1}
+.tab .dot{width:6px;height:6px;border-radius:50%;flex:none}
+.bar .spacer{flex:1}
+.wc{display:flex;align-items:center;gap:8px;padding:0 14px 0 8px}
+.wc span{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:var(--text-2);background:var(--layer-1)}
+.wc svg{width:12px;height:12px}
+.ib{width:32px;height:32px;display:grid;place-items:center;border-radius:var(--radius);color:var(--text-2)}
+.ib:hover{background:var(--layer-hover)}
+.ib.on{background:var(--layer-hover);color:var(--text)}
+.sep{width:1px;background:var(--border-subtle);margin:12px 6px}
+
+/* Biblioteca */
+.lib{flex:1;display:flex;min-height:0}
+.side{width:248px;flex:none;background:var(--layer-1);padding:16px 12px;display:flex;flex-direction:column;gap:2px}
+.search{height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg);border-radius:var(--radius);color:var(--text-3);margin-bottom:14px}
+[data-theme="dark"] .search{background:var(--layer-2)}
+.search span{flex:1}
+kbd{font:400 12px/16px var(--font-mono);color:var(--text-3);border:1px solid var(--border-subtle);border-radius:3px;padding:0 4px}
+.nav{height:32px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:var(--radius);color:var(--text)}
+.nav:hover{background:var(--layer-hover)}
+.nav.on{background:var(--layer-hover);font-weight:600;box-shadow:inset 2px 0 0 var(--accent)}
+.nav .n{margin-left:auto;font:400 12px/16px var(--font-mono);color:var(--text-3)}
+.sw{width:10px;height:10px;border-radius:2px;flex:none}
+.glabel{font:600 12px/16px var(--font-ui);color:var(--text-2);padding:18px 10px 6px;display:flex;align-items:center;gap:6px}
+.glabel .from{margin-left:auto;font:italic 400 13px/16px var(--font-serif);color:var(--text-3)}
+.add{height:32px;display:flex;align-items:center;gap:10px;padding:0 10px;color:var(--text-2)}
+
+.main{flex:1;overflow:hidden;padding:28px 40px 0}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.head h1{font:400 28px/36px var(--font-serif);margin:0;letter-spacing:.2px}
+.head .spacer{flex:1}
+.sel{height:32px;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;border-radius:var(--radius);color:var(--text-2)}
+.sel:hover{background:var(--layer-hover)}
+.seg{display:flex;background:var(--layer-1);border-radius:var(--radius);padding:2px}
+.seg .ib{width:28px;height:28px}
+.seg .ib.on{background:var(--bg);box-shadow:0 0 0 1px var(--border-subtle)}
+[data-theme="dark"] .seg .ib.on{background:var(--layer-2);box-shadow:none}
+.primary{height:32px;display:flex;align-items:center;gap:8px;padding:0 14px 0 12px;border-radius:var(--radius);background:var(--accent);color:var(--on-accent);font-weight:600}
+.section{font:600 12px/16px var(--font-ui);color:var(--text-2);margin:22px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,152px);gap:28px 34px}
+.nb{display:flex;flex-direction:column;gap:10px}
+.nb .name{font-weight:600;line-height:18px}
+[data-cover="contorno"] .nb .name,[data-cover="linho"] .nb .name{display:none}
+[data-cover="contorno"] .nb .meta,[data-cover="linho"] .nb .meta{margin-top:0}
+.nb .meta{font:400 12px/16px var(--font-mono);color:var(--text-3);margin-top:-6px}
+.nb.sel-on .cover{outline:2px solid var(--accent);outline-offset:3px}
+
+/* Capas */
+.cover{width:152px;height:200px;position:relative;border-radius:3px 6px 6px 3px;overflow:hidden;box-shadow:var(--cover-shadow);background:var(--c)}
+.cover svg.art{position:absolute;inset:0;width:100%;height:100%}
+.cover::before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(0,0,0,.08) 70%,rgba(255,255,255,.12));z-index:2}
+.cover .t{position:absolute;left:20px;right:14px;bottom:16px;color:#fff;font:400 19px/22px var(--font-serif);z-index:3;text-wrap:balance}
+.cover .k{position:absolute;left:20px;top:14px;color:rgba(255,255,255,.7);font:400 11px/14px var(--font-mono);z-index:3;letter-spacing:.4px}
+/* linho */
+[data-cover="linho"] .cover{background:
+  repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 3px),
+  repeating-linear-gradient(90deg,rgba(0,0,0,.07) 0 1px,transparent 1px 3px),var(--c)}
+[data-cover="linho"] .cover svg.art{display:none}
+[data-cover="linho"] .cover::after{content:"";position:absolute;top:0;bottom:0;right:16px;width:7px;background:rgba(0,0,0,.32);box-shadow:inset 1px 0 rgba(255,255,255,.12);z-index:2}
+[data-cover="linho"] .cover .t{left:22px;right:30px;top:52px;bottom:auto;background:#f6f3ec;color:#1d1d1d;font-size:15px;line-height:18px;padding:10px 10px 11px;border-radius:2px;box-shadow:0 1px 1px rgba(0,0,0,.2)}
+[data-cover="linho"] .cover .k{left:24px;top:auto;bottom:14px}
+/* página */
+[data-cover="pagina"] .cover{background:#fff;border-radius:3px}
+[data-cover="pagina"] .cover::before{width:100%;height:6px;bottom:auto;background:var(--c)}
+[data-cover="pagina"] .cover svg.art{display:none}
+[data-cover="pagina"] .cover svg.thumb{display:block}
+.cover svg.thumb{display:none;position:absolute;inset:0;width:100%;height:100%}
+[data-cover="pagina"] .cover .t,[data-cover="pagina"] .cover .k{display:none}
+
+/* Editor */
+.editor{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
+.palette{position:absolute;left:50%;top:12px;height:44px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:0 6px;background:var(--bg);border-radius:var(--radius-float);box-shadow:var(--shadow-overlay);z-index:5}
+.palette .sep{margin:10px 6px}
+.palette .ib.on{background:var(--layer-hover);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+.col{width:20px;height:20px;border-radius:50%;margin:0 3px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.col.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+.thick{width:28px;height:32px;display:grid;place-items:center;border-radius:var(--radius)}
+.thick i{display:block;border-radius:50%;background:var(--text-2)}
+.thick.on{background:var(--layer-hover)}
+.thick.on i{background:var(--text)}
+.modes{display:flex;align-items:center;gap:2px;background:var(--layer-1);border-radius:var(--radius);padding:2px;margin:8px 4px}
+.modes button{height:28px;padding:0 10px;border-radius:3px;color:var(--text-2);font-size:13px}
+.modes button.on{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 0 0 1px var(--border-subtle)}
+[data-theme="dark"] .modes button.on{background:var(--layer-2);box-shadow:none}
+.canvas{flex:1;background:var(--canvas);overflow:hidden;position:relative;display:flex;justify-content:center;padding-top:72px}
+.page{width:600px;height:830px;background:var(--paper);box-shadow:0 1px 3px rgba(0,0,0,.12);position:relative;flex:none;
+  background-image:repeating-linear-gradient(180deg,transparent 0 31px,var(--rule) 31px 32px);background-position:0 70px}
+.page svg{position:absolute;inset:0;width:100%;height:100%}
+.grow{position:absolute;display:flex;align-items:center;gap:6px;font:400 12px/16px var(--font-mono);color:var(--text-2);background:var(--bg);border:1px solid var(--border-subtle);border-radius:var(--radius-float);padding:4px 10px 4px 8px;box-shadow:var(--shadow-overlay)}
+.grow.r{left:calc(50% + 300px + 66px);top:180px}
+.growline{position:absolute;left:calc(50% + 300px);top:72px;width:57px;height:830px;background:repeating-linear-gradient(135deg,color-mix(in oklch,var(--accent) 14%,transparent) 0 6px,transparent 6px 12px);border:1px dashed color-mix(in oklch,var(--accent) 55%,transparent);border-left:0}
+.pill{position:absolute;right:16px;bottom:16px;display:flex;align-items:center;gap:4px;background:var(--bg);border-radius:var(--radius-float);box-shadow:var(--shadow-overlay);padding:4px;font:400 12px/16px var(--font-mono);color:var(--text-2)}
+.pill span{padding:0 8px}
+.pill .ib{width:28px;height:28px}
+
+/* Menu radial */
+.radial{position:absolute;left:1010px;top:430px;width:208px;height:208px}
+.radial .ring{position:absolute;inset:0;border-radius:50%;background:var(--bg);box-shadow:var(--shadow-overlay),inset 0 0 0 1px var(--border-subtle)}
+.radial .hole{position:absolute;inset:66px;border-radius:50%;background:var(--layer-1);display:grid;place-items:center;color:var(--text-2);box-shadow:inset 0 0 0 1px var(--border-subtle)}
+.radial .hole svg{width:22px;height:22px}
+.radial .it{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;display:grid;place-items:center;color:var(--text-2)}
+.radial .it svg{width:18px;height:18px}
+.radial .it.on{background:var(--accent);color:var(--on-accent)}
+.radial .lbl{position:absolute;left:50%;top:-30px;transform:translateX(-50%);font:400 12px/16px var(--font-ui);background:var(--text);color:var(--bg);padding:3px 8px;border-radius:var(--radius);white-space:nowrap}
+
+/* Busca */
+.results{width:720px}
+.hit{display:flex;gap:16px;padding:12px;border-radius:var(--radius)}
+.hit:hover,.hit.on{background:var(--layer-1)}
+.hit .mini{width:44px;height:58px;border-radius:2px 4px 4px 2px;flex:none;position:relative;overflow:hidden;box-shadow:var(--cover-shadow)}
+.hit .mini svg{width:100%;height:100%}
+.hit .what{font-weight:600}
+.hit .where{font:400 12px/16px var(--font-mono);color:var(--text-3)}
+.hit .ex{color:var(--text-2);margin-top:4px}
+mark{background:color-mix(in oklch,var(--accent) 18%,transparent);color:var(--text);border-radius:2px;padding:0 1px}
+[data-theme="dark"] mark{background:color-mix(in oklch,var(--accent) 30%,transparent)}
+
+/* Editor de capa */
+.coverpop{position:absolute;left:470px;top:150px;width:336px;background:var(--bg);border-radius:var(--radius-float);box-shadow:var(--shadow-overlay),0 0 0 1px var(--border-subtle);padding:16px;z-index:10}
+[data-theme="dark"] .coverpop{background:var(--layer-1)}
+.coverpop .gl{font:600 12px/16px var(--font-ui);color:var(--text-2);margin:0 0 8px}
+.coverpop .gl+*{margin-bottom:16px}
+.styles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.st{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}
+.st .mini{width:52px;height:68px;border-radius:2px 4px 4px 2px;position:relative;overflow:hidden;box-shadow:var(--cover-shadow)}
+.st .mini svg{position:absolute;inset:0;width:100%;height:100%}
+.st.on{color:var(--text);font-weight:600}
+.st.on .mini{outline:2px solid var(--accent);outline-offset:2px}
+.swatches{display:flex;flex-wrap:wrap;gap:10px}
+.swatches span{width:24px;height:24px;border-radius:50%}
+.swatches span.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+[data-theme="dark"] .swatches span.on{box-shadow:0 0 0 2px var(--layer-1),0 0 0 4px var(--accent)}
+.swatches .cust{display:grid;place-items:center;background:conic-gradient(#bd1c67,#af4700,#8a7232,#028053,#2f5d6b,#2d5fdc,#8044ca,#bd1c67)}
+.rowbtns{display:flex;gap:8px}
+.ghost{height:32px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:var(--radius);background:var(--layer-1);color:var(--text)}
+[data-theme="dark"] .ghost{background:var(--layer-2)}
+.wide .cover{width:338px}
+.secondary{height:32px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:var(--radius);background:var(--layer-1);color:var(--text)}
+
+/* Quadro */
+.board{position:absolute;inset:0;background-color:var(--paper);background-image:radial-gradient(circle,color-mix(in oklch,var(--text) 22%,transparent) 1px,transparent 1.4px);background-size:18px 18px}
+.board svg{position:absolute;inset:0;width:100%;height:100%}
+.minimap{position:absolute;right:16px;bottom:64px;width:200px;height:124px;background:var(--bg);border-radius:var(--radius-float);box-shadow:var(--shadow-overlay);overflow:hidden}
+.minimap svg{width:100%;height:100%}
+.s-capa,.s-quadro{display:none}
+[data-screen="capa"] .s-capa,[data-screen="quadro"] .s-quadro{display:block}
+[data-screen="quadro"] .page,[data-screen="quadro"] .grow,[data-screen="quadro"] .growline,[data-screen="quadro"] .radial{display:none}
+[data-screen="capa"] .s-editor,[data-screen="capa"] .s-busca,
+[data-screen="quadro"] .s-lib,[data-screen="quadro"] .s-busca,
+[data-screen="biblioteca"] .s-editor,[data-screen="biblioteca"] .s-busca,
+[data-screen="editor"] .s-lib,[data-screen="editor"] .s-busca,
+[data-screen="busca"] .s-editor,[data-screen="busca"] .s-grid{display:none}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+<div class="win" id="win">
+
+  <div class="bar">
+    <div class="brand" title="Ambitus"><svg viewBox="0 0 24 24"><use href="#delta"/></svg></div>
+    <div class="tabs">
+      <div class="tab s-libtab"><svg class="i"><use href="#i-library"/></svg>Biblioteca</div>
+      <div class="tab s-t1"><span class="dot" style="background:#5b4a86"></span>Limites — aula 3<svg class="i x"><use href="#i-x"/></svg></div>
+      <div class="tab s-tq"><span class="dot" style="background:#5b4a86"></span>Mapa de limites<svg class="i x"><use href="#i-x"/></svg></div>
+      <div class="tab"><span class="dot" style="background:#2f5d6b"></span>Ondas e oscilações<svg class="i x"><use href="#i-x"/></svg></div>
+      <button class="ib" style="align-self:center"><svg class="i"><use href="#i-plus"/></svg></button>
+    </div>
+    <div class="spacer"></div>
+    <div class="modes s-editor s-noquadro"><button>Clássico</button><button class="on">Estúdio</button><button>Foco</button></div>
+    <button class="ib s-editor" style="align-self:center"><svg class="i"><use href="#i-undo"/></svg></button>
+    <button class="ib" style="align-self:center"><svg class="i"><use href="#i-more"/></svg></button>
+    <div class="wc"><span><svg class="i"><use href="#i-min"/></svg></span><span><svg class="i"><use href="#i-max"/></svg></span><span><svg class="i"><use href="#i-x"/></svg></span></div>
+  </div>
+
+  <!-- Biblioteca -->
+  <div class="lib s-lib">
+    <aside class="side">
+      <div class="search"><svg class="i"><use href="#i-search"/></svg><span id="q">Buscar…</span><kbd>Ctrl K</kbd></div>
+      <div class="nav"><svg class="i"><use href="#i-clock"/></svg>Recentes</div>
+      <div class="nav"><svg class="i"><use href="#i-grid"/></svg>Todos<span class="n">31</span></div>
+      <div class="glabel">Matérias<span class="from">∫ Summa</span></div>
+      <div class="nav on"><span class="sw" style="background:#5b4a86"></span>Cálculo I<span class="n">9</span></div>
+      <div class="nav"><span class="sw" style="background:#2f5d6b"></span>Física II<span class="n">7</span></div>
+      <div class="nav"><span class="sw" style="background:#8a5a3a"></span>Álgebra Linear<span class="n">8</span></div>
+      <div class="nav"><span class="sw" style="background:#4d6b45"></span>Química Geral<span class="n">4</span></div>
+      <div class="glabel">Pastas</div>
+      <div class="nav"><svg class="i"><use href="#i-folder"/></svg>Rascunhos<span class="n">2</span></div>
+      <div class="nav"><svg class="i"><use href="#i-folder"/></svg>Leituras<span class="n">1</span></div>
+      <button class="add"><svg class="i"><use href="#i-plus"/></svg>Adicionar pasta</button>
+    </aside>
+    <main class="main">
+      <div class="s-grid">
+        <div class="head">
+          <h1>Cálculo I</h1>
+          <div class="spacer"></div>
+          <button class="sel">Recentes<svg class="i"><use href="#i-down"/></svg></button>
+          <div class="seg"><button class="ib on"><svg class="i"><use href="#i-grid"/></svg></button><button class="ib"><svg class="i"><use href="#i-list"/></svg></button></div>
+          <button class="secondary"><svg class="i"><use href="#i-board"/></svg>Novo quadro</button>
+          <button class="primary"><svg class="i"><use href="#i-plus"/></svg>Novo caderno</button>
+        </div>
+        <div class="section">Aulas</div>
+        <div class="grid" id="g1"></div>
+        <div class="section">Quadros</div>
+        <div class="grid" id="g3"></div>
+        <div class="section">Listas</div>
+        <div class="grid" id="g2"></div>
+      </div>
+      <div class="s-busca">
+        <div class="head"><h1>“limite lateral”</h1><div class="spacer"></div><span style="color:var(--text-3);font:400 12px/16px var(--font-mono)">4 resultados em 3 cadernos</span></div>
+        <div class="results" id="hits" style="margin-top:16px"></div>
+      </div>
+      <div class="coverpop s-capa">
+        <div class="gl">Estilo</div>
+        <div class="styles" id="styles"></div>
+        <div class="gl">Cor</div>
+        <div class="swatches" id="sw"></div>
+        <div class="rowbtns"><button class="ghost"><svg class="i"><use href="#i-shuffle"/></svg>Outro desenho</button><button class="ghost"><svg class="i"><use href="#i-image"/></svg>Imagem…</button></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Editor, modo Estúdio -->
+  <div class="editor s-editor">
+    <div class="canvas">
+    <div class="palette">
+      <button class="ib on"><svg class="i"><use href="#i-pen"/></svg></button>
+      <button class="ib"><svg class="i"><use href="#i-hl"/></svg></button>
+      <button class="ib"><svg class="i"><use href="#i-eraser"/></svg></button>
+      <button class="ib"><svg class="i"><use href="#i-lasso"/></svg></button>
+      <button class="ib"><svg class="i"><use href="#i-type"/></svg></button>
+      <button class="ib"><svg class="i"><use href="#i-sigma"/></svg></button>
+      <div class="sep"></div>
+      <span class="col on" style="background:#1d2433"></span>
+      <span class="col" style="background:#2d5fdc"></span>
+      <span class="col" style="background:#8044ca"></span>
+      <span class="col" style="background:#bd1c67"></span>
+      <span class="col" style="background:#028053"></span>
+      <div class="sep"></div>
+      <span class="thick"><i style="width:3px;height:3px"></i></span>
+      <span class="thick on"><i style="width:6px;height:6px"></i></span>
+      <span class="thick"><i style="width:10px;height:10px"></i></span>
+    </div>
+      <div class="page"><svg id="pagesvg" viewBox="0 0 600 830"></svg></div>
+      <div class="growline"></div>
+      <div class="grow r"><svg class="i"><use href="#i-right"/></svg>+2 cm</div>
+      <div class="radial" id="radial">
+        <div class="ring"></div>
+        <div class="hole"><svg viewBox="0 0 24 24" style="fill:currentColor"><use href="#delta"/></svg></div>
+        <div class="lbl">Marca-texto</div>
+      </div>
+      <div class="board s-quadro"><svg id="boardsvg" viewBox="0 0 1280 752"></svg></div>
+      <div class="minimap s-quadro"><svg id="minisvg" viewBox="0 0 200 124"></svg></div>
+      <div class="pill">
+        <button class="ib"><svg class="i"><use href="#i-minus"/></svg></button><span>100%</span><button class="ib"><svg class="i"><use href="#i-plus"/></svg></button>
+        <span style="border-left:1px solid var(--border-subtle);padding-left:12px">3 / 12</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="delta" viewBox="0 0 24 24"><text x="12" y="19" text-anchor="middle" font-family="STIX Two Text" font-style="italic" font-size="22" fill="currentColor">∂</text></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 19a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 20 7h-7.5l-2-2.5H4A1.5 1.5 0 0 0 2.5 6v11.5A1.5 1.5 0 0 0 4 19Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M17 7 7 17M7 7l10 10"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-min" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+    <symbol id="i-max" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
+    <symbol id="i-library" viewBox="0 0 24 24"><path d="M4 4v16M8.5 6v14M13 6v14M16.5 6.5l3.5 13"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M20.2 6.8a1.9 1.9 0 0 0-3-3L4.6 16.4a2 2 0 0 0-.5.8L3 21l3.8-1.1a2 2 0 0 0 .8-.5Z"/></symbol>
+    <symbol id="i-hl" viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="m7 21-4.3-4.3a2.4 2.4 0 0 1 0-3.4l9.6-9.6a2.4 2.4 0 0 1 3.4 0l5.6 5.6a2.4 2.4 0 0 1 0 3.4L13 21M22 21H7M5 11l9 9"/></symbol>
+    <symbol id="i-lasso" viewBox="0 0 24 24"><path d="M7 21a4 4 0 0 1-2-3.5M4 14.5A6 6 0 0 1 2.5 10.5C2.5 6.4 6.8 3 12 3s9.5 3.4 9.5 7.5S17.2 18 12 18a11 11 0 0 1-4.5-1"/><circle cx="5" cy="16" r="2"/></symbol>
+    <symbol id="i-type" viewBox="0 0 24 24"><path d="M5 7V5h14v2M9.5 19h5M12 5v14"/></symbol>
+    <symbol id="i-sigma" viewBox="0 0 24 24"><path d="M18 7V5H6l6 7-6 7h12v-2"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21l4-4 4 4"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 7h3.5c2 0 3 1 4.2 3l2.6 4c1.2 2 2.2 3 4.2 3H21M18 14l3 3-3 3M3 17h3.5c1.2 0 2-.4 2.8-1.2M14.7 8.2C15.5 7.4 16.3 7 17.5 7H21M18 4l3 3-3 3"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-9 9"/></symbol>
+    <symbol id="i-shapes" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="8" height="8" rx="1"/><circle cx="16.5" cy="16.5" r="4.5"/></symbol>
+  </defs>
+</svg>
+
+<script>
+(function(){
+const root=document.documentElement;
+// Escala a janela 1280×800 para a largura disponível.
+const stage=document.getElementById('stage'),win=document.getElementById('win');
+function fit(){const s=Math.min(1,stage.clientWidth/1280);win.style.transform='scale('+s+')';stage.style.height=(800*s)+'px'}
+fit();addEventListener('resize',fit);
+const scr=root.dataset.screen;
+document.querySelector(scr==='editor'?'.s-t1':scr==='quadro'?'.s-tq':'.s-libtab').classList.add('on');
+if(scr==='quadro')document.querySelector('.s-noquadro').style.display='none';
+if(scr==='busca')document.getElementById('q').textContent='limite lateral',document.getElementById('q').style.color='var(--text)';
+
+// PRNG com semente no nome do caderno: cada capa sai diferente e estável.
+function seed(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19}return function(){h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);h^=h>>>16;return (h>>>0)/4294967296}}
+function closed(pts){let d='';const n=pts.length;for(let i=0;i<n;i++){const p0=pts[(i-1+n)%n],p1=pts[i],p2=pts[(i+1)%n],p3=pts[(i+2)%n];if(i===0)d+='M'+p1[0].toFixed(1)+' '+p1[1].toFixed(1);const c1=[p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6],c2=[p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6];d+='C'+c1.map(v=>v.toFixed(1)).join(' ')+' '+c2.map(v=>v.toFixed(1)).join(' ')+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1)}return d+'Z'}
+// Curvas de nível: anéis deformados em volta de um ou dois picos (∂Ω, o contorno).
+function contour(name,w,h){const r=seed(name);let s='';const peaks=[[w*(.35+r()*.5),h*(.15+r()*.45)]];if(r()>.4)peaks.push([w*(r()*.8),h*(.55+r()*.4)]);
+ for(const [cx,cy] of peaks){const ph=[r()*6.28,r()*6.28,r()*6.28],am=[.10+r()*.12,.05+r()*.08,.02+r()*.04];const rings=7+Math.floor(r()*4);
+  for(let k=1;k<=rings;k++){const R=k*(9+r()*1.5);const pts=[];for(let j=0;j<48;j++){const t=j/48*6.2832;const f=1+am[0]*Math.sin(2*t+ph[0]+k*.15)+am[1]*Math.sin(3*t+ph[1]-k*.1)+am[2]*Math.sin(5*t+ph[2]);pts.push([cx+Math.cos(t)*R*f*1.05,cy+Math.sin(t)*R*f])}
+   const a=k%4===0?.42:.2;s+='<path d="'+closed(pts)+'" fill="none" stroke="rgba(255,255,255,'+a+')" stroke-width="'+(k%4===0?1.2:.8)+'"/>'}}
+ return s}
+// Escrita à mão de mentira: laços em volta de uma linha de base.
+function scrib(r,x,y,w,xh){let d='',t=0,sp=1.25+r()*.2,a=1.5;const T=w/sp;let tall=-1;let first=true;
+ while(t<T){const per=Math.floor(t/6.2832);if(Math.floor((t-.25)/6.2832)!==per)tall=r()<.16?(r()<.5?1:-1):0;
+  const hh=xh*(.5+.08*Math.sin(t*.37))*(tall===1?2.1:1);const dy=tall===-1?xh*.9*Math.max(0,-Math.cos(t)):0;
+  const px=x+t*sp+a*Math.sin(t)*(xh/7),py=y-hh*(1-Math.cos(t))+dy;d+=(first?'M':'L')+px.toFixed(1)+' '+py.toFixed(1);first=false;t+=.3}
+ return d}
+function words(r,x,y,maxw,xh){let s='',cx=x;while(cx<x+maxw-20){const w=12+r()*38;if(cx+w>x+maxw)break;s+='<path d="'+scrib(r,cx,y,w,xh)+'"/>';cx+=w+7+r()*5}return s}
+function thumb(name,color){const r=seed(name+'p');let s='<svg class="thumb" viewBox="0 0 152 200">';for(let y=34;y<196;y+=10)s+='<path d="M8 '+y+'H144" stroke="#e3e8ee" stroke-width=".6"/>';
+ s+='<g fill="none" stroke="#1d2433" stroke-width=".7" stroke-linecap="round">';s+=words(r,12,23,90,4.5);for(let y=43;y<190;y+=10){if(r()<.18)continue;s+=words(r,12+(r()<.2?10:0),y-1,110+r()*20,2.6)}s+='</g></svg>';return s}
+
+const C={calc:'#5b4a86',fis:'#2f5d6b',alg:'#8a5a3a',qui:'#4d6b45'};
+const aulas=[['Limites — aula 3','12 pág · 12/11'],['Limites — aula 2','9 pág · 07/11'],['Limites laterais','6 pág · 05/11'],['Continuidade','11 pág · 31/10'],['Funções — revisão','4 pág · 24/10'],['Derivadas, primeira ideia','3 pág · 22/10']];
+const listas=[['Lista 3','8 pág · 10/11'],['Lista 2','14 pág · 29/10'],['P1 — simulado','5 pág · 20/10']];
+function card(n,meta,c,i){return '<div class="nb'+(i===0?'':'')+'"><div class="cover" style="--c:'+c+'"><svg class="art" viewBox="0 0 152 200">'+contour(n,152,200)+'</svg>'+thumb(n,c)+'<div class="k">'+(i+1).toString().padStart(2,'0')+'</div><div class="t">'+n+'</div></div><div class="name">'+n+'</div><div class="meta">'+meta+'</div></div>'}
+document.getElementById('g1').innerHTML=aulas.map((a,i)=>card(a[0],a[1],C.calc,i)).join('');
+document.getElementById('g2').innerHTML=listas.map((a,i)=>card(a[0],a[1],C.calc,i)).join('');
+
+// Resultados da busca
+const hits=[['Limites laterais','Cálculo I · pág. 2',C.calc,'O <mark>limite lateral</mark> pela direita de 1/x em 0 é +∞; pela esquerda, −∞.'],['Limites — aula 3','Cálculo I · pág. 7',C.calc,'…existe o limite só quando cada <mark>limite lateral</mark> existe e os dois são iguais.'],['Limites — aula 3','Cálculo I · pág. 8',C.calc,'Exemplo: |x|/x, <mark>limite lateral</mark> −1 e 1.'],['Lista 3','Cálculo I · pág. 1',C.calc,'3. Calcule cada <mark>limite lateral</mark> e decida se o limite existe.']];
+document.getElementById('hits').innerHTML=hits.map((h,i)=>'<div class="hit'+(i===0?' on':'')+'"><div class="mini" style="background:'+h[2]+'"><svg viewBox="0 0 44 58">'+contour(h[0],44,58).replace(/stroke-width="[\d.]+"/g,'stroke-width=".6"')+'</svg></div><div><div class="what">'+h[0]+'</div><div class="where">'+h[1]+'</div><div class="ex">'+h[3]+'</div></div></div>').join('');
+
+// Página do editor
+const r=seed('pagina-editor');let p='';
+p+='<text x="56" y="62" font-family="STIX Two Text" font-size="26" fill="var(--ink)">Limites laterais</text>';
+p+='<g fill="none" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">';
+for(const y of [133,165,197]){p+=words(r,56,y,y===197?300:470,8)}
+p+='</g>';
+p+='<text x="120" y="262" font-family="STIX Two Text" font-size="24" fill="var(--ink)">lim<tspan font-style="italic" dx="2"> f</tspan>(<tspan font-style="italic">x</tspan>) = +∞</text>';
+p+='<text x="139" y="282" text-anchor="middle" font-family="STIX Two Text" font-size="13" fill="var(--ink)"><tspan font-style="italic">x</tspan> → 0⁺</text>'.replace('⁺','+');
+p+='<path d="M108 252 L350 250" stroke="#8044ca" stroke-opacity=".18" stroke-width="22" stroke-linecap="round" fill="none"/>';
+// gráfico 1/x à mão
+p+='<g fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linecap="round"><path d="M110 560 Q250 562 400 558"/><path d="M255 700 Q253 560 256 400"/>';
+p+='<path d="M262 414 C266 470 276 520 300 535 S360 548 396 550" stroke="#2d5fdc" stroke-width="1.8"/><path d="M248 706 C244 650 234 600 210 585 S150 572 114 570" stroke="#2d5fdc" stroke-width="1.8"/>';
+p+='<path d="M392 553 l6 5 -6 5M250 406 l6 -6 6 6"/></g>';
+p+='<g fill="none" stroke="#bd1c67" stroke-width="1.4" stroke-linecap="round">'+words(r,300,452,140,7)+'<path d="M330 470 C320 490 300 500 280 470 l8 2 M280 470 l-1 8"/></g>';
+p+='<g fill="none" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round">';for(const y of [760,792]){p+=words(r,56,y,y===792?220:450,8)}p+='</g>';
+document.getElementById('pagesvg').innerHTML=p;
+
+// Quadro na biblioteca: cartão largo com o miolo do quadro
+function boardThumb(name,w,hh){const r=seed(name);let s='<svg viewBox="0 0 '+w+' '+hh+'" style="position:absolute;inset:0;width:100%;height:100%"><defs><pattern id="dots'+w+'" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".6" fill="rgba(255,255,255,.28)"/></pattern></defs><rect width="100%" height="100%" fill="url(#dots'+w+')"/><g fill="none" stroke="rgba(255,255,255,.75)" stroke-width=".9" stroke-linecap="round">';
+ const blocks=[[30,40,90],[150,30,70],[220,100,80],[60,120,100]];for(const [x,y,ww] of blocks){s+=words(r,x,y,ww,4);s+=words(r,x,y+12,ww*.8,4)}
+ s+='<path d="M120 45 C140 50 140 60 150 40M200 52 C230 70 240 80 225 98M210 120 C170 140 150 130 165 122"/></g></svg>';return s}
+const g3=document.getElementById('g3');g3.innerHTML='<div class="nb wide"><div class="cover" style="--c:#3f3a4f">'+boardThumb('Mapa de limites',338,200)+'<div class="k">QUADRO</div><div class="t">Mapa de limites</div></div><div class="name">Mapa de limites</div><div class="meta">editado hoje, 14:20</div></div>';
+
+// Popover de capa: estilos prontos e cores
+const styl=[['Contorno','contorno'],['Linho','linho'],['Página','pagina'],['Lisa','lisa']];
+document.getElementById('styles').innerHTML=styl.map((s,i)=>{let inner='';if(s[1]==='contorno')inner='<svg viewBox="0 0 152 200">'+contour('Limites — aula 3',152,200)+'</svg>';
+ if(s[1]==='linho')inner='<div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(0,0,0,.07) 0 1px,transparent 1px 3px)"></div><div style="position:absolute;right:7px;top:0;bottom:0;width:4px;background:rgba(0,0,0,.32)"></div><div style="position:absolute;left:9px;right:14px;top:20px;height:16px;background:#f6f3ec;border-radius:1px"></div>';
+ if(s[1]==='pagina')inner=thumb('Limites — aula 3').replace('class="thumb"','style="display:block"');
+ const bg=s[1]==='pagina'?'#fff;box-shadow:inset 0 3px 0 #5b4a86,var(--cover-shadow)':'#5b4a86';
+ return '<div class="st'+(i===0?' on':'')+'"><div class="mini" style="background:'+bg+'">'+inner+'</div>'+s[0]+'</div>'}).join('');
+document.getElementById('sw').innerHTML=['#5b4a86','#2f5d6b','#8a5a3a','#4d6b45','#8a7232','#9b3a5a','#3d3d3d','#d9d2c3'].map((c,i)=>'<span class="'+(i===0?'on':'')+'" style="background:'+c+'"'+(i===0?' title="Cor da matéria"':'')+'></span>').join('')+'<span class="cust" title="Outra cor"></span>';
+if(scr==='capa'){const nb=document.querySelector('#g1 .nb');nb.classList.add('sel-on')}
+
+// Quadro: canvas pontilhado com blocos espalhados, minimapa com a vista atual
+if(scr==='quadro'){const rq=seed('quadro');let b='<g fill="none" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">';
+ b+='</g><text x="110" y="200" font-family="STIX Two Text" font-size="30" fill="var(--ink)">Limites</text><g fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linecap="round">';
+ for(const y of [240,268,296])b+=words(rq,110,y,250,7);
+ b+='</g><text x="560" y="180" font-family="STIX Two Text" font-size="22" fill="var(--ink)">lim<tspan font-style="italic"> f</tspan>(<tspan font-style="italic">x</tspan>) = <tspan font-style="italic">L</tspan></text>';
+ b+='<g fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linecap="round">'+words(rq,560,220,220,6)+words(rq,560,246,180,6)+'</g>';
+ b+='<g fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round"><path d="M880 420 Q1000 421 1120 418M1000 520 Q999 420 1001 300"/><path d="M1006 312 C1010 360 1020 395 1040 405 S1090 412 1116 413" stroke="#2d5fdc" stroke-width="1.7"/><path d="M994 516 C990 470 980 440 960 432 S910 425 884 424" stroke="#2d5fdc" stroke-width="1.7"/></g>';
+ b+='<g fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round"><path d="M180 560 Q300 561 420 559M300 660 Q299 560 301 470"/><path d="M190 600 L296 600" stroke="#8044ca" stroke-width="1.8"/><path d="M304 520 L414 520" stroke="#8044ca" stroke-width="1.8"/><circle cx="300" cy="600" r="3" stroke="#8044ca"/><circle cx="300" cy="520" r="3" fill="#8044ca" stroke="#8044ca"/></g>';
+ b+='<g fill="none" stroke="#bd1c67" stroke-width="1.5" stroke-linecap="round"><path d="M380 250 C450 250 500 220 540 190"/><path d="M528 186 l13 3 -6 11"/><path d="M780 240 C850 260 900 300 930 330"/><path d="M918 330 l13 2 -2 -13"/><path d="M640 300 C560 400 470 460 430 520"/><path d="M428 506 l1 15 13 -6"/></g>';
+ b+='<g fill="none" stroke="#bd1c67" stroke-width="1.2" stroke-linecap="round">'+words(rq,560,330,120,5)+words(rq,860,560,160,5)+'</g>';
+ b+='<path d="M98 160 h300 M600 120" stroke="#8044ca" stroke-opacity=".0"/>';
+ document.getElementById('boardsvg').innerHTML=b;
+ let m='<rect width="200" height="124" fill="var(--layer-1)"/>';
+ for(const [x,y,w,hh] of [[30,22,30,16],[62,18,26,12],[96,30,26,20],[40,58,30,18],[120,70,40,26],[150,20,24,14],[20,92,22,14]])m+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'" rx="2" fill="color-mix(in oklch,var(--text) 22%,transparent)"/>';
+ m+='<rect x="24" y="14" width="104" height="62" fill="none" stroke="var(--accent)" stroke-width="1.5" rx="2"/>';
+ document.getElementById('minisvg').innerHTML=m;
+ document.querySelector('.pill span').textContent='60%';document.querySelector('.pill span:last-child').textContent='Ir ao conteúdo';
+}
+
+// Itens do menu radial
+const items=['i-pen','i-hl','i-eraser','i-lasso','i-type','i-shapes','i-sigma','i-undo'];
+const rad=document.getElementById('radial');items.forEach((id,i)=>{const a=-Math.PI/2+i*2*Math.PI/items.length;const el=document.createElement('div');el.className='it'+(i===1?' on':'');el.style.left=(104+Math.cos(a)*82)+'px';el.style.top=(104+Math.sin(a)*82)+'px';el.innerHTML='<svg class="i"><use href="#'+id+'"/></svg>';rad.appendChild(el)});
+})();
+</script>
+</body>
+</html>
