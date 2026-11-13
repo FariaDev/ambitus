@@ -4983,6 +4983,54 @@ msgstr "Digite um comando…"
 msgid "No command with that name."
 msgstr "Nenhum comando com esse nome."
 
+msgid "Earlier versions…"
+msgstr "Versões anteriores…"
+
+msgid "Earlier versions of {1}"
+msgstr "Versões anteriores de {1}"
+
+msgid "A copy is kept before each save, at most one every ten minutes. The newest thirty stay."
+msgstr "Uma cópia é guardada antes de cada gravação, no máximo uma a cada dez minutos. Ficam as trinta mais novas."
+
+msgid "No version yet. The first one is kept the next time the notebook is saved."
+msgstr "Ainda não há versões. A primeira é guardada na próxima vez que o caderno for salvo."
+
+msgid "Save the notebook first: its versions are kept from then on."
+msgstr "Salve o caderno primeiro: as versões são guardadas a partir daí."
+
+msgid "Restore…"
+msgstr "Restaurar…"
+
+msgid "Restore"
+msgstr "Restaurar"
+
+msgid "Restore this version?"
+msgstr "Restaurar esta versão?"
+
+msgid "The notebook goes back to how it was {1}. How it is now is kept in the list."
+msgstr "O caderno volta ao estado de {1}. Como ele está agora fica guardado na lista."
+
+msgid "Version restored. The state before it is in the list too."
+msgstr "Versão restaurada. O estado de antes também está na lista."
+
+msgid "The version could not be restored."
+msgstr "Não deu para restaurar a versão."
+
+msgid "The version could not be opened."
+msgstr "Não deu para abrir a versão."
+
+msgid "{1} (version of {2})"
+msgstr "{1} (versão de {2})"
+
+msgid "today, {1}"
+msgstr "hoje, {1}"
+
+msgid "yesterday, {1}"
+msgstr "ontem, {1}"
+
+msgid "{1}, {2}"
+msgstr "{1}, {2}"
+
 msgid "Send page to Summa"
 msgstr "Mandar página ao Summa"
 

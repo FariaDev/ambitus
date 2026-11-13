@@ -7,6 +7,7 @@
 #include <glib.h>   // for g_warning, g_error
 
 #include "ambitus/Board.h"                // for isBoard, previewArea
+#include "ambitus/Versions.h"
 #include "control/Control.h"              // for Control
 #include "control/jobs/BlockingJob.h"     // for BlockingJob
 #include "control/xojfile/SaveHandler.h"  // for SaveHandler
@@ -127,6 +128,9 @@ auto SaveJob::save() -> bool {
 
     h.prepareSave(doc, target);
     doc->unlock_shared();
+
+    // Ambitus: the file as it was goes to the earlier versions before it is written over
+    ambitus::versions::keepBeforeSave(target);
 
     auto const createBackup = doc->shouldCreateBackupOnSave();
 
