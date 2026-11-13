@@ -268,7 +268,6 @@ void MainWindow::applyEditorMode() {
         gtk_widget_set_visible(w, show);
     }
     setSidebarVisible(classic && settings->isSidebarVisible());
-    gtk_widget_set_visible(get("statusbar"), !focus);
     if (studioPalette) {
         studioPalette->setVisible(mode == ambitus::EditorMode::STUDIO);
     }
