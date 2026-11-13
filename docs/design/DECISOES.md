@@ -119,6 +119,9 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
 - A biblioteca não mostra a barra de menu; o menu fica no ⋯.
 - **Clássico**: menu, barras e lateral como a pessoa deixou nas preferências.
   **Estúdio**: sem menu, barras de cima/lados e lateral; fica a barra de baixo
-  (página e zoom); a paleta flutuante é o próximo pedaço. **Foco**: só a
+  (página e zoom) e entra a paleta flutuante no alto (`gui/StudioPalette`):
+  caneta, marca-texto, borracha, laço, texto, LaTeX, 5 cores do protótipo e
+  3 espessuras, ligadas às ações do Xournal++ (`select-tool`, `tool-color`,
+  `tool-size`). **Foco**: só a
   página. O modo é salvo em `settings.xml` (`editorMode`) e as barras são
   escondidas direto nos widgets, sem mexer nas preferências do Clássico.

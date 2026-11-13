@@ -44,6 +44,7 @@ class Menubar;
 namespace ambitus {
 class PageGrowHandle;
 class TitleBar;
+class StudioPalette;
 enum class EditorMode;
 }
 namespace ambitus::library {
@@ -207,7 +208,10 @@ private:
 
     GtkWidget* viewStack = nullptr;
     std::unique_ptr<ambitus::library::LibraryView> library;
+    /// Ambitus: "+2 cm" on the page edges
     std::unique_ptr<ambitus::PageGrowHandle> growHandle;
-    std::unique_ptr<ambitus::TitleBar>
-            titleBar;  ///< Ambitus: client side title bar  ///< Ambitus: "+2 cm" on the page edges
+    /// Ambitus: palette of the Studio mode
+    std::unique_ptr<ambitus::StudioPalette> studioPalette;
+    /// Ambitus: client side title bar
+    std::unique_ptr<ambitus::TitleBar> titleBar;
 };

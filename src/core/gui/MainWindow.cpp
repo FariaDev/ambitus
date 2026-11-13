@@ -45,6 +45,7 @@
 
 #include "GladeSearchpath.h"     // for GladeSearchpath
 #include "PageGrowHandle.h"      // for PageGrowHandle
+#include "StudioPalette.h"       // for StudioPalette
 #include "TitleBar.h"            // for TitleBar
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
 #include "XournalView.h"         // for XournalView
@@ -125,6 +126,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     initXournalWidget();
     this->growHandle = std::make_unique<ambitus::PageGrowHandle>(control, xournal.get(), overlay);
+    this->studioPalette = std::make_unique<ambitus::StudioPalette>(overlay);
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
@@ -239,6 +241,9 @@ void MainWindow::applyEditorMode() {
     }
     setSidebarVisible(classic && settings->isSidebarVisible());
     gtk_widget_set_visible(get("statusbar"), !focus);
+    if (studioPalette) {
+        studioPalette->setVisible(mode == ambitus::EditorMode::STUDIO);
+    }
     if (titleBar) {
         titleBar->setMode(mode);
     }
