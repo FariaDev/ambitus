@@ -247,6 +247,7 @@ void Settings::loadDefault() {
 
     this->snapRecognizedShapesEnabled = false;
     this->scratchOutEnabled = true;
+    this->editorMode = 0;
     this->restoreLineWidthEnabled = false;
 
     this->inTransaction = false;
@@ -713,6 +714,8 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->snapRecognizedShapesEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("scratchOutEnabled")) == 0) {
         this->scratchOutEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("editorMode")) == 0) {
+        this->editorMode = std::clamp<int>(g_ascii_strtoll(reinterpret_cast<const char*>(value), nullptr, 10), 0, 2);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("restoreLineWidthEnabled")) == 0) {
         this->restoreLineWidthEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("preferredLocale")) == 0) {
@@ -1198,6 +1201,7 @@ void Settings::save() {
 
     SAVE_BOOL_PROP(snapRecognizedShapesEnabled);
     SAVE_BOOL_PROP(scratchOutEnabled);
+    SAVE_INT_PROP(editorMode);
     SAVE_BOOL_PROP(restoreLineWidthEnabled);
 
     SAVE_INT_PROP(numIgnoredStylusEvents);
@@ -2377,6 +2381,16 @@ void Settings::setScratchOutEnabled(bool enabled) {
 }
 
 auto Settings::getScratchOutEnabled() const -> bool { return this->scratchOutEnabled; }
+
+void Settings::setEditorMode(int mode) {
+    if (this->editorMode == mode) {
+        return;
+    }
+    this->editorMode = mode;
+    save();
+}
+
+auto Settings::getEditorMode() const -> int { return this->editorMode; }
 
 
 void Settings::setRestoreLineWidthEnabled(bool enabled) { this->restoreLineWidthEnabled = enabled; }

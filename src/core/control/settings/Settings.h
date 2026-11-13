@@ -551,6 +551,10 @@ public:
     void setScratchOutEnabled(bool enabled);
     bool getScratchOutEnabled() const;
 
+    /// Ambitus: screen mode of the editor (0 classic, 1 studio, 2 focus)
+    void setEditorMode(int mode);
+    int getEditorMode() const;
+
     /**
      * Set line width restoring for resized edit selctions enabled
      */
@@ -1148,6 +1152,9 @@ private:
 
     /// Ambitus: scratch out to erase
     bool scratchOutEnabled{};
+
+    /// Ambitus: screen mode of the editor
+    int editorMode{};
 
     /**
      * Whether the line width should be preserved in a resizing operation

@@ -43,6 +43,8 @@ class GladeSearchpath;
 class Menubar;
 namespace ambitus {
 class PageGrowHandle;
+class TitleBar;
+enum class EditorMode;
 }
 namespace ambitus::library {
 class LibraryView;
@@ -115,6 +117,9 @@ public:
     void showLibrary();
     void showEditor();
     bool isLibraryShown() const;
+    /// Ambitus: Classic (all the bars), Studio (floating palette) or Focus (only the page)
+    void setEditorMode(ambitus::EditorMode mode);
+    void applyEditorMode();
 
     const ToolbarWidgetArray& getToolbarWidgets() const;
     const char* getToolbarName(GtkToolbar* toolbar) const;
@@ -202,5 +207,7 @@ private:
 
     GtkWidget* viewStack = nullptr;
     std::unique_ptr<ambitus::library::LibraryView> library;
-    std::unique_ptr<ambitus::PageGrowHandle> growHandle;  ///< Ambitus: "+2 cm" on the page edges
+    std::unique_ptr<ambitus::PageGrowHandle> growHandle;
+    std::unique_ptr<ambitus::TitleBar>
+            titleBar;  ///< Ambitus: client side title bar  ///< Ambitus: "+2 cm" on the page edges
 };

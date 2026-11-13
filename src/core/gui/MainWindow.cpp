@@ -45,6 +45,7 @@
 
 #include "GladeSearchpath.h"     // for GladeSearchpath
 #include "PageGrowHandle.h"      // for PageGrowHandle
+#include "TitleBar.h"            // for TitleBar
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
 #include "XournalView.h"         // for XournalView
 #include "config-dev.h"          // for TOOLBAR_CONFIG
@@ -203,6 +204,44 @@ void MainWindow::populate(GladeSearchpath* gladeSearchPath) {
     createToolbar();
 
     setToolbarVisible(control->getSettings()->isToolbarVisible());
+
+    // Ambitus: our own title bar, with the modes and the whole menu under "⋯"
+    titleBar = std::make_unique<ambitus::TitleBar>(GTK_WINDOW(this->window), menubar->getModel(),
+                                                   [this](ambitus::EditorMode m) { setEditorMode(m); });
+    gtk_window_set_titlebar(GTK_WINDOW(this->window), titleBar->getWidget());
+    titleBar->setMode(static_cast<ambitus::EditorMode>(control->getSettings()->getEditorMode()));
+    titleBar->setEditorShown(!isLibraryShown());
+}
+
+void MainWindow::setEditorMode(ambitus::EditorMode mode) {
+    control->getSettings()->setEditorMode(static_cast<int>(mode));
+    applyEditorMode();
+}
+
+void MainWindow::applyEditorMode() {
+    auto* settings = control->getSettings();
+    auto mode = static_cast<ambitus::EditorMode>(settings->getEditorMode());
+    bool classic = mode == ambitus::EditorMode::CLASSIC;
+    bool focus = mode == ambitus::EditorMode::FOCUS;
+    // the bars are hidden here without touching the settings, so Classic comes back as it was;
+    // the library has no menu bar: the whole menu is under "⋯" in the title bar
+    gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(this->window),
+                                            classic && !isLibraryShown() && settings->isMenubarVisible());
+    for (size_t i = 0; i < TOOLBAR_DEFINITIONS_LEN; i++) {
+        if (i >= TBFloatFirst && i <= TBFloatLast) {
+            continue;  // the floating toolbox keeps its own
+        }
+        GtkWidget* w = this->toolbarWidgets[i].get();
+        bool bottom = std::string_view(TOOLBAR_DEFINITIONS[i].guiName).starts_with("tbBottom");
+        bool show = (classic || (bottom && !focus)) && settings->isToolbarVisible() &&
+                    gtk_toolbar_get_n_items(GTK_TOOLBAR(w)) != 0;
+        gtk_widget_set_visible(w, show);
+    }
+    setSidebarVisible(classic && settings->isSidebarVisible());
+    gtk_widget_set_visible(get("statusbar"), !focus);
+    if (titleBar) {
+        titleBar->setMode(mode);
+    }
 }
 
 GMenuModel* MainWindow::getMenuModel() const { return menubar->getModel(); }
@@ -213,11 +252,19 @@ void MainWindow::showLibrary() {
     library->refresh();
     gtk_stack_set_visible_child_name(GTK_STACK(viewStack), "library");
     library->focusSearch();
+    if (titleBar) {
+        titleBar->setEditorShown(false);
+        applyEditorMode();
+    }
 }
 
 void MainWindow::showEditor() {
     if (isLibraryShown()) {
         gtk_stack_set_visible_child_name(GTK_STACK(viewStack), "editor");
+    }
+    if (titleBar) {
+        titleBar->setEditorShown(true);
+        applyEditorMode();
     }
 }
 
@@ -772,7 +819,11 @@ void MainWindow::updatePageNumbers(size_t page, size_t pagecount, size_t pdfpage
 
 auto MainWindow::getMenubar() const -> Menubar* { return menubar.get(); }
 
-void MainWindow::show(GtkWindow* parent) { gtk_widget_show(this->window); }
+void MainWindow::show(GtkWindow* parent) {
+    gtk_widget_show(this->window);
+    // after the menu bar is restored (queued in the constructor)
+    Util::execInUiThread([this]() { applyEditorMode(); });
+}
 
 void MainWindow::setUndoDescription(const string& description) { menubar->setUndoDescription(description); }
 

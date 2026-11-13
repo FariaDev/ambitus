@@ -110,3 +110,15 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   normal; marca-texto e reconhecedor de formas não disparam.
 - Geometria em `ambitus/ScratchOut` (com testes), ligação em
   `StrokeHandler::scratchOut`.
+
+## Barra de título e modos de tela (2026-11-13)
+
+- A janela usa barra de título própria (`GtkHeaderBar`, `gui/TitleBar`): ∂,
+  Biblioteca, nome do caderno, modos, desfazer e **⋯** com o menu inteiro.
+  As abas vão entrar nessa barra.
+- A biblioteca não mostra a barra de menu; o menu fica no ⋯.
+- **Clássico**: menu, barras e lateral como a pessoa deixou nas preferências.
+  **Estúdio**: sem menu, barras de cima/lados e lateral; fica a barra de baixo
+  (página e zoom); a paleta flutuante é o próximo pedaço. **Foco**: só a
+  página. O modo é salvo em `settings.xml` (`editorMode`) e as barras são
+  escondidas direto nos widgets, sem mexer nas preferências do Clássico.

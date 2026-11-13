@@ -490,3 +490,64 @@ button.amb-grow-pill:hover { background: @amb_hover; color: @amb_text; }
     border-color: @amb_dk_border;
 }
 #mainWindow.darkMode button.amb-grow-pill:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+
+/* ---------- barra de título: ∂, biblioteca, caderno, modos, desfazer, menu ---------- */
+
+headerbar.amb-titlebar {
+    background: @amb_bg;
+    background-image: none;
+    border: none;
+    border-bottom: 1px solid @amb_border;
+    box-shadow: none;
+    min-height: 44px;
+    padding: 0 6px 0 12px;
+    color: @amb_text;
+}
+headerbar.amb-titlebar:backdrop { background: @amb_bg; }
+headerbar.amb-titlebar .amb-brand {
+    font-family: "Instrument Serif", "IBM Plex Serif", serif;
+    font-size: 17pt;
+    margin-right: 6px;
+}
+headerbar.amb-titlebar .amb-tb-title { font-weight: 600; }
+headerbar.amb-titlebar button {
+    background: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    color: @amb_text2;
+    border-radius: 4px;
+    min-height: 28px;
+}
+headerbar.amb-titlebar button:hover { background: @amb_hover; color: @amb_text; }
+headerbar.amb-titlebar button.amb-tb-icon { min-width: 28px; padding: 0 4px; }
+
+headerbar.amb-titlebar .amb-modes {
+    background: @amb_layer;
+    border-radius: 4px;
+    padding: 2px;
+    margin: 0 6px;
+}
+headerbar.amb-titlebar .amb-modes button {
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: 3px;
+    font-size: 10pt;
+}
+headerbar.amb-titlebar .amb-modes button:checked {
+    background: @amb_bg;
+    color: @amb_text;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px @amb_border;
+}
+
+#mainWindow.darkMode headerbar.amb-titlebar,
+headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_dk_border; color: @amb_dk_text; }
+#mainWindow.darkMode headerbar.amb-titlebar button { color: @amb_dk_text2; }
+#mainWindow.darkMode headerbar.amb-titlebar button:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode headerbar.amb-titlebar .amb-modes { background: @amb_dk_layer; }
+#mainWindow.darkMode headerbar.amb-titlebar .amb-modes button:checked {
+    background: @amb_dk_layer2;
+    color: @amb_dk_text;
+    box-shadow: none;
+}

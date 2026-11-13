@@ -4959,3 +4959,24 @@ msgstr "Crescer a página em 2 cm"
 
 msgid "Scratch Out to Erase"
 msgstr "Riscar para apagar"
+
+msgid "Classic"
+msgstr "Clássico"
+
+msgid "Studio"
+msgstr "Estúdio"
+
+msgid "Focus"
+msgstr "Foco"
+
+msgid "All the toolbars"
+msgstr "Todas as barras"
+
+msgid "A floating palette above the page"
+msgstr "Paleta flutuante sobre a página"
+
+msgid "Only the page"
+msgstr "Só a página"
+
+msgid "Menu"
+msgstr "Menu"
