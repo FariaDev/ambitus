@@ -1577,6 +1577,9 @@ void Control::replaceDocument(std::unique_ptr<Document> doc, int scrollToPage) {
     }
 
     fileLoaded(scrollToPage);
+    if (this->win) {
+        this->win->showEditor();
+    }
 }
 
 static auto formatErrorMessages(const std::vector<std::string>& errorMessages) -> std::string {

@@ -31,6 +31,7 @@
 #include "gui/toolbarMenubar/model/ToolbarModel.h"      // for ToolbarModel
 #include "gui/widgets/SpinPageAdapter.h"                // for SpinPageAdapter
 #include "gui/widgets/XournalWidget.h"                  // for gtk_xournal_get_l...
+#include "library/LibraryView.h"                        // for LibraryView
 #include "util/GListView.h"                             // for GListView, GListV...
 #include "util/GtkUtil.h"                               // for getWidgetDPI
 #include "util/PathUtil.h"                              // for getConfigFile
@@ -76,6 +77,40 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     loadMainCSS(gladeSearchPath, "ambitus.css");
 
     GtkOverlay* overlay = GTK_OVERLAY(get("mainOverlay"));
+
+    // Ambitus: the library and the editor share the window through a stack
+    {
+        GtkWidget* editor = GTK_WIDGET(overlay);
+        g_object_ref(editor);
+        gtk_container_remove(GTK_CONTAINER(this->window), editor);
+        viewStack = gtk_stack_new();
+        gtk_stack_set_transition_type(GTK_STACK(viewStack), GTK_STACK_TRANSITION_TYPE_CROSSFADE);
+        gtk_stack_set_transition_duration(GTK_STACK(viewStack), 120);
+        gtk_stack_add_named(GTK_STACK(viewStack), editor, "editor");
+        g_object_unref(editor);
+
+        ambitus::library::LibraryView::Actions actions;
+        actions.open = [control](const fs::path& p) { control->openFile(p); };
+        actions.newNotebook = [this, control](const fs::path& folder) {
+            fs::path file;
+            if (!folder.empty()) {
+                const std::string base = _("Untitled notebook");
+                file = folder / (base + ".xopp");
+                for (int i = 2; fs::exists(file); i++) {
+                    file = folder / (base + " " + std::to_string(i) + ".xopp");
+                }
+            }
+            showEditor();
+            control->newFile(file);
+        };
+        library =
+                std::make_unique<ambitus::library::LibraryView>(Util::getConfigFile("library.ini"), std::move(actions));
+        gtk_stack_add_named(GTK_STACK(viewStack), library->getWidget(), "library");
+        gtk_container_add(GTK_CONTAINER(this->window), viewStack);
+        gtk_widget_show(viewStack);
+        gtk_stack_set_visible_child_name(GTK_STACK(viewStack), "editor");
+    }
+
     this->pdfFloatingToolBox = std::make_unique<PdfFloatingToolbox>(this, overlay);
     this->floatingToolbox = std::make_unique<FloatingToolbox>(this, overlay);
 
@@ -168,6 +203,22 @@ void MainWindow::populate(GladeSearchpath* gladeSearchPath) {
 GMenuModel* MainWindow::getMenuModel() const { return menubar->getModel(); }
 
 MainWindow::~MainWindow() = default;
+
+void MainWindow::showLibrary() {
+    library->refresh();
+    gtk_stack_set_visible_child_name(GTK_STACK(viewStack), "library");
+    library->focusSearch();
+}
+
+void MainWindow::showEditor() {
+    if (isLibraryShown()) {
+        gtk_stack_set_visible_child_name(GTK_STACK(viewStack), "editor");
+    }
+}
+
+auto MainWindow::isLibraryShown() const -> bool {
+    return viewStack && library && gtk_stack_get_visible_child(GTK_STACK(viewStack)) == library->getWidget();
+}
 
 struct ThemeProperties {
     bool dark;

@@ -90,6 +90,11 @@ struct ActionProperties<Action::OPEN> {
 };
 
 template <>
+struct ActionProperties<Action::LIBRARY> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getWindow()->showLibrary(); }
+};
+
+template <>
 struct ActionProperties<Action::ANNOTATE_PDF> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
         ctrl->clearSelectionEndText();

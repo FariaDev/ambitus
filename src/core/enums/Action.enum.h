@@ -41,6 +41,7 @@ enum class Action : size_t {
     EXPORT_AS,
     PRINT,
     QUIT,
+    LIBRARY,  ///< Ambitus: show the notebook library
 
     // Menu edit
     ARRANGE_SELECTION_ORDER,

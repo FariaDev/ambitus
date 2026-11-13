@@ -4833,3 +4833,89 @@ msgid "<span size=\"xx-large\" weight=\"bold\">Ambitus</span>\n"
 "<i>Based on Xournal++</i>"
 msgstr "<span size=\"xx-large\" weight=\"bold\">Ambitus</span>\n"
 "<i>Baseado no Xournal++</i>"
+
+# Ambitus: biblioteca de cadernos
+msgid "today"
+msgstr "hoje"
+
+msgid "yesterday"
+msgstr "ontem"
+
+msgid "New notebook"
+msgstr "Novo caderno"
+
+msgid "Search…"
+msgstr "Buscar…"
+
+msgid "Add folder"
+msgstr "Adicionar pasta"
+
+msgid "Recent"
+msgstr "Recentes"
+
+msgid "Courses"
+msgstr "Matérias"
+
+msgid "Folders"
+msgstr "Pastas"
+
+msgid "Remove from library"
+msgstr "Tirar da biblioteca"
+
+msgid "All notebooks"
+msgstr "Todos os cadernos"
+
+msgid "The notebooks you open show up here."
+msgstr "Os cadernos que você abrir aparecem aqui."
+
+msgid "No notebooks here yet."
+msgstr "Ainda não há cadernos aqui."
+
+msgid "Nothing found."
+msgstr "Nada encontrado."
+
+msgid "Style"
+msgstr "Estilo"
+
+msgid "Contour"
+msgstr "Contorno"
+
+msgid "Linen"
+msgstr "Linho"
+
+msgid "Colour"
+msgstr "Cor"
+
+msgid "Default colour"
+msgstr "Cor padrão"
+
+msgid "Colour of the course"
+msgstr "Cor da matéria"
+
+msgid "Other colour"
+msgstr "Outra cor"
+
+msgid "Another pattern"
+msgstr "Outro desenho"
+
+msgid "Image…"
+msgstr "Imagem…"
+
+msgid "Cover image"
+msgstr "Imagem da capa"
+
+msgid "Add folder to the library"
+msgstr "Adicionar pasta à biblioteca"
+
+msgid "Add"
+msgstr "Adicionar"
+
+msgid "Untitled notebook"
+msgstr "Caderno sem título"
+
+msgid "Library"
+msgstr "Biblioteca"
+
+msgctxt "cover style"
+msgid "Plain"
+msgstr "Lisa"

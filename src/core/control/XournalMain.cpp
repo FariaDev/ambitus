@@ -510,10 +510,15 @@ void on_startup(GApplication* application, XMPtr app_data) {
         }
     }
 
+    // Ambitus: with nothing to open, start in the notebook library
+    const bool startInLibrary = p.empty();
     app_data->control->openFileWithoutSavingTheCurrentDocument(
             std::move(p), app_data->attachMode, app_data->openAtPageNumber - 1,
-            [ctrl = app_data->control.get(), app = GTK_APPLICATION(application)](bool) {
+            [ctrl = app_data->control.get(), app = GTK_APPLICATION(application), startInLibrary](bool) {
                 ctrl->getScheduler()->start();
+                if (startInLibrary) {
+                    ctrl->getWindow()->showLibrary();
+                }
 
                 checkForEmergencySave(ctrl);
 

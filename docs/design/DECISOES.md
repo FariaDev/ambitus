@@ -43,3 +43,23 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   um buffer inteiro, `RenderJob.cpp`) → crescer para esquerda/cima →
   navegação (arrastar, zoom-out, minimapa) → recortes para o tutor do Summa
   em vez do `--create-img` da página inteira (plano de compatibilidade antes).
+
+## Biblioteca nativa (2026-11-13)
+
+- A biblioteca e o editor dividem a janela num `GtkStack`. O app abre na
+  biblioteca quando começa sem arquivo; abrir ou criar um caderno troca para o
+  editor; **Arquivo → Biblioteca** (Alt+Home) volta.
+- As matérias vêm do `config.json` do Summa (`$LEARNING_DESK_RUNTIME`, senão a
+  pasta "Mesa de Estudos" na config do sistema): nome, pasta e cor. As pastas
+  próprias e as capas ficam em `library.ini` na config do Ambitus, **nunca no
+  `.xopp`**, para os cadernos seguirem arquivos comuns do Xournal++.
+- Varredura: até 6 níveis, sem ocultos, `.autosave.xopp` e `~`; link
+  simbólico só vale dentro da pasta. Dentro de uma matéria, as subpastas viram
+  seções (Aulas, Listas…).
+- Capas desenhadas em Cairo, com os mesmos estilos do protótipo: Contorno
+  (curvas de nível geradas do nome; "Outro desenho" troca a semente), Linho,
+  Página (a miniatura embutida no `.xopp`), Lisa e imagem própria. Capa clara
+  ganha tinta escura. Botão direito (ou a tecla Menu) abre o popover da capa.
+- Ainda falta: a busca dentro do texto e do LaTeX (hoje a busca filtra pelo
+  nome) e as abas (o Xournal++ tem um documento por janela, então as abas
+  pedem refatorar o `Control` para vários documentos).

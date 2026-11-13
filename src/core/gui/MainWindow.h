@@ -41,6 +41,9 @@ class FloatingToolbox;
 class GladeSearchpath;
 
 class Menubar;
+namespace ambitus::library {
+class LibraryView;
+}
 
 typedef std::array<xoj::util::WidgetSPtr, TOOLBAR_DEFINITIONS_LEN> ToolbarWidgetArray;
 
@@ -104,6 +107,11 @@ public:
 
     void updateToolbarMenu();
     void updateColorscheme();
+
+    /// Ambitus: the notebook library and the editor share the window
+    void showLibrary();
+    void showEditor();
+    bool isLibraryShown() const;
 
     const ToolbarWidgetArray& getToolbarWidgets() const;
     const char* getToolbarName(GtkToolbar* toolbar) const;
@@ -188,4 +196,7 @@ private:
     xoj::util::WidgetSPtr panedContainerWidget;
     xoj::util::WidgetSPtr mainContentWidget;
     xoj::util::WidgetSPtr sidebarWidget;
+
+    GtkWidget* viewStack = nullptr;
+    std::unique_ptr<ambitus::library::LibraryView> library;
 };

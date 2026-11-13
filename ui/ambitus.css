@@ -297,3 +297,141 @@ tooltip.background {
     box-shadow: inset 0 -2px @amb_dk_accent;
 }
 
+/* ---------- biblioteca ---------- */
+
+#library { background-color: @amb_bg; color: @amb_text; }
+#mainWindow.darkMode #library { background-color: @amb_dk_bg; color: @amb_dk_text; }
+
+#library .amb-lib-side {
+    min-width: 224px; /* 248 com o padding */
+    padding: 16px 12px;
+    background-color: @amb_layer;
+}
+#mainWindow.darkMode #library .amb-lib-side { background-color: @amb_dk_layer; }
+
+#library .amb-lib-search {
+    min-height: 40px;
+    margin-bottom: 14px;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background-color: @amb_bg;
+    color: @amb_text;
+}
+#mainWindow.darkMode #library .amb-lib-search { background-color: @amb_dk_layer2; color: @amb_dk_text; }
+
+#library .amb-lib-side list,
+#library .amb-lib-side scrolledwindow { background: transparent; }
+
+#library row.amb-nav {
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 4px;
+    color: @amb_text;
+    background: transparent;
+}
+#library row.amb-nav:hover { background-color: @amb_hover; }
+#library row.amb-nav:selected {
+    background-color: @amb_hover;
+    color: @amb_text;
+    font-weight: 600;
+    box-shadow: inset 2px 0 0 @amb_accent;
+}
+#mainWindow.darkMode #library row.amb-nav { color: @amb_dk_text; }
+#mainWindow.darkMode #library row.amb-nav:hover,
+#mainWindow.darkMode #library row.amb-nav:selected { background-color: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode #library row.amb-nav:selected { box-shadow: inset 2px 0 0 @amb_dk_accent; }
+
+#library row.amb-group {
+    padding: 18px 10px 6px;
+    font-size: 9pt;
+    font-weight: 600;
+    color: @amb_text2;
+    background: transparent;
+}
+#mainWindow.darkMode #library row.amb-group { color: @amb_dk_text2; }
+
+#library .amb-count {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 9pt;
+    color: @amb_text3;
+    font-weight: 400;
+}
+#library .amb-from {
+    font-family: "STIX Two Text", serif;
+    font-style: italic;
+    font-size: 10pt;
+    font-weight: 400;
+    color: @amb_text3;
+}
+#mainWindow.darkMode #library .amb-count,
+#mainWindow.darkMode #library .amb-from { color: @amb_dk_text3; }
+
+#library .amb-lib-add {
+    min-height: 32px;
+    padding: 0 10px;
+    color: @amb_text2;
+}
+#mainWindow.darkMode #library .amb-lib-add { color: @amb_dk_text2; }
+
+#library .amb-lib-head { padding: 28px 40px 8px; }
+#library .amb-lib-title {
+    font-family: "STIX Two Text", serif;
+    font-size: 21pt;
+}
+#library .amb-lib-body { padding: 0 40px 40px; }
+
+#library .amb-primary {
+    min-height: 32px;
+    padding: 0 14px 0 12px;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background: @amb_accent;
+    color: @amb_on_accent;
+    font-weight: 600;
+}
+#library .amb-primary:hover { background: shade(@amb_accent, 1.25); }
+#mainWindow.darkMode #library .amb-primary { background: @amb_dk_accent; color: @amb_dk_on_accent; }
+#mainWindow.darkMode #library .amb-primary:hover { background: shade(@amb_dk_accent, 0.9); }
+
+#library .amb-section {
+    margin: 22px 0 12px;
+    font-size: 9pt;
+    font-weight: 600;
+    color: @amb_text2;
+}
+#mainWindow.darkMode #library .amb-section { color: @amb_dk_text2; }
+
+#library .amb-grid { margin-top: 14px; }
+#library .amb-grid flowboxchild { padding: 0; background: transparent; }
+
+#library button.amb-nb {
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: none;
+    outline-offset: 3px;
+}
+#library button.amb-nb:hover { background: transparent; }
+#library .amb-nb-name { font-weight: 600; }
+#library .amb-nb-meta {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 9pt;
+    color: @amb_text3;
+}
+#mainWindow.darkMode #library .amb-nb-meta { color: @amb_dk_text3; }
+
+#library .amb-empty { margin-top: 24px; color: @amb_text3; }
+#mainWindow.darkMode #library .amb-empty { color: @amb_dk_text3; }
+
+/* popover da capa */
+popover.amb-coverpop { padding: 16px; }
+popover.amb-coverpop .amb-pop-label { font-size: 9pt; font-weight: 600; margin-top: 4px; }
+popover.amb-coverpop button.amb-style { padding: 4px; font-size: 9pt; }
+popover.amb-coverpop button.amb-style.on { font-weight: 600; box-shadow: inset 0 -2px 0 @amb_accent; }
+popover.amb-coverpop button.amb-swatch { padding: 2px; min-width: 0; min-height: 0; border-radius: 50%; }
+popover.amb-coverpop .amb-ghost { min-height: 32px; }
+popover.amb-coverpop .amb-ghost { padding: 0 10px; border-radius: 4px; color: @amb_text2; }
+popover.amb-coverpop .amb-ghost:hover { background: @amb_hover; color: @amb_text; }
