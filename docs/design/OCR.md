@@ -54,8 +54,35 @@ Nada vai para o `.xopp`: o texto lido fica no índice do cache.
   plano, com um teto; cota esgotada só adia.
 - Sem rede ou sem o Summa, nada muda: a busca acha o que já foi lido.
 
+## O que já está feito (2026-11-13)
+
+- **Summa** (branch `t3/ponte-ambitus` no worktree `summa-ponte`, só local):
+  a ponte voltou da tag e escuta em `127.0.0.1` enquanto o Summa roda
+  (`runtime/ambitus-bridge.json`, modo 0600, com porta e token). O
+  interruptor "Buscar também na escrita à mão" fica em Configurações →
+  Recursos da mesa, desligado por padrão, e recusa modelo gratuito, modelo
+  sem visão e o motor Claude.
+- **Ambitus:** o índice da busca guarda a impressão dos traços de cada
+  página (`SearchIndex::unreadInk`/`setInk`). O `InkReader` exporta a página
+  sem pauta com `--create-img` a 120 dpi e manda o PNG a `POST /ler-tinta`.
+  A biblioteca lê depois de cada indexação, em rodadas de até 90 s, e marca
+  os achados como "escrito à mão". Uma linha embaixo dos resultados diz
+  quanto já foi lido ou por que a leitura não anda.
+- **Conferido** com a ponte real do Summa e uma leitura falsa no lugar do
+  modelo: desligada, ligada e com o Summa fechado. Ainda falta medir a taxa
+  de acerto com um modelo de verdade em páginas escritas pelo Lucas.
+
+Limites conhecidos:
+
+- Um quadro grande vira um PNG grande. Acima de 8 MB a ponte recusa e a
+  página fica sem ler.
+- Durante uma rodada (até 90 s), uma mudança nos cadernos só reindexa
+  quando a rodada acaba.
+- Ainda não existe "mandar a página ao chat solto" nem "converter a seleção
+  em texto".
+
 ## Antes de começar
 
-- O ok para mexer no Summa: trazer a ponte de volta da tag, mais o pedido
-  "mandar a página ao chat solto".
-- Em quais cadernos medir a taxa de acerto (umas 10 páginas).
+- ~~O ok para mexer no Summa~~: dado.
+- Medir a taxa de acerto em umas 10 páginas escritas de verdade, quando
+  houver cadernos.
