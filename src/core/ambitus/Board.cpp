@@ -84,6 +84,14 @@ Range previewArea(const Range& content, double pageWidth, double pageHeight) {
                  std::min(content.maxX + AIR, pageWidth), std::min(content.maxY + AIR, pageHeight));
 }
 
+double exportZoom(const Range& area, double zoom) {
+    const double pixels = area.getWidth() * area.getHeight() * zoom * zoom;
+    if (pixels <= MAX_EXPORT_PIXELS || pixels <= 0) {
+        return zoom;
+    }
+    return std::sqrt(MAX_EXPORT_PIXELS / (area.getWidth() * area.getHeight()));
+}
+
 Size contentReach(const XojPage& page) {
     Size r{0, 0};
     for (const Layer* layer: page.getLayersView()) {

@@ -59,13 +59,12 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
 - Na biblioteca, o quadro é um cartão de duas colunas na cor da matéria, com
   os pontos e o que está escrito em tinta clara. A prévia salva num quadro
   mostra só a parte escrita (até 384 px, sem os pontos).
-- **Falta decidir: o tutor do Summa.** O `ler_caderno` chama
+- **Tutor do Summa.** O `ler_caderno` chama
   `xournalpp <cópia> -n N --export-range=N --create-img <saída> --export-png-dpi 120`,
-  uma página por vez, e espera um arquivo só em `<saída>`. Num quadro isso
-  vira uma imagem enorme e quase vazia. Plano proposto, sem mexer no Summa nem
-  no formato: no `--create-img` de um quadro, exportar só a caixa do conteúdo
-  (como a prévia), com um teto de pixels que baixa o DPI se preciso. Continua
-  um arquivo por página, no mesmo nome.
+  uma página por vez, e espera um arquivo só em `<saída>`. Num quadro a
+  exportação em imagem (essa e a do diálogo) sai só com a parte escrita e duas
+  linhas de pontos de folga, e o DPI baixa se passar de 4096² pixels. Continua
+  um arquivo por página, no mesmo nome: nada muda no Summa nem no formato.
 
 ## Biblioteca nativa (2026-11-13)
 

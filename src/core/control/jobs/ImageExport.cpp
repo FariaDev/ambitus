@@ -8,6 +8,7 @@
 
 #include <cairo-svg.h>  // for cairo_svg_surface_create
 
+#include "ambitus/Board.h"               // for isBoard, previewArea
 #include "control/jobs/BaseExportJob.h"  // for EXPORT_BACKGROUND_NONE, EXPO...
 #include "model/Document.h"              // for Document
 #include "model/PageRef.h"               // for PageRef
@@ -161,13 +162,24 @@ void ImageExport::exportImagePage(size_t pageId, size_t id, double zoomRatio, Ex
     std::shared_lock<Document> lock(*doc);
     ConstPageRef page = doc->getPage(pageId);
 
-    zoomRatio = createSurface(page->getWidth(), page->getHeight(), id, zoomRatio);
+    // Ambitus: a board exports only its written part, with a ceiling on the pixels
+    Range area(0, 0, page->getWidth(), page->getHeight());
+    if (ambitus::board::isBoard(*doc)) {
+        area = ambitus::board::previewArea(ambitus::board::contentBounds(*page), page->getWidth(), page->getHeight());
+        if (format == EXPORT_GRAPHICS_PNG && qualityParameter.getQualityCriterion() == EXPORT_QUALITY_DPI) {
+            zoomRatio = ambitus::board::exportZoom(area, zoomRatio);
+        }
+    }
+
+    zoomRatio = createSurface(area.getWidth(), area.getHeight(), id, zoomRatio);
 
     cairo_status_t state = cairo_surface_status(this->surface);
     if (state != CAIRO_STATUS_SUCCESS) {
         this->lastError = _("Error save image #1");
         return;
     }
+
+    cairo_translate(this->cr, -area.minX, -area.minY);
 
     if (page->getBackgroundType().isPdfPage() && (exportBackground != EXPORT_BACKGROUND_NONE)) {
         // Handle the pdf page separately, to call renderForPrinting for better quality.

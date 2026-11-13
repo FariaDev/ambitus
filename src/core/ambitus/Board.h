@@ -68,4 +68,9 @@ constexpr int PREVIEW_SIZE = 384;
 /// the whole page when there is no content
 Range previewArea(const Range& content, double pageWidth, double pageHeight);
 
+/// Most pixels of an image exported from a board (--create-img, export dialog)
+constexpr double MAX_EXPORT_PIXELS = 4096.0 * 4096.0;
+/// The export zoom, lowered so `area` fits in MAX_EXPORT_PIXELS
+double exportZoom(const Range& area, double zoom);
+
 }  // namespace ambitus::board

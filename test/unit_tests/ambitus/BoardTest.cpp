@@ -70,3 +70,14 @@ TEST(Board, writingNearTheLeftOrTopMovesTheContentInWholeDots) {
     s = shiftToFit(Range());
     EXPECT_DOUBLE_EQ(s.width, 0);
 }
+
+TEST(Board, anExportedBoardHasACeilingOfPixels) {
+    using namespace ambitus::board;
+    // a small written part keeps the asked resolution
+    EXPECT_DOUBLE_EQ(exportZoom(Range(0, 0, 800, 600), 120.0 / 72), 120.0 / 72);
+    // a board written all over is scaled down to the ceiling
+    Range big(0, 0, 20000, 12000);
+    double z = exportZoom(big, 120.0 / 72);
+    EXPECT_LT(z, 120.0 / 72);
+    EXPECT_NEAR(big.getWidth() * z * big.getHeight() * z, MAX_EXPORT_PIXELS, 1);
+}
