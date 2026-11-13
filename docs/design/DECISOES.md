@@ -39,10 +39,33 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
 
 - Tipo próprio de caderno ("Novo quadro"): uma página única que cresce
   sozinha, então o `.xopp` continua abrindo no Xournal++ original.
-- Ordem: crescer para direita/baixo → render em ladrilhos (hoje cada página é
-  um buffer inteiro, `RenderJob.cpp`) → crescer para esquerda/cima →
-  navegação (arrastar, zoom-out, minimapa) → recortes para o tutor do Summa
-  em vez do `--create-img` da página inteira (plano de compatibilidade antes).
+- A marca é `ambitus=board` na configuração do fundo (pontos de 18 pt); o
+  Xournal++ ignora a chave e a mantém ao salvar. É quadro o documento de uma
+  página só com essa marca.
+- Começa com 89×56 pontos e mantém 28 pontos livres em volta do que está
+  escrito, crescendo em pontos inteiros (o padrão não "pula"):
+  - para a direita e para baixo, a página só aumenta; isso não entra no
+    histórico;
+  - para a esquerda e para cima, tudo anda para a direita/baixo e a vista rola
+    junto. O deslocamento entra no histórico grudado na ação que o causou
+    (um Ctrl+Z desfaz os dois), porque ações antigas guardam coordenadas
+    absolutas (traços apagados, centro de escala e rotação). Não acontece ao
+    desfazer/refazer nem com seleção ou caixa de texto aberta.
+- Página grande é renderizada só em volta da vista (a área visível mais uma
+  vista de cada lado), não num buffer inteiro.
+- Visual: sem borda nem sombra, a tela inteira é o papel; modo Estúdio fixo;
+  zoom vai até 5 %. No canto, minimapa (clicar/arrastar leva até lá) e a
+  pílula de zoom com "Ir ao conteúdo".
+- Na biblioteca, o quadro é um cartão de duas colunas na cor da matéria, com
+  os pontos e o que está escrito em tinta clara. A prévia salva num quadro
+  mostra só a parte escrita (até 384 px, sem os pontos).
+- **Falta decidir: o tutor do Summa.** Ele lê os cadernos com
+  `xournalpp --create-img`, uma imagem por página; num quadro isso vira uma
+  imagem enorme e quase vazia. Plano proposto, sem mexer no Summa nem no
+  formato: no `--create-img` de um quadro, exportar só a caixa do conteúdo
+  (como a prévia), com resolução limitada. Se ficar grande demais, dividir em
+  blocos por agrupamento do conteúdo, com os nomes `-1.png`, `-2.png`… que o
+  Summa já trata como páginas.
 
 ## Biblioteca nativa (2026-11-13)
 
