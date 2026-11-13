@@ -173,6 +173,14 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
 - Fechar uma aba pergunta se quer salvar, como fechar um arquivo; fechar a
   última volta à biblioteca. Ao sair, cada aba com mudanças pergunta, uma por
   vez.
-- Limite conhecido: o autosave e o salvamento de emergência cobrem só o
-  documento da janela; uma aba de lado com mudanças não é salva sozinha.
+- Autosave: cada aba guarda o próprio arquivo de autosave, e trocar de aba
+  não apaga mais o da outra (o Xournal++ guarda um só e apagava o anterior).
+  No timer do autosave, uma aba de lado com mudanças desde o último autosave
+  é salva na hora, no mesmo nome que o Xournal++ usaria (`.Nome.autosave.xopp`
+  ao lado do arquivo); sem arquivo, vai para `autosaves/<pid>-tab<n>` no
+  cache. Como nada edita uma aba de lado, isso acontece uma vez só depois que
+  ela sai da janela. Ao sair do app, os autosaves das abas são apagados, como
+  o Xournal++ faz com o da janela.
+- Limite conhecido: o salvamento de emergência (quando o app trava) cobre só
+  o documento da janela; as abas de lado ficam com o último autosave.
 

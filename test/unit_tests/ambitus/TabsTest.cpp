@@ -29,3 +29,18 @@ TEST(Tabs, aNewTabGoesNextToTheActiveOne) {
     EXPECT_EQ(insertAt(3, NO_TAB), 3u);
     EXPECT_EQ(insertAt(0, NO_TAB), 0u);
 }
+
+TEST(Tabs, theAutosaveOfATabAsideHasItsOwnName) {
+    // with a file: next to it, hidden, as Xournal++ autosaves the document in the window
+    EXPECT_EQ(autosavePath("/notes/Calc I.xopp", "/cache/autosaves", 42, 3), fs::path("/notes/.Calc I.autosave.xopp"));
+    // without a file: in the cache, apart from the one in the window (`42.autosave.xopp`) and from the other tabs
+    EXPECT_EQ(autosavePath("", "/cache/autosaves", 42, 3), fs::path("/cache/autosaves/42-tab3.autosave.xopp"));
+    EXPECT_NE(autosavePath("", "/cache/autosaves", 42, 3), autosavePath("", "/cache/autosaves", 42, 4));
+}
+
+TEST(Tabs, anEmptyHistoryAutosavedIsUnchanged) {
+    UndoRedoHandler::State state;
+    EXPECT_FALSE(state.isChangedAutosave());
+    state.autosaved();
+    EXPECT_FALSE(state.isChangedAutosave());
+}

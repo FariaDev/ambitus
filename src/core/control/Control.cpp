@@ -185,6 +185,7 @@ Control::~Control() {
     this->enableAutosave(false);
 
     deleteLastAutosaveFile();
+    deleteTabAutosaves();  // Ambitus
     this->scheduler->stop();
     this->changedPages.clear();  // can be removed, will be done by implicit destructor
 
@@ -342,6 +343,8 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
 }
 
 auto Control::autosaveCallback(Control* control) -> bool {
+    control->autosaveTabsAside();  // Ambitus
+
     if (!control->undoRedo->isChangedAutosave()) {
         // do nothing, nothing changed
         return true;

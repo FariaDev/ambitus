@@ -12,11 +12,14 @@
 #include "control/CrashHandler.h"
 #include "control/ScrollHandler.h"
 #include "control/settings/MetadataManager.h"
+#include "control/xojfile/SaveHandler.h"
 #include "control/zoom/ZoomControl.h"
 #include "gui/MainWindow.h"
 #include "model/Document.h"
 #include "model/DocumentHandler.h"
 #include "undo/UndoRedoHandler.h"
+#include "util/PathUtil.h"
+#include "util/Util.h"
 
 #include "Tabs.h"
 
@@ -33,6 +36,19 @@ size_t afterClose(size_t count, size_t active, size_t closed) {
 }
 
 size_t insertAt(size_t count, size_t active) { return active == NO_TAB ? count : active + 1; }
+
+fs::path autosavePath(const fs::path& file, const fs::path& autosaves, long pid, unsigned serial) {
+    fs::path path;
+    if (file.empty()) {
+        path = autosaves / (std::to_string(pid) + "-tab" + std::to_string(serial) + ".xopp");
+    } else {
+        path = file;
+        path.replace_filename(fs::path(".") += file.filename());
+    }
+    Util::clearExtensions(path);
+    path += ".autosave.xopp";
+    return path;
+}
 
 }  // namespace ambitus::tabs
 
@@ -62,7 +78,7 @@ void Control::ensureActiveTab() {
     }
     const size_t at = ambitus::tabs::insertAt(tabs.size(), newTabAfter);
     newTabAfter = ambitus::NO_TAB;
-    tabs.insert(tabs.begin() + static_cast<std::ptrdiff_t>(at), ambitus::Tab{path, nullptr, {}});
+    tabs.insert(tabs.begin() + static_cast<std::ptrdiff_t>(at), ambitus::Tab{path, nullptr, {}, {}, nextTabSerial++});
     activeTab = at;
 }
 
@@ -88,7 +104,75 @@ void Control::parkActiveTab() {
     doc->unlock_shared();
     tab.doc->unlock();
     tab.undo = undoRedo->takeState();
+    keepAutosaveAside(tab);
     activeTab = ambitus::NO_TAB;
+}
+
+void Control::keepAutosaveAside(ambitus::Tab& tab) {
+    // The autosave of the document goes aside with it, or the next document autosaved would delete it
+    // (setLastAutosaveFile). One without a file was autosaved under the name of the window (pid), which the next one
+    // without a file would overwrite: it takes a name of its own.
+    tab.autosave = std::exchange(lastAutosaveFilename, {});
+    if (!tab.path.empty() || tab.autosave.empty()) {
+        return;
+    }
+    auto own = ambitus::tabs::autosavePath({}, Util::getCacheSubfolder("autosaves"), static_cast<long>(Util::getPid()),
+                                           tab.serial);
+    try {
+        if (fs::exists(tab.autosave)) {
+            fs::rename(tab.autosave, own);
+            tab.autosave = own;
+        }
+    } catch (const fs::filesystem_error& e) {
+        g_warning("Could not keep the autosave of a tab aside: %s", e.what());
+    }
+}
+
+void Control::autosaveTabsAside() {
+    for (size_t i = 0; i < tabs.size(); i++) {
+        auto& tab = tabs[i];
+        if (i == activeTab || !tab.doc || !tab.undo.isChangedAutosave()) {
+            continue;
+        }
+        // Nothing edits a document aside, so it is saved here, at once: each one only once after it is put aside
+        auto path = ambitus::tabs::autosavePath(tab.path, Util::getCacheSubfolder("autosaves"),
+                                                static_cast<long>(Util::getPid()), tab.serial);
+        fs::path temp = path;
+        temp += u8"~";
+        SaveHandler handler;
+        tab.doc->lock_shared();
+        handler.prepareSave(tab.doc.get(), path);
+        tab.doc->unlock_shared();
+        handler.saveTo(temp);
+        if (!handler.getErrorMessage().empty()) {
+            g_warning("Could not autosave a tab: %s", handler.getErrorMessage().c_str());
+            continue;
+        }
+        try {
+            fs::rename(temp, path);
+            if (!tab.autosave.empty() && tab.autosave != path && fs::exists(tab.autosave)) {
+                fs::remove(tab.autosave);
+            }
+        } catch (const fs::filesystem_error& e) {
+            g_warning("Could not autosave a tab: %s", e.what());
+            continue;
+        }
+        tab.autosave = path;
+        tab.undo.autosaved();
+    }
+}
+
+void Control::deleteTabAutosaves() {
+    for (auto& tab: tabs) {
+        try {
+            if (!tab.autosave.empty() && fs::exists(tab.autosave)) {
+                fs::remove(tab.autosave);
+            }
+        } catch (const fs::filesystem_error& e) {
+            g_warning("Could not remove the autosave of a tab: %s", e.what());
+        }
+        tab.autosave.clear();
+    }
 }
 
 void Control::activateTab(size_t index) {
@@ -108,6 +192,7 @@ void Control::activateTab(size_t index) {
     tab.doc.reset();
     undoRedo->restoreState(std::move(tab.undo));
     tab.undo = {};
+    lastAutosaveFilename = std::exchange(tab.autosave, {});
 
     setEmergencyDocument(doc);
     fileLoaded();

@@ -52,6 +52,10 @@ public:
         UndoAction* autosavedUndo = nullptr;
         /// whether the document had changes since it was saved
         bool isChanged() const;
+        /// whether the document had changes since it was autosaved
+        bool isChangedAutosave() const;
+        /// marks the document as autosaved as it is now
+        void autosaved();
     };
     /// Takes the whole history out, leaving the handler empty
     State takeState();

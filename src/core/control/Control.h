@@ -545,6 +545,11 @@ private:
     size_t newTabAfter = ambitus::NO_TAB;
     /// Ambitus tabs: keeps the document in the window aside, in its tab
     void parkActiveTab();
+    void keepAutosaveAside(ambitus::Tab& tab);
+    /// autosaves the tabs aside changed since their last autosave (the autosave timer)
+    void autosaveTabsAside();
+    void deleteTabAutosaves();
+    unsigned nextTabSerial = 1;
     /// The document in the window gets a tab, if it is a file or has changes and has none yet
     void ensureActiveTab();
     /// Puts the document in the window aside; the next one loaded gets a new tab next to it

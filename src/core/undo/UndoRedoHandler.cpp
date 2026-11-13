@@ -199,6 +199,12 @@ auto UndoRedoHandler::State::isChanged() const -> bool {
     return undoList.empty() ? savedUndo != nullptr : savedUndo != undoList.back().get();
 }
 
+auto UndoRedoHandler::State::isChangedAutosave() const -> bool {
+    return undoList.empty() ? autosavedUndo != nullptr : autosavedUndo != undoList.back().get();
+}
+
+void UndoRedoHandler::State::autosaved() { autosavedUndo = undoList.empty() ? nullptr : undoList.back().get(); }
+
 auto UndoRedoHandler::undoDescription() -> string {
     if (!this->undoList.empty()) {
         UndoAction& a = *this->undoList.back();

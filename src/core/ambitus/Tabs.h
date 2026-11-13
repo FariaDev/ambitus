@@ -29,6 +29,10 @@ struct Tab {
     /// null for the tab in the window
     std::unique_ptr<Document> doc;
     UndoRedoHandler::State undo;
+    /// the last autosave of the document while it is aside (the one in the window keeps it in the Control)
+    fs::path autosave;
+    /// tells apart the autosaves of documents without a file
+    unsigned serial = 0;
 };
 
 /// What the tab strip shows
@@ -45,6 +49,9 @@ namespace tabs {
 size_t afterClose(size_t count, size_t active, size_t closed);
 /// Where a new tab goes: right after the active one, at the end when none is active
 size_t insertAt(size_t count, size_t active);
+/// Where the autosave of a document kept aside goes: next to its file, as Xournal++ does, or in `autosaves` (the
+/// cache folder) under a name of its own, for a document without a file
+fs::path autosavePath(const fs::path& file, const fs::path& autosaves, long pid, unsigned serial);
 }  // namespace tabs
 
 }  // namespace ambitus
