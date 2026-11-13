@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ambitus — revisão 2</title>
+<style>
+@font-face{font-family:"IBM Plex Sans";src:url("../r1/fonts/IBMPlexSans-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"IBM Plex Sans";src:url("../r1/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");font-weight:600}
+@font-face{font-family:"IBM Plex Mono";src:url("../r1/fonts/IBMPlexMono-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"STIX Two Text";src:url("../r1/fonts/STIXTwoText.woff2") format("woff2");font-weight:400}
+:root{--bg:#fff;--layer:#f4f4f4;--border:#e0e0e0;--text:#161616;--text2:#525252;--text3:#6f6f6f;--accent:#8044ca;--warn:#8a5a00;--warnbg:#fff6e0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--layer);color:var(--text);font:400 15px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:40px 28px 80px}
+h1{font:400 34px/1.2 "STIX Two Text",Georgia,serif;margin:0 0 6px}
+h1 .d{color:var(--accent)}
+.sub{color:var(--text2);margin:0 0 28px}
+h2{font:400 24px/1.3 "STIX Two Text",Georgia,serif;margin:44px 0 12px;padding-top:12px;border-top:1px solid var(--border)}
+h3{font-size:17px;font-weight:600;margin:0 0 4px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:20px 22px;margin:16px 0}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0 10px;color:var(--text2);font-size:13px}
+kbd,code{font:400 12.5px "IBM Plex Mono",ui-monospace,monospace;background:var(--layer);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.commit{font:400 12px "IBM Plex Mono",monospace;color:var(--text3)}
+img{display:block;max-width:100%;border:1px solid var(--border);border-radius:6px;margin:10px 0}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.pair img{margin:0}
+.cap{font-size:12.5px;color:var(--text3);margin:2px 0 10px}
+ul.lim{margin:8px 0 0;padding-left:18px;color:var(--text2);font-size:14px}
+ul.lim li{margin:2px 0}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.toc{columns:2;font-size:14px;padding-left:18px}
+.dec{background:var(--warnbg);border-color:#f0dca8}
+.dec h3{color:var(--warn)}
+.opts{margin:8px 0 0;padding-left:18px}
+.pending{color:var(--text3);font-style:italic}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{border-bottom:1px solid var(--border);padding:7px 8px;text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--text2)}
+</style>
+</head>
+<body><main>
+
+<h1><span class="d">∂</span> Ambitus — revisão 2</h1>
+<p class="sub">Tudo o que entrou desde a revisão 1: a ponte com o Summa e a rodada “o máximo que der, sem bloat”. As capturas são do app de verdade (Xvfb, caderno de exemplo). Nada foi enviado ao remoto.</p>
+
+<ol class="toc">
+<li><a href="#tinta">Busca na escrita à mão</a></li>
+<li><a href="#mandar">Mandar a página ao Summa</a></li>
+<li><a href="#converter">Converter escrita em texto</a></li>
+<li><a href="#copiar">Copiar página como imagem</a></li>
+<li><a href="#teclas">Uma tecla por ferramenta</a></li>
+<li><a href="#segurar">Segurar para endireitar</a></li>
+<li><a href="#paleta">Paleta de comandos</a></li>
+<li><a href="#versoes">Versões anteriores</a></li>
+<li><a href="#summa">No Summa</a></li>
+<li><a href="#codigo">Revisão de código</a></li>
+<li><a href="#decisoes">Decisões suas</a></li>
+</ol>
+
+<h2>Atalhos novos</h2>
+<table>
+<tr><th>Atalho</th><th>O quê</th><th>Onde no menu</th></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>/</kbd></td><td>Paleta de comandos</td><td>Editar</td></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd></td><td>Converter a escrita selecionada em texto</td><td>Editar</td></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd></td><td>Mandar a página ao chat lateral do Summa</td><td>Arquivo</td></tr>
+<tr><td><kbd>P</kbd> <kbd>M</kbd> <kbd>E</kbd> <kbd>S</kbd> <kbd>T</kbd> <kbd>X</kbd></td><td>Caneta, marca-texto, borracha, laço, texto, LaTeX</td><td>—</td></tr>
+<tr><td>caneta parada ~0,5 s</td><td>Endireita o traço</td><td>—</td></tr>
+<tr><td>sem atalho</td><td>Copiar página como imagem · Versões anteriores…</td><td>Editar · Arquivo</td></tr>
+</table>
+
+<h2 id="tinta">1. Busca na escrita à mão</h2>
+<div class="card">
+<span class="tag">Organização</span>
+<h3>A Biblioteca acha o que foi escrito à mão</h3>
+<div class="meta"><span class="commit">88fe54c5f · c7de71399</span><span>Liga no Summa (desligada por padrão)</span></div>
+<p>Com a leitura ligada no Summa, o Ambitus manda ao Summa, uma por vez e em segundo plano, as páginas cujos traços mudaram. O Summa lê com o modelo de visão que você já usa lá e devolve o texto, que entra no índice. Na busca, os achados vindos da tinta aparecem com “· escrito à mão”, e uma linha embaixo diz em que pé está a leitura.</p>
+<img src="img/busca-tinta.png" alt="Busca na Biblioteca com resultados escritos à mão">
+<ul class="lim">
+<li>Nada sai da máquina sem o interruptor do Summa. Modelos grátis e o motor Claude não leem notas.</li>
+<li>Páginas acima de 8 MB em PNG são recusadas. A reindexação espera a rodada de leitura terminar (até 90 s).</li>
+<li>Ainda não medimos o acerto na sua letra de verdade.</li>
+</ul>
+</div>
+
+<h2 id="mandar">2. Mandar a página ao Summa</h2>
+<div class="card">
+<span class="tag">Espaço de trabalho</span>
+<h3>A página aberta vira pergunta no chat lateral</h3>
+<div class="meta"><span class="commit">b10b827cc</span><span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> · Arquivo</span></div>
+<p>Salva o caderno se for preciso e manda o caminho e o número da página ao Summa. O Summa traz a janela para a frente e põe um rascunho no chat lateral; o tutor relê o caderno pelo caminho. Com o Summa fechado, um aviso diz o que fazer:</p>
+<img src="img/mandar-summa.png" alt="Aviso: o Summa não está aberto">
+<p class="cap">Do lado do Summa, veja a seção “No Summa”.</p>
+</div>
+
+<h2 id="converter">3. Converter escrita em texto</h2>
+<div class="card">
+<span class="tag">Matemática</span>
+<h3>Laço na escrita → texto no lugar</h3>
+<div class="meta"><span class="commit">5e6b51578</span><span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> · Editar</span></div>
+<p>A seleção é lida pelo Summa e trocada por uma caixa de texto na mesma posição. Um Ctrl+Z traz os traços de volta.</p>
+<img src="img/converter.png" alt="Antes e depois da conversão">
+<ul class="lim"><li>Fórmulas viram texto com <code>$…$</code>, não LaTeX renderizado. Usa a mesma leitura (e o mesmo interruptor) da busca.</li></ul>
+</div>
+
+<h2 id="copiar">4. Copiar página como imagem</h2>
+<div class="card">
+<span class="tag">Experiência</span>
+<h3>A página na área de transferência, pronta para colar</h3>
+<div class="meta"><span class="commit">64e6cd5af</span><span>Editar → Copiar página como imagem</span></div>
+<div class="pair">
+<div><img src="img/copiar-toast.png" alt="Aviso de página copiada"><p class="cap">O aviso.</p></div>
+<div><img src="img/copiar-clip.png" alt="Imagem colada"><p class="cap">O que foi colado: PNG de 150 dpi, fundo branco, com PDF e sem a pauta. Num quadro, só a parte escrita.</p></div>
+</div>
+</div>
+
+<h2 id="teclas">5. Uma tecla por ferramenta</h2>
+<div class="card">
+<span class="tag">Experiência</span>
+<h3>P caneta · M marca-texto · E borracha · S laço · T texto · X LaTeX</h3>
+<div class="meta"><span class="commit">1335df344</span></div>
+<p>Só valem com o foco na página e sem texto em edição: digitar “pet sxm” dentro de uma caixa de texto não troca a ferramenta. As dicas da paleta do Estúdio mostram a letra (“Caneta (P)”). <kbd>h j k l</kbd> (rolagem) e os números (cores) seguem como no Xournal++.</p>
+<img src="img/teclas.png" alt="Texto digitado com a ferramenta de texto ativa">
+</div>
+
+<h2 id="segurar">6. Segurar para endireitar</h2>
+<div class="card">
+<span class="tag">Matemática</span>
+<h3>Desenhe, pare a caneta, e o traço vira a forma</h3>
+<div class="meta"><span class="commit">6788a0e1f</span><span>sempre ligado, só com a caneta</span></div>
+<p>Usa o reconhecedor de formas do Xournal++ (reta, retângulo, círculo, triângulo, seta). Se o traço não é uma forma, nada acontece.</p>
+<img src="img/segurar.png" alt="Reta segurada, traço tremido sem segurar e círculo segurado">
+<p class="cap">De cima para baixo: reta segurada no fim, a mesma reta sem segurar e um círculo à mão segurado.</p>
+<img src="img/segurar-desfazer.png" alt="Antes e depois do Ctrl+Z">
+<p class="cap">Em cima, depois de segurar; embaixo, depois de um Ctrl+Z, com o traço à mão de volta.</p>
+</div>
+
+<h2 id="paleta">7. Paleta de comandos</h2>
+<div class="card">
+<span class="tag">Experiência</span>
+<h3>Qualquer item do menu, pelo nome</h3>
+<div class="meta"><span class="commit">46680d120</span><span><kbd>Ctrl</kbd>+<kbd>/</kbd> (o <kbd>Ctrl</kbd>+<kbd>K</kbd> já é a busca nos cadernos)</span></div>
+<p>Não liga para acento nem maiúscula. Mostra só o que dá para fazer agora, o caminho no menu e o atalho de cada comando, para aprender. <kbd>↑</kbd><kbd>↓</kbd> escolhem, <kbd>Enter</kbd> roda, <kbd>Esc</kbd> ou um clique fora fecham.</p>
+<img src="img/paleta.png" alt="Paleta de comandos buscando 'pagina'">
+<img src="img/paleta-check.png" alt="Opções ligadas com ✓ e a paleta fechada com Esc">
+<p class="cap">As opções ligadas têm ✓. Embaixo, a paleta fechada com Esc.</p>
+</div>
+
+<h2 id="versoes">8. Versões anteriores</h2>
+<div class="card">
+<span class="tag">Organização</span>
+<h3>O caderno como estava, a cada salvamento</h3>
+<div class="meta"><span class="commit">4a5c8ca0d</span><span>Arquivo → Versões anteriores…</span></div>
+<p>Antes de cada gravação, o arquivo como estava vai para a pasta de dados do Ambitus (no máximo uma cópia a cada 10 min; ficam as 30 mais novas). A pasta dos cadernos, que o Summa lê, não ganha nada, e o <code>.xopp</code> não muda.</p>
+<img src="img/versoes-lista.png" alt="Lista de versões">
+<div class="pair">
+<div><img src="img/versoes-confirmar.png" alt="Confirmação de restaurar"><p class="cap">Restaurar… pede confirmação e guarda o estado de agora.</p></div>
+<div><img src="img/versoes-aba.png" alt="Versão aberta numa aba"><p class="cap">Abrir põe uma cópia numa aba própria.</p></div>
+</div>
+<img src="img/versoes-restaurada.png" alt="Caderno restaurado">
+<ul class="lim">
+<li>Só a gravação de verdade cria versão; o salvamento automático, não.</li>
+<li>A cópia aberta numa aba fica no cache: salvar nela não muda o caderno.</li>
+</ul>
+</div>
+
+<h2 id="summa">9. No Summa</h2>
+<div class="card" id="summa-card">
+<span class="tag">Summa · commits locais fc6926b5 · 2e580660</span>
+<h3>O interruptor da leitura</h3>
+<p>Em Configurações → Recursos da mesa. Desligado por padrão. Ao ligar, o Summa confere se o seu modelo é pago e enxerga imagens; se não for, não liga e diz o motivo.</p>
+<img src="img/summa-interruptor.png" alt="Interruptor Buscar também na escrita à mão">
+<h3 style="margin-top:22px">A página chegando no chat lateral</h3>
+<p>O Summa vem para a frente com o rascunho pronto e o cursor no fim. Nada é enviado sozinho: você escreve a pergunta e aperta Enviar.</p>
+<img src="img/summa-chat-pagina.png" alt="Chat lateral com o rascunho da página" style="max-width:440px">
+<ul class="lim"><li>O rascunho traz o caminho inteiro do arquivo (o tutor precisa dele para reler o caderno). Ver as decisões.</li></ul>
+</div>
+
+<h2 id="codigo">10. Revisão de código</h2>
+<div class="card" id="codigo-card">
+<div class="meta"><span>Revisão independente (Sonnet 5.5) dos cinco commits da rodada · correções em <span class="commit">fe3f77775</span></span></div>
+<table>
+<tr><th>Achado</th><th>Gravidade</th><th>Estado</th></tr>
+<tr><td>Segurar com o laser pointer deixava tinta na página e derrubava o app ao soltar</td><td>alta</td><td>corrigido: só a caneta</td></tr>
+<tr><td>Restaurar a versão mais antiga com a lista cheia apagava essa versão antes de copiá-la</td><td>alta</td><td>corrigido: a versão vai antes para perto do caderno</td></tr>
+<tr><td>Restaurar sobrescrevia o caderno mesmo sem conseguir guardar o estado atual; a escrita não era atômica</td><td>média</td><td>corrigido: aborta com aviso; troca por rename</td></tr>
+<tr><td>Copiar página saía sem a seleção e sem o texto em edição</td><td>média</td><td>corrigido</td></tr>
+<tr><td>Enter logo depois de digitar na paleta rodava um item da lista antiga</td><td>média</td><td>corrigido</td></tr>
+<tr><td>Disco cheio: cópia pela metade e diálogo de erro a cada gravação</td><td>média</td><td>corrigido: confere o espaço e apaga o resto</td></tr>
+<tr><td>Abrir a mesma versão duas vezes sobrescrevia a cópia já editada</td><td>baixa</td><td>corrigido</td></tr>
+<tr><td>Fechamento adiado da paleta sem dono; Alt+Tab fechava a paleta</td><td>baixa</td><td>corrigido</td></tr>
+<tr><td>Segurar na última página não cria a página nova automática</td><td>baixa</td><td>aberto</td></tr>
+<tr><td>Mover ou renomear o caderno deixa o histórico de versões para trás (a chave é o caminho)</td><td>limite de desenho</td><td>aberto</td></tr>
+</table>
+<p class="cap">Retestado no Xvfb depois das correções: Enter rápido na paleta, restaurar a versão mais antiga, segurar com a caneta. 189 testes de unidade passando.</p>
+</div>
+
+<h2 id="decisoes">11. Decisões suas</h2>
+<div class="card dec">
+<h3>Segurar para endireitar: interruptor?</h3>
+<p>Hoje está sempre ligado. Se atrapalhar quando você para no meio de uma conta, ponho um item em Ferramentas para ligar e desligar.</p>
+</div>
+<div class="card dec">
+<h3>Página copiada: com ou sem pauta?</h3>
+<p>Hoje vai sem pauta, igual ao que o tutor vê. Com pauta, fica igual à tela.</p>
+</div>
+<div class="card dec">
+<h3>Fita de estudo: sim ou não?</h3>
+<p>Uma faixa que esconde a resposta até você tocar nela. Precisa de uma convenção nova no arquivo (uma camada com nome especial). O Xournal++ abriria o caderno normalmente, mas veria a faixa como um retângulo comum. Ficou de fora para evitar bloat.</p>
+</div>
+<div class="card dec">
+<h3>Caminho do arquivo no rascunho do chat</h3>
+<p>Hoje o rascunho mostra “(/home/…/Limites — aula 3.xopp)”. Dá para esconder o caminho do texto e passá-lo ao tutor por fora, deixando só “Sobre a pág. 2 do caderno ‘Limites — aula 3’:”. A mudança é no Summa.</p>
+</div>
+<div class="card dec">
+<h3>Converter e mandar ao Summa no menu radial?</h3>
+<p>O anel do botão direito tem só ferramentas. Dá para pôr “Converter” quando há seleção e “Mandar ao Summa” sempre.</p>
+</div>
+
+<h2>Depois desta revisão</h2>
+<div class="card">
+<p>A rodada de UI começa pela barra de ferramentas poluída. Depois vêm canetas favoritas, barra da seleção, toque de novo para opções e o texto “Xournal++ travou”. Tudo com protótipo aqui antes de implementar.</p>
+</div>
+
+</main></body>
+</html>
