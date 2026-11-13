@@ -97,11 +97,15 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   some; Ctrl+Z traz de volta. Liga e desliga em **Ferramentas → Riscar para
   apagar** (ligado por padrão, guardado em `settings.xml` como
   `scratchOutEnabled`).
-- Conta como rabisco o traço que vai e volta pelo menos 4 vezes na direção
-  principal, cada vez por mais de um terço do comprimento; escrita à mão anda
-  para a frente na linha e não conta. Apaga o traço que fica pelo menos 60%
-  dentro da caixa do rabisco e que o rabisco de fato cruza. Sem nada embaixo,
-  o zigue-zague fica como tinta.
+- Conta como rabisco o traço feito em até 3 s que vai e volta pelo menos 5
+  vezes na direção principal (cada passada com mais de 40% do comprimento),
+  achatado (no máximo 65% de largura) e com caminho de pelo menos 4 vezes o
+  comprimento. Escrita à mão anda para a frente e hachura lenta vira tinta.
+- Apaga o traço que fica pelo menos 60% dentro da caixa do rabisco e que é
+  cruzado por duas passadas não vizinhas; encostar com uma ponta não basta.
+  Sem nada embaixo, o zigue-zague fica como tinta.
+- O tempo, as passadas não vizinhas e o rabisco achatado vieram do Archey
+  Notes como ideia; o código é nosso.
 - Só traços por enquanto (texto, imagem e LaTeX ficam). Só a caneta no modo
   normal; marca-texto e reconhecedor de formas não disparam.
 - Geometria em `ambitus/ScratchOut` (com testes), ligação em

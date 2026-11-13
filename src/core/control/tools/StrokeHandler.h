@@ -97,6 +97,8 @@ protected:
 
     bool hasPressure;
 
+    gint64 startedAt = 0;  ///< Ambitus: when the stroke began (monotonic, µs), for scratch out
+
 private:
     /**
      * @brief Pointer to the Stabilizer instance

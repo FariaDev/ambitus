@@ -51,7 +51,7 @@ std::vector<Pt> cursive(double x0, double y, double width) {
 TEST(ScratchOut, zigzagIsAScribble) {
     Scribble s;
     ASSERT_TRUE(detectScribble(zigzag(100, 160, 100, 112, 6), s));
-    EXPECT_GE(s.reversals, 4);
+    EXPECT_EQ(s.passes(), 6u);
     EXPECT_NEAR(std::abs(s.dir.x), 1.0, 0.1);  // it moves along x
 }
 
@@ -68,17 +68,19 @@ TEST(ScratchOut, writingAndLinesAreNotScribbles) {
     Scribble s;
     EXPECT_FALSE(detectScribble(line(0, 0, 100, 20), s));
     EXPECT_FALSE(detectScribble(cursive(0, 0, 120), s));
-    EXPECT_FALSE(detectScribble(zigzag(100, 160, 100, 112, 3), s));  // only 2 turns: a "Z" or "N"
-    EXPECT_FALSE(detectScribble(zigzag(100, 104, 100, 101, 8), s));  // too small
+    EXPECT_FALSE(detectScribble(zigzag(100, 160, 100, 112, 4), s));  // a "W": too few passes
+    EXPECT_FALSE(detectScribble(zigzag(100, 108, 100, 101, 8), s));  // too small
+    EXPECT_FALSE(detectScribble(zigzag(100, 160, 100, 160, 6), s));  // not flat: a big "M"
     EXPECT_FALSE(detectScribble({{0, 0}, {10, 0}}, s));
 }
 
 TEST(ScratchOut, crossesOutWhatIsUnder) {
-    auto z = zigzag(100, 160, 100, 112, 6);
+    auto z = zigzag(100, 160, 100, 130, 6);
     Scribble s;
     ASSERT_TRUE(detectScribble(z, s));
-    EXPECT_TRUE(crossesOut(s, z, line(105, 106, 155, 106), 3));   // a word under it
-    EXPECT_FALSE(crossesOut(s, z, line(105, 200, 155, 200), 3));  // far below
-    EXPECT_FALSE(crossesOut(s, z, line(0, 106, 400, 106), 3));    // a long line only partly under it
+    EXPECT_TRUE(crossesOut(s, z, cursive(108, 115, 40), 3));    // a word under it
+    EXPECT_FALSE(crossesOut(s, z, cursive(108, 200, 40), 3));   // far below
+    EXPECT_FALSE(crossesOut(s, z, cursive(0, 115, 300), 3));    // a long sentence only partly under it
+    EXPECT_FALSE(crossesOut(s, z, line(110, 99, 150, 99), 3));  // touched by the first pass only
     EXPECT_FALSE(crossesOut(s, z, {}, 3));
 }

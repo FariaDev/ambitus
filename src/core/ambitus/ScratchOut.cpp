@@ -6,13 +6,24 @@
 namespace ambitus::scratch {
 
 namespace {
-constexpr int MIN_REVERSALS = 4;
-constexpr double REVERSAL_SHARE = 1.0 / 3.0;  ///< a turn counts after moving back this share of the length
-constexpr double COVERED_SHARE = 0.6;         ///< share of the target that must be inside the scribble box
-constexpr double BOX_MARGIN = 0.15;           ///< the box grows by this share of its size on each side
+constexpr size_t MIN_PASSES = 5;
+constexpr double PASS_SHARE = 0.4;     ///< a pass must cover this share of the length
+constexpr double MAX_FLATNESS = 0.65;  ///< extent across / extent along
+constexpr double MIN_PATH = 4.0;       ///< the path is at least this many times the length
+constexpr double COVERED_SHARE = 0.6;  ///< share of the target that must be inside the scribble box
+constexpr double BOX_MARGIN = 0.15;    ///< the box grows by this share of its size on each side
 
 double dot(Pt a, Pt b) { return a.x * b.x + a.y * b.y; }
 Pt sub(Pt a, Pt b) { return {a.x - b.x, a.y - b.y}; }
+
+double distanceToSegment2(Pt p, Pt a, Pt b) {
+    Pt ab = sub(b, a);
+    Pt ap = sub(p, a);
+    double len2 = dot(ab, ab);
+    double t = len2 > 0 ? std::clamp(dot(ap, ab) / len2, 0.0, 1.0) : 0.0;
+    Pt d{ap.x - t * ab.x, ap.y - t * ab.y};
+    return dot(d, d);
+}
 }  // namespace
 
 bool detectScribble(const std::vector<Pt>& points, Scribble& out, double minSize) {
@@ -22,6 +33,9 @@ bool detectScribble(const std::vector<Pt>& points, Scribble& out, double minSize
     // main direction: principal axis of the points
     Pt c{0, 0};
     for (auto const& p: points) {
+        if (!std::isfinite(p.x) || !std::isfinite(p.y)) {
+            return false;
+        }
         c.x += p.x;
         c.y += p.y;
     }
@@ -45,8 +59,9 @@ bool detectScribble(const std::vector<Pt>& points, Scribble& out, double minSize
     s.maxS = s.maxT = -1e300;
     std::vector<double> along;
     along.reserve(points.size());
-    for (auto const& p: points) {
-        Pt d = sub(p, c);
+    double path = 0;
+    for (size_t i = 0; i < points.size(); i++) {
+        Pt d = sub(points[i], c);
         double a = dot(d, dir);
         double t = dot(d, normal);
         along.push_back(a);
@@ -54,41 +69,52 @@ bool detectScribble(const std::vector<Pt>& points, Scribble& out, double minSize
         s.maxS = std::max(s.maxS, a);
         s.minT = std::min(s.minT, t);
         s.maxT = std::max(s.maxT, t);
+        if (i > 0) {
+            path += std::hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+        }
     }
     double length = s.maxS - s.minS;
-    if (length < minSize) {
+    if (length < minSize || s.maxT - s.minT > MAX_FLATNESS * length || path < MIN_PATH * length) {
         return false;
     }
 
-    // count the turns along dir, with hysteresis so that jitter does not count
-    double threshold = REVERSAL_SHARE * length;
+    // split into passes at the turns, with hysteresis so that jitter does not count
+    double threshold = PASS_SHARE * length;
     int direction = 0;  // +1 forward, -1 back, 0 not moved enough yet
-    double lo = along.front(), hi = along.front(), extreme = along.front();
-    for (double a: along) {
+    size_t start = 0, extremeAt = 0;
+    double extreme = along.front();
+    s.turns.push_back(0);
+    for (size_t i = 1; i < along.size(); i++) {
+        double a = along[i];
         if (direction == 0) {
-            lo = std::min(lo, a);
-            hi = std::max(hi, a);
-            if (hi - lo > threshold) {
-                direction = a >= hi ? 1 : -1;
+            if (std::abs(a - along[start]) >= threshold) {
+                direction = a > along[start] ? 1 : -1;
                 extreme = a;
+                extremeAt = i;
             }
         } else if (direction * (a - extreme) > 0) {
             extreme = a;  // still moving the same way
-        } else if (std::abs(a - extreme) > threshold) {
-            s.reversals++;
+            extremeAt = i;
+        } else if (direction * (extreme - a) >= threshold) {
+            s.turns.push_back(extremeAt);
+            start = extremeAt;
             direction = -direction;
             extreme = a;
+            extremeAt = i;
         }
     }
-    if (s.reversals < MIN_REVERSALS) {
+    if (direction != 0 && std::abs(extreme - along[start]) >= threshold) {
+        s.turns.push_back(extremeAt);  // the last pass
+    }
+    if (s.passes() < MIN_PASSES) {
         return false;
     }
-    out = s;
+    out = std::move(s);
     return true;
 }
 
 bool crossesOut(const Scribble& s, const std::vector<Pt>& scribble, const std::vector<Pt>& target, double tolerance) {
-    if (target.empty() || scribble.empty()) {
+    if (target.empty() || scribble.empty() || s.passes() == 0) {
         return false;
     }
     Pt normal{-s.dir.y, s.dir.x};
@@ -106,14 +132,29 @@ bool crossesOut(const Scribble& s, const std::vector<Pt>& scribble, const std::v
     if (static_cast<double>(inside) < COVERED_SHARE * static_cast<double>(target.size())) {
         return false;
     }
-    // the scribble must actually pass over the target, not just around it
+
+    // two passes that are not neighbours must go over it: neighbours share a turning point
     double tol2 = tolerance * tolerance;
-    for (auto const& p: target) {
-        for (auto const& q: scribble) {
-            Pt d = sub(p, q);
-            if (dot(d, d) <= tol2) {
-                return true;
+    auto passHits = [&](size_t k) {
+        size_t from = s.turns[k], to = std::min(s.turns[k + 1], scribble.size() - 1);
+        for (size_t i = from; i < to; i++) {
+            for (auto const& p: target) {
+                if (distanceToSegment2(p, scribble[i], scribble[i + 1]) <= tol2) {
+                    return true;
+                }
             }
+        }
+        return false;
+    };
+    long firstHit = -1;
+    for (size_t k = 0; k < s.passes(); k++) {
+        if (!passHits(k)) {
+            continue;
+        }
+        if (firstHit < 0) {
+            firstHit = static_cast<long>(k);
+        } else if (static_cast<long>(k) >= firstHit + 2) {
+            return true;
         }
     }
     return false;

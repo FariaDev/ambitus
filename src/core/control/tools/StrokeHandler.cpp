@@ -220,7 +220,8 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zo
 
 bool StrokeHandler::scratchOut(Layer* layer) {
     if (!control->getSettings()->getScratchOutEnabled() || stroke->getToolType() != StrokeTool::PEN ||
-        control->getToolHandler()->getDrawingType() != DRAWING_TYPE_DEFAULT) {
+        control->getToolHandler()->getDrawingType() != DRAWING_TYPE_DEFAULT ||
+        static_cast<double>(g_get_monotonic_time() - startedAt) / G_USEC_PER_SEC > ambitus::scratch::MAX_DURATION) {
         return false;
     }
     using ambitus::scratch::Pt;
@@ -324,6 +325,7 @@ void StrokeHandler::onButtonPressEvent(const PositionInputData& pos, double zoom
     this->buttonDownPoint.y = pos.y / zoom;
 
     stroke = createStroke(this->control);
+    this->startedAt = g_get_monotonic_time();
 
     this->hasPressure = this->stroke->getToolType().isPressureSensitive() && pos.pressure != Point::NO_PRESSURE;
 
