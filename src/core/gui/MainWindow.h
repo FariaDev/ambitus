@@ -47,6 +47,7 @@ class TitleBar;
 class StudioPalette;
 class RadialMenu;
 class BoardNavigator;
+class Toast;
 enum class EditorMode;
 }
 namespace ambitus::library {
@@ -118,6 +119,8 @@ public:
 
     /// Ambitus: the notebook library and the editor share the window
     void showLibrary();
+    /// Ambitus: a short notice over the page that goes away by itself (see ambitus::Toast)
+    void showToast(const std::string& text, bool busy = false);
     void showEditor();
     bool isLibraryShown() const;
     /// Ambitus: Classic (all the bars), Studio (floating palette) or Focus (only the page)
@@ -220,6 +223,7 @@ private:
     std::unique_ptr<ambitus::StudioPalette> studioPalette;
     /// Ambitus: ring of tools on the right button
     std::unique_ptr<ambitus::RadialMenu> radialMenu;
+    std::unique_ptr<ambitus::Toast> toast;
     /// Ambitus: minimap and zoom of a board
     std::unique_ptr<ambitus::BoardNavigator> boardNavigator;
     /// Ambitus: client side title bar

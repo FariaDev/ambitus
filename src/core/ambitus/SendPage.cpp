@@ -4,12 +4,12 @@
 #include <thread>
 
 #include "control/Control.h"
+#include "gui/MainWindow.h"
 #include "library/InkReader.h"
 #include "model/Document.h"
 #include "undo/UndoRedoHandler.h"
 #include "util/StringUtils.h"  // for char_cast
 #include "util/Util.h"         // for execInUiThread
-#include "util/XojMsgBox.h"
 #include "util/i18n.h"
 
 #include "filesystem.h"
@@ -43,13 +43,16 @@ void send(Control* ctrl) {
     }
     const size_t page = ctrl->getCurrentPageNo();
     const std::string name(char_cast(file.stem().u8string()));
-    GtkWindow* win = ctrl->getGtkWindow();
     // the bridge answers at once, but a socket never runs on the UI thread
-    std::thread([file, page, name, win] {
+    std::thread([file, page, name, ctrl] {
         auto bridge = library::findSummaBridge();
         const auto result = bridge ? library::sendPageToSumma(*bridge, file, page, name) : library::PageSend::NoSumma;
         if (result != library::PageSend::Sent) {
-            Util::execInUiThread([win, result] { XojMsgBox::showErrorToUser(win, messageFor(result)); });
+            Util::execInUiThread([ctrl, result] {
+                if (auto* win = ctrl->getWindow()) {
+                    win->showToast(messageFor(result));
+                }
+            });
         }
     }).detach();
 }

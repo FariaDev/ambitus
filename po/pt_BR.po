@@ -4935,6 +4935,39 @@ msgstr "Lendo os cadernos…"
 msgid "Nothing found in the text or the formulas."
 msgstr "Nada no texto nem nas fórmulas."
 
+msgid "Convert handwriting to text"
+msgstr "Converter escrita em texto"
+
+msgid "Converting uses Summa: open Summa and try again."
+msgstr "A conversão usa o Summa: abra o Summa e tente de novo."
+
+msgid "Switch on “Search the handwriting too” in the settings of Summa to convert."
+msgstr "Ligue “Buscar também na escrita à mão” nas Configurações do Summa para converter."
+
+msgid "The model chosen in Summa does not read images, or is free."
+msgstr "O modelo escolhido no Summa não lê imagem ou é gratuito."
+
+msgid "The quota of the model is over for now."
+msgstr "A cota do modelo acabou por agora."
+
+msgid "Summa is reading another page. Try again in a moment."
+msgstr "O Summa está lendo outra página. Tente de novo em instantes."
+
+msgid "The reading failed. Try again."
+msgstr "A leitura falhou. Tente de novo."
+
+msgid "Select the handwriting with the lasso first."
+msgstr "Selecione a escrita com o laço primeiro."
+
+msgid "Reading the handwriting…"
+msgstr "Lendo a escrita…"
+
+msgid "Nothing legible in the selection."
+msgstr "Nada legível na seleção."
+
+msgid "Converted. Ctrl+Z brings the strokes back."
+msgstr "Convertido. Ctrl+Z traz os traços de volta."
+
 msgid "Send page to Summa"
 msgstr "Mandar página ao Summa"
 

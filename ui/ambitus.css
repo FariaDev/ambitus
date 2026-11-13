@@ -593,6 +593,17 @@ headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_
     box-shadow: none;
 }
 
+/* ---------- aviso curto (Toast) ---------- */
+
+.amb-toast {
+    background: @amb_text;
+    color: @amb_bg;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 10pt;
+}
+#mainWindow.darkMode .amb-toast { background: @amb_dk_layer2; color: @amb_dk_text; }
+
 /* ---------- paleta flutuante do modo Estúdio ---------- */
 
 .amb-palette {

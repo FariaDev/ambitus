@@ -8,6 +8,7 @@
 
 #include <control/tools/TextEditor.h>
 
+#include "ambitus/ConvertInk.h"
 #include "ambitus/SendPage.h"
 #include "control/AudioController.h"
 #include "control/Control.h"
@@ -114,6 +115,11 @@ struct ActionProperties<Action::SCRATCH_OUT> {
 template <>
 struct ActionProperties<Action::SEND_PAGE_TO_SUMMA> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ambitus::sendPageToSumma(ctrl); }
+};
+
+template <>
+struct ActionProperties<Action::CONVERT_TO_TEXT> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ambitus::convertSelectionToText(ctrl); }
 };
 
 template <>

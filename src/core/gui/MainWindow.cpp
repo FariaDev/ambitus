@@ -51,6 +51,7 @@
 #include "RadialMenu.h"          // for RadialMenu
 #include "StudioPalette.h"       // for StudioPalette
 #include "TitleBar.h"            // for TitleBar
+#include "Toast.h"               // for Toast
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
 #include "XournalView.h"         // for XournalView
 #include "config-dev.h"          // for TOOLBAR_CONFIG
@@ -150,6 +151,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     this->studioPalette = std::make_unique<ambitus::StudioPalette>(overlay);
     this->radialMenu = std::make_unique<ambitus::RadialMenu>(control, xournal.get(), overlay);
     this->boardNavigator = std::make_unique<ambitus::BoardNavigator>(control, xournal.get(), overlay);
+    this->toast = std::make_unique<ambitus::Toast>(overlay);
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
@@ -347,6 +349,12 @@ void MainWindow::boardContentChanged() {
 GMenuModel* MainWindow::getMenuModel() const { return menubar->getModel(); }
 
 MainWindow::~MainWindow() = default;
+
+void MainWindow::showToast(const std::string& text, bool busy) {
+    if (toast) {
+        toast->show(text, busy);
+    }
+}
 
 void MainWindow::showLibrary() {
     library->refresh();

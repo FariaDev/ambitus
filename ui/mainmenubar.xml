@@ -123,6 +123,11 @@
      <attribute name="action">win.delete</attribute>
      <attribute name="accel">Delete</attribute>
     </item>
+    <item>
+     <attribute name="label" translatable="yes">Convert handwriting to text</attribute>
+     <attribute name="action">win.convert-to-text</attribute>
+     <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;c</attribute>
+    </item>
    </section>
    <section>
      <submenu>
