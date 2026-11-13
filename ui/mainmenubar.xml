@@ -120,6 +120,11 @@
      <attribute name="action">win.search</attribute>
      <attribute name="accel">&lt;Ctrl&gt;f</attribute>
     </item>
+    <item>
+     <attribute name="label" translatable="yes">Command palette</attribute>
+     <attribute name="action">win.command-palette</attribute>
+     <attribute name="accel">&lt;Ctrl&gt;slash</attribute>
+    </item>
    </section>
    <section>
     <item>

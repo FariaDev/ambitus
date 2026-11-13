@@ -129,6 +129,11 @@ struct ActionProperties<Action::COPY_PAGE_AS_IMAGE> {
 };
 
 template <>
+struct ActionProperties<Action::COMMAND_PALETTE> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getWindow()->openCommandPalette(); }
+};
+
+template <>
 struct ActionProperties<Action::ANNOTATE_PDF> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
         ctrl->clearSelectionEndText();

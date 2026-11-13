@@ -45,7 +45,8 @@
 #include "util/i18n.h"                                  // for FS, _F
 #include "util/raii/CStringWrapper.h"                   // for OwnedCString
 
-#include "BoardNavigator.h"      // for BoardNavigator
+#include "BoardNavigator.h"  // for BoardNavigator
+#include "CommandPalette.h"
 #include "GladeSearchpath.h"     // for GladeSearchpath
 #include "PageGrowHandle.h"      // for PageGrowHandle
 #include "RadialMenu.h"          // for RadialMenu
@@ -152,6 +153,8 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     this->radialMenu = std::make_unique<ambitus::RadialMenu>(control, xournal.get(), overlay);
     this->boardNavigator = std::make_unique<ambitus::BoardNavigator>(control, xournal.get(), overlay);
     this->toast = std::make_unique<ambitus::Toast>(overlay);
+    this->commandPalette = std::make_unique<ambitus::CommandPalette>(
+            overlay, GTK_WINDOW(this->window), [this] { return getMenuModel(); }, xournal->getWidget());
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
@@ -353,6 +356,12 @@ MainWindow::~MainWindow() = default;
 void MainWindow::showToast(const std::string& text, bool busy) {
     if (toast) {
         toast->show(text, busy);
+    }
+}
+
+void MainWindow::openCommandPalette() {
+    if (commandPalette && !isLibraryShown()) {
+        commandPalette->open();
     }
 }
 

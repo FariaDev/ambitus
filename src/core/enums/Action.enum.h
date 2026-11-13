@@ -47,6 +47,7 @@ enum class Action : size_t {
     SEND_PAGE_TO_SUMMA,  ///< Ambitus: the page on screen to the side chat of Summa
     CONVERT_TO_TEXT,     ///< Ambitus: the selected handwriting to text, read by Summa
     COPY_PAGE_AS_IMAGE,  ///< Ambitus: the page on screen to the clipboard, as a PNG
+    COMMAND_PALETTE,     ///< Ambitus: find a command of the menu by name and run it
 
     // Menu edit
     ARRANGE_SELECTION_ORDER,

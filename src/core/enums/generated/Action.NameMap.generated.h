@@ -20,6 +20,7 @@ constexpr const char* ACTION_NAMES[] = {  // Action to string conversion map
         "send-page-to-summa",
         "convert-to-text",
         "copy-page-as-image",
+        "command-palette",
         "arrange-selection-order",
         "undo",
         "redo",

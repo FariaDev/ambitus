@@ -4974,6 +4974,15 @@ msgstr "Copiar página como imagem"
 msgid "Page copied as an image."
 msgstr "Página copiada como imagem."
 
+msgid "Command palette"
+msgstr "Paleta de comandos"
+
+msgid "Type a command…"
+msgstr "Digite um comando…"
+
+msgid "No command with that name."
+msgstr "Nenhum comando com esse nome."
+
 msgid "Send page to Summa"
 msgstr "Mandar página ao Summa"
 

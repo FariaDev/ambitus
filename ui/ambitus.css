@@ -604,6 +604,24 @@ headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_
 }
 #mainWindow.darkMode .amb-toast { background: @amb_dk_layer2; color: @amb_dk_text; }
 
+/* ---------- paleta de comandos (Ctrl+/) ---------- */
+
+.amb-cmd {
+    background: @amb_bg;
+    border: 1px solid @amb_border;
+    border-radius: 10px;
+    padding: 8px;
+    box-shadow: 0 8px 28px alpha(black, 0.18);
+}
+.amb-cmd list { background: transparent; }
+.amb-cmd row { padding: 6px 10px; border-radius: 6px; }
+.amb-cmd row:selected { background: @amb_hover; color: @amb_text; }
+.amb-cmd-path, .amb-cmd-accel, .amb-cmd-empty { color: @amb_text3; font-size: 9pt; }
+.amb-cmd-empty { padding: 10px; }
+#mainWindow.darkMode .amb-cmd { background: @amb_dk_layer; border-color: @amb_dk_border; }
+#mainWindow.darkMode .amb-cmd row:selected { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-cmd-path, #mainWindow.darkMode .amb-cmd-accel { color: @amb_dk_text3; }
+
 /* ---------- paleta flutuante do modo Estúdio ---------- */
 
 .amb-palette {
