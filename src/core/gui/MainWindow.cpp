@@ -44,6 +44,7 @@
 #include "util/raii/CStringWrapper.h"                   // for OwnedCString
 
 #include "GladeSearchpath.h"     // for GladeSearchpath
+#include "PageGrowHandle.h"      // for PageGrowHandle
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
 #include "XournalView.h"         // for XournalView
 #include "config-dev.h"          // for TOOLBAR_CONFIG
@@ -122,6 +123,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     }
 
     initXournalWidget();
+    this->growHandle = std::make_unique<ambitus::PageGrowHandle>(control, xournal.get(), overlay);
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 

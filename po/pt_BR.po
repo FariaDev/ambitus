@@ -4953,3 +4953,6 @@ msgstr "Crescer a página para a direita (+2 cm)"
 
 msgid "Grow Page Down (+2 cm)"
 msgstr "Crescer a página para baixo (+2 cm)"
+
+msgid "Grow the page by 2 cm"
+msgstr "Crescer a página em 2 cm"

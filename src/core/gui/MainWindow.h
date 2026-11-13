@@ -41,6 +41,9 @@ class FloatingToolbox;
 class GladeSearchpath;
 
 class Menubar;
+namespace ambitus {
+class PageGrowHandle;
+}
 namespace ambitus::library {
 class LibraryView;
 }
@@ -199,4 +202,5 @@ private:
 
     GtkWidget* viewStack = nullptr;
     std::unique_ptr<ambitus::library::LibraryView> library;
+    std::unique_ptr<ambitus::PageGrowHandle> growHandle;  ///< Ambitus: "+2 cm" on the page edges
 };

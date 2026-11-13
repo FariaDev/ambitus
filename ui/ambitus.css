@@ -462,7 +462,31 @@ popover.amb-coverpop .amb-ghost:hover { background: @amb_hover; color: @amb_text
 }
 #library .amb-hit-ex,
 #library .amb-hit-tex { margin-top: 4px; color: @amb_text2; }
-#library .amb-hit-tex { font-family: "IBM Plex Mono", monospace; font-size: 9.5pt; font-feature-settings: "liga" 0, "calt" 0; }
+#library .amb-hit-tex { font-family: "IBM Plex Mono", monospace; font-size: 9.5pt; font-feature-settings: "liga=0, calt=0"; }
 #mainWindow.darkMode #library .amb-hit-where { color: @amb_dk_text3; }
 #mainWindow.darkMode #library .amb-hit-ex,
 #mainWindow.darkMode #library .amb-hit-tex { color: @amb_dk_text2; }
+
+/* ---------- crescer a página: faixa e pílula na borda ---------- */
+
+.amb-grow-strip { color: @amb_accent; }
+#mainWindow.darkMode .amb-grow-strip { color: @amb_dk_accent; }
+
+button.amb-grow-pill {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 9pt;
+    color: @amb_text2;
+    background: @amb_bg;
+    background-image: none;
+    border: 1px solid @amb_border;
+    border-radius: 8px;
+    padding: 4px 10px 4px 8px;
+    min-height: 0;
+}
+button.amb-grow-pill:hover { background: @amb_hover; color: @amb_text; }
+#mainWindow.darkMode button.amb-grow-pill {
+    color: @amb_dk_text2;
+    background: @amb_dk_layer;
+    border-color: @amb_dk_border;
+}
+#mainWindow.darkMode button.amb-grow-pill:hover { background: @amb_dk_hover; color: @amb_dk_text; }

@@ -83,5 +83,10 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   altura da página no `.xopp`, então o Xournal++ original e o
   `--create-img` do tutor abrem igual.
 - Página com fundo de PDF não cresce (o fundo não acompanharia).
-- Próximo pedaço: a faixa listrada com a prévia dos 2 cm e a pílula "+2 cm"
-  na borda da página, como no protótipo.
+- Na borda: com o ponteiro (ou a caneta pairando) perto da borda direita ou
+  de baixo, aparece a faixa listrada com a prévia dos 2 cm e a pílula
+  "+2 cm"; o clique cresce aquela página. Some ao encostar a caneta, para não
+  atrapalhar a escrita. A faixa nunca cobre outra página: embaixo ela fica no
+  vão até a próxima. Fica na `GtkOverlay` acima das páginas
+  (`gui/PageGrowHandle`), sem mexer no render do Xournal++; o ponteiro é lido
+  por um *emission hook* porque o `InputContext` encerra o sinal `event`.

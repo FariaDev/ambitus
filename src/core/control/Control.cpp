@@ -1003,8 +1003,9 @@ void Control::paperFormat() {
     popup.show(GTK_WINDOW(this->win->getWindow()));
 }
 
-void Control::growPage(double dw, double dh) {
-    auto const& page = getCurrentPage();
+void Control::growPage(double dw, double dh) { growPage(getCurrentPage(), dw, dh); }
+
+void Control::growPage(const PageRef& page, double dw, double dh) {
     if (!page || page->getBackgroundType().isPdfPage()) {
         return;
     }
