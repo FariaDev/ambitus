@@ -10,6 +10,7 @@
 #include <json-glib/json-glib.h>  // for JsonParser, JsonBuilder
 #include <zip.h>                  // for zip_open
 
+#include "ambitus/Board.h"        // for isBoardPageType
 #include "util/GzInputStream.h"   // for GzInputStream
 #include "util/PathUtil.h"        // for toGFilename
 #include "util/StringUtils.h"     // for char_cast
@@ -18,7 +19,7 @@
 namespace ambitus::library {
 
 namespace {
-constexpr int INDEX_VERSION = 1;
+constexpr int INDEX_VERSION = 2;       // 2: pages remember the board mark
 constexpr size_t CONTEXT_BEFORE = 40;  ///< characters of excerpt before the match
 constexpr size_t CONTEXT_AFTER = 70;   ///< and after
 
@@ -36,6 +37,14 @@ void onStart(GMarkupParseContext*, const gchar* name, const gchar** attrNames, c
     auto* st = static_cast<ParseState*>(data);
     if (!strcmp(name, "page")) {
         st->pages.emplace_back();
+    } else if (!strcmp(name, "background") && !st->pages.empty()) {
+        for (int i = 0; attrNames[i]; i++) {
+            if (!strcmp(attrNames[i], "config")) {
+                PageType t;
+                t.config = attrValues[i];
+                st->pages.back().board = ambitus::board::isBoardPageType(t);
+            }
+        }
     } else if (!strcmp(name, "text") && !st->pages.empty()) {
         st->inText = true;
         st->text.clear();
@@ -244,6 +253,7 @@ SearchIndex::SearchIndex(fs::path cacheFile): file(std::move(cacheFile)) {
                 JsonNode* pn = json_array_get_element(pages, k);
                 if (JSON_NODE_HOLDS_OBJECT(pn)) {
                     JsonObject* po = json_node_get_object(pn);
+                    pt.board = json_object_get_boolean_member_with_default(po, "board", false);
                     for (auto [key, vec]: {std::pair{"text", &pt.texts}, std::pair{"latex", &pt.latex}}) {
                         if (!json_object_has_member(po, key)) {
                             continue;
@@ -299,6 +309,11 @@ auto SearchIndex::update(const std::vector<fs::path>& notebooks) -> size_t {
     return read;
 }
 
+auto SearchIndex::isBoard(const fs::path& notebook) const -> bool {
+    auto it = entries.find(notebook);
+    return it != entries.end() && it->second.pages.size() == 1 && it->second.pages[0].board;
+}
+
 auto SearchIndex::save() const -> bool {
     JsonBuilder* b = json_builder_new();
     json_builder_begin_object(b);
@@ -318,6 +333,10 @@ auto SearchIndex::save() const -> bool {
         json_builder_begin_array(b);
         for (const auto& pt: e.pages) {
             json_builder_begin_object(b);
+            if (pt.board) {
+                json_builder_set_member_name(b, "board");
+                json_builder_add_boolean_value(b, true);
+            }
             for (auto [key, vec]: {std::pair{"text", &pt.texts}, std::pair{"latex", &pt.latex}}) {
                 if (vec->empty()) {
                     continue;

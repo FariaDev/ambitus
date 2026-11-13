@@ -23,6 +23,7 @@ namespace ambitus::library {
 struct PageText {
     std::vector<std::string> texts;  ///< text boxes, in file order
     std::vector<std::string> latex;  ///< LaTeX source of the formulas
+    bool board = false;              ///< the background carries the board mark (see ambitus/Board.h)
     bool operator==(const PageText&) const = default;
 };
 
@@ -60,6 +61,9 @@ public:
                                   size_t limit = 200) const;
 
     size_t size() const { return entries.size(); }
+
+    /// Whether the notebook is a board: one page, with the board mark (false when not indexed)
+    bool isBoard(const fs::path& notebook) const;
 
 private:
     struct Entry {

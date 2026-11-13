@@ -177,3 +177,24 @@ TEST(LibrarySearch, corruptCacheStartsEmpty) {
     SearchIndex index(d.path / "index.json");
     EXPECT_EQ(index.size(), 0u);
 }
+
+TEST(LibrarySearch, theIndexKnowsTheBoardsAndKeepsThem) {
+    TempDir d;
+    const auto board = d.path / "quadro.xopp";
+    const auto notebook = d.path / "caderno.xopp";
+    writeGz(board, R"(<xournal><page width="1602" height="1008">)"
+                   R"(<background type="solid" color="#ffffffff" style="dotted" config="r1=18,ambitus=board"/>)"
+                   R"(<layer><text>mapa</text></layer></page></xournal>)");
+    writeGz(notebook, XML);
+    {
+        SearchIndex index(d.path / "index.json");
+        index.update({board, notebook});
+        EXPECT_TRUE(index.isBoard(board));
+        EXPECT_FALSE(index.isBoard(notebook));
+        EXPECT_FALSE(index.isBoard(d.path / "other.xopp"));
+        ASSERT_TRUE(index.save());
+    }
+    SearchIndex index(d.path / "index.json");
+    EXPECT_EQ(index.update({board, notebook}), 0u);  // from the cache
+    EXPECT_TRUE(index.isBoard(board));
+}
