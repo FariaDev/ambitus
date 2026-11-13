@@ -4935,6 +4935,30 @@ msgstr "Lendo os cadernos…"
 msgid "Nothing found in the text or the formulas."
 msgstr "Nada no texto nem nas fórmulas."
 
+msgid "handwritten"
+msgstr "escrito à mão"
+
+msgid "The handwriting is searched while Summa is open."
+msgstr "A escrita à mão entra na busca enquanto o Summa está aberto."
+
+msgid "To search the handwriting too, switch on the reading of notebooks in Summa."
+msgstr "Para buscar também na escrita à mão, ligue a leitura dos cadernos no Summa."
+
+msgid "The handwriting is not read: the model chosen in Summa does not read images, or is free."
+msgstr "A escrita à mão não é lida: o modelo escolhido no Summa não lê imagem ou é gratuito."
+
+msgid "The handwriting is not read with the Claude engine of Summa yet."
+msgstr "Com o motor Claude do Summa a escrita à mão ainda não é lida."
+
+msgid "The reading of the handwriting stopped: the quota of the model is over for now."
+msgstr "A leitura da escrita à mão parou: a cota do modelo acabou por agora."
+
+msgid "The handwriting of every page is searched too."
+msgstr "A escrita à mão de todas as páginas também entra na busca."
+
+msgid "Handwriting read on %zu of %zu pages."
+msgstr "Escrita à mão lida em %zu de %zu páginas."
+
 msgid "page %zu"
 msgstr "pág. %zu"
 

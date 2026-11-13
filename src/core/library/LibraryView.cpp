@@ -166,6 +166,7 @@ LibraryView::LibraryView(fs::path storeFile, fs::path indexFile, Actions a):
 
 LibraryView::~LibraryView() {
     *alive = false;
+    *stopInk = true;
     for (auto* m: {&previews, &images}) {
         for (auto& [_, pb]: *m) {
             if (pb) {
@@ -274,18 +275,20 @@ void LibraryView::reindex() {
         files.push_back(e.nb.path);
     }
 
+    // a reason not to read (Summa closed, reading off, no model…) is retried after a while, not at every change
+    constexpr auto INK_RETRY = std::chrono::minutes(2);
+    const bool tryInk = inkStop == InkStop::None || inkStop == InkStop::Failed ||
+                        std::chrono::steady_clock::now() - inkStoppedAt > INK_RETRY;
+
     struct Job {
         LibraryView* self;
         std::shared_ptr<bool> alive;
         std::shared_ptr<SearchIndex> result;
+        bool last;                  ///< the indexing (and the reading) is over
+        std::optional<InkRun> ink;  ///< when the handwriting was read
     };
-    auto* job = new Job{this, alive, nullptr};
-    std::thread([job, files = std::move(files), file = indexFile] {
-        auto idx = std::make_shared<SearchIndex>(file);
-        if (idx->update(files) > 0) {
-            idx->save();
-        }
-        job->result = std::move(idx);
+    auto deliver = [self = this, alive = alive](std::shared_ptr<SearchIndex> result, bool last,
+                                                std::optional<InkRun> ink) {
         g_idle_add(
                 +[](gpointer d) -> gboolean {
                     std::unique_ptr<Job> job(static_cast<Job*>(d));
@@ -294,7 +297,14 @@ void LibraryView::reindex() {
                     }
                     auto* self = job->self;
                     self->index = std::move(job->result);
-                    self->indexing = false;
+                    if (job->ink) {
+                        self->inkStop = job->ink->stop;
+                        self->inkStoppedAt = std::chrono::steady_clock::now();
+                        // the time was up with pages left: another round
+                        if (job->ink->read > 0 && job->ink->stop == InkStop::None) {
+                            self->indexAgain = true;
+                        }
+                    }
                     // a search shows what is written; boards found for the first time get their wide card
                     bool boardsChanged = false;
                     for (auto& e: self->entriesFor(self->current)) {
@@ -306,13 +316,64 @@ void LibraryView::reindex() {
                     if (!self->filter.empty() || boardsChanged) {
                         self->fillGrid();
                     }
-                    if (self->indexAgain) {
-                        self->reindex();
+                    if (job->last) {
+                        self->indexing = false;
+                        if (self->indexAgain) {
+                            self->reindex();
+                        }
                     }
                     return G_SOURCE_REMOVE;
                 },
-                job);
+                new Job{self, alive, std::move(result), last, std::move(ink)});
+    };
+    std::thread([deliver, tryInk, stop = stopInk, files = std::move(files), file = indexFile] {
+        auto idx = std::make_shared<SearchIndex>(file);
+        if (idx->update(files) > 0) {
+            idx->save();
+        }
+        if (!tryInk || idx->inkProgress().first == 0) {
+            deliver(std::move(idx), true, std::nullopt);
+            return;
+        }
+        // the search gets the text at once; the handwriting is read on a copy, a page at a time
+        deliver(std::make_shared<SearchIndex>(*idx), false, std::nullopt);
+        constexpr auto INK_ROUND = std::chrono::seconds(90);
+        InkRun run = readInk(*idx, files, std::chrono::steady_clock::now() + INK_ROUND, *stop);
+        deliver(std::move(idx), true, run);
     }).detach();
+}
+
+auto LibraryView::inkStatus() const -> std::string {
+    if (!index) {
+        return {};
+    }
+    auto [pages, read] = index->inkProgress();
+    if (pages == 0) {
+        return {};
+    }
+    if (read >= pages) {
+        return _("The handwriting of every page is searched too.");
+    }
+    switch (inkStop) {
+        case InkStop::NoSumma:
+            return _("The handwriting is searched while Summa is open.");
+        case InkStop::Disabled:
+            return _("To search the handwriting too, switch on the reading of notebooks in Summa.");
+        case InkStop::NoModel:
+        case InkStop::NoVision:
+        case InkStop::Free:
+            return _("The handwriting is not read: the model chosen in Summa does not read images, or is free.");
+        case InkStop::Claude:
+            return _("The handwriting is not read with the Claude engine of Summa yet.");
+        case InkStop::Quota:
+            return _("The reading of the handwriting stopped: the quota of the model is over for now.");
+        default:
+            break;
+    }
+    gchar* text = g_strdup_printf(_("Handwriting read on %zu of %zu pages."), read, pages);
+    std::string s = text;
+    g_free(text);
+    return s;
 }
 
 void LibraryView::fillSide() {
@@ -620,8 +681,12 @@ void LibraryView::addTextHits(const std::vector<Entry>& everywhere) {
         order.push_back(e.nb.path);
     }
     const auto hits = index->search(filter, order);
+    const std::string ink = inkStatus();
     if (hits.empty()) {
         gtk_container_add(GTK_CONTAINER(body), label(_("Nothing found in the text or the formulas."), "amb-empty"));
+        if (!ink.empty()) {
+            gtk_container_add(GTK_CONTAINER(body), label(ink, "amb-ink-status"));
+        }
         return;
     }
     std::set<fs::path> books;
@@ -636,6 +701,9 @@ void LibraryView::addTextHits(const std::vector<Entry>& everywhere) {
         }
     }
     gtk_container_add(GTK_CONTAINER(body), list);
+    if (!ink.empty()) {
+        gtk_container_add(GTK_CONTAINER(body), label(ink, "amb-ink-status"));
+    }
 
     const std::string count = std::string(g_dngettext(nullptr, "%zu result", "%zu results", hits.size())) + " · " +
                               g_dngettext(nullptr, "%zu notebook", "%zu notebooks", books.size());
@@ -662,7 +730,8 @@ auto LibraryView::makeHit(const SearchHit& h, const Entry& e) -> GtkWidget* {
     GtkWidget* text = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
     gtk_container_add(GTK_CONTAINER(text), label(e.nb.name, "amb-hit-name"));
     gchar* where = g_strdup_printf(_("page %zu"), h.page + 1);
-    std::string place = (e.place.empty() ? "" : e.place + " · ") + where + (h.latex ? " · LaTeX" : "");
+    std::string place = (e.place.empty() ? "" : e.place + " · ") + where + (h.latex ? " · LaTeX" : "") +
+                        (h.ink ? std::string(" · ") + _("handwritten") : "");
     g_free(where);
     gtk_container_add(GTK_CONTAINER(text), label(place, "amb-hit-where"));
 

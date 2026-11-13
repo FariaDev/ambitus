@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <atomic>
+#include <chrono>
 #include <functional>
 #include <map>
 #include <memory>
@@ -20,6 +22,7 @@
 #include <gtk/gtk.h>
 
 #include "CoverRenderer.h"
+#include "InkReader.h"
 #include "LibraryStore.h"
 #include "NotebookScanner.h"
 #include "NotebookSearch.h"
@@ -118,6 +121,14 @@ private:
     std::shared_ptr<bool> alive = std::make_shared<bool>(true);  ///< false once this view is gone
     bool indexing = false;
     bool indexAgain = false;
+
+    /// The reading of the handwriting through Summa (InkReader), after each indexing
+    std::shared_ptr<std::atomic<bool>> stopInk =
+            std::make_shared<std::atomic<bool>>(false);    ///< set when the view goes
+    InkStop inkStop = InkStop::None;                       ///< why the last run stopped
+    std::chrono::steady_clock::time_point inkStoppedAt{};  ///< when; a stop is not retried for a while
+    /// The line under the text hits that says how far the reading of the handwriting is
+    std::string inkStatus() const;
 };
 
 }  // namespace ambitus::library

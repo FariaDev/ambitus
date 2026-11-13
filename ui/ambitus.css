@@ -438,6 +438,8 @@ tooltip.background {
 
 #library .amb-empty { margin-top: 24px; color: @amb_text3; }
 #mainWindow.darkMode #library .amb-empty { color: @amb_dk_text3; }
+#library .amb-ink-status { margin-top: 14px; font-size: 9pt; color: @amb_text3; }
+#mainWindow.darkMode #library .amb-ink-status { color: @amb_dk_text3; }
 
 /* popover da capa */
 popover.amb-coverpop { padding: 16px; }
