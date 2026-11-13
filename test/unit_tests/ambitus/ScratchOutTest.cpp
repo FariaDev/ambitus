@@ -7,6 +7,7 @@
  */
 
 #include <cmath>
+#include <cstdlib>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -83,4 +84,57 @@ TEST(ScratchOut, crossesOutWhatIsUnder) {
     EXPECT_FALSE(crossesOut(s, z, cursive(0, 115, 300), 3));    // a long sentence only partly under it
     EXPECT_FALSE(crossesOut(s, z, line(110, 99, 150, 99), 3));  // touched by the first pass only
     EXPECT_FALSE(crossesOut(s, z, {}, 3));
+}
+
+namespace {
+/// a messy human scribble: passes of uneven length, rounded turns, jitter, a tilt and drift
+std::vector<Pt> messy(unsigned seed, int passes, double tilt) {
+    std::srand(seed);
+    auto rnd = [](double a, double b) { return a + (b - a) * (std::rand() / static_cast<double>(RAND_MAX)); };
+    std::vector<Pt> pts;
+    double y = 0, x = 0;
+    for (int p = 0; p < passes; p++) {
+        double from = p % 2 == 0 ? rnd(-8, 6) : rnd(44, 62);
+        double to = p % 2 == 0 ? rnd(44, 62) : rnd(-8, 6);
+        double dy = rnd(1, 6);
+        int n = static_cast<int>(rnd(6, 14));
+        for (int i = 0; i <= n; i++) {
+            double t = static_cast<double>(i) / n;
+            double s = 0.5 - 0.5 * std::cos(M_PI * t);  // slows down at the turns
+            x = from + (to - from) * s + rnd(-1.5, 1.5);
+            double yy = y + dy * t + rnd(-1.5, 1.5) + 3 * std::sin(M_PI * t);  // passes are curved
+            pts.push_back({x * std::cos(tilt) - yy * std::sin(tilt), x * std::sin(tilt) + yy * std::cos(tilt)});
+        }
+        y += dy;
+    }
+    return pts;
+}
+}  // namespace
+
+TEST(ScratchOut, messyScribblesStillCount) {
+    int found = 0, total = 0;
+    for (unsigned seed = 1; seed <= 200; seed++) {
+        for (double tilt: {0.0, 0.3, -0.5, 1.2}) {
+            Scribble s;
+            total++;
+            found += detectScribble(messy(seed, 5 + seed % 4, tilt), s) ? 1 : 0;
+        }
+    }
+    EXPECT_GE(found, total * 95 / 100) << found << " of " << total;
+}
+
+TEST(ScratchOut, messyScribbleErasesTheWordUnder) {
+    int erased = 0, detected = 0;
+    for (unsigned seed = 1; seed <= 200; seed++) {
+        auto z = messy(seed, 5 + seed % 4, 0);
+        Scribble s;
+        if (!detectScribble(z, s)) {
+            continue;
+        }
+        detected++;
+        // a word in the middle of the scribble
+        Pt c = s.origin;
+        erased += crossesOut(s, z, cursive(c.x - 18, c.y, 30), 3) ? 1 : 0;
+    }
+    EXPECT_GE(erased, detected * 9 / 10) << erased << " of " << detected;
 }
