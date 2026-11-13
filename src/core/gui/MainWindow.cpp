@@ -110,6 +110,25 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
             showEditor();
             control->newFile(file);
         };
+        actions.newBoard = [this, control](const fs::path& folder) {
+            fs::path file;
+            if (!folder.empty()) {
+                // boards go in their own section of the folder
+                fs::path dir = folder / _("Boards");
+                std::error_code ec;
+                fs::create_directories(dir, ec);
+                if (ec) {
+                    dir = folder;
+                }
+                const std::string base = _("Untitled board");
+                file = dir / (base + ".xopp");
+                for (int i = 2; fs::exists(file); i++) {
+                    file = dir / (base + " " + std::to_string(i) + ".xopp");
+                }
+            }
+            showEditor();
+            control->newBoard(file);
+        };
         library = std::make_unique<ambitus::library::LibraryView>(
                 Util::getConfigFile("library.ini"), Util::getCacheFile("library-index.json"), std::move(actions));
         gtk_stack_add_named(GTK_STACK(viewStack), library->getWidget(), "library");

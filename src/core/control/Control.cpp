@@ -11,6 +11,7 @@
 #include <string>      // for string
 #include <utility>     // for move
 
+#include "ambitus/Board.h"                                       // for pageTemplate
 #include "control/AudioController.h"                             // for Audi...
 #include "control/ClipboardHandler.h"                            // for Clip...
 #include "control/CompassController.h"                           // for Comp...
@@ -1539,6 +1540,17 @@ void Control::newFile(fs::path filepath) {
             [ctrl = this, filepath = std::move(filepath)](bool closed) {
                 if (closed) {
                     ctrl->replaceDocument(createNewDocument(ctrl, std::move(filepath), std::nullopt), -1);
+                }
+            },
+            true);
+}
+
+void Control::newBoard(fs::path filepath) {
+    this->close(
+            [ctrl = this, filepath = std::move(filepath)](bool closed) {
+                if (closed) {
+                    auto tpl = ambitus::board::pageTemplate(ctrl->settings->getPageTemplateSettings());
+                    ctrl->replaceDocument(createNewDocument(ctrl, std::move(filepath), tpl), -1);
                 }
             },
             true);

@@ -36,6 +36,8 @@ public:
         std::function<void(const fs::path&, size_t page)> openAt;
         /// new notebook; the folder is the one being shown (empty for Recent/All)
         std::function<void(const fs::path& folder)> newNotebook;
+        /// new board (one page that grows), same folder rule as newNotebook
+        std::function<void(const fs::path& folder)> newBoard;
     };
 
     /// storeFile: covers and folders (config); indexFile: the search index (cache)

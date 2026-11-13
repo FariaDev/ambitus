@@ -395,6 +395,19 @@ tooltip.background {
 #mainWindow.darkMode #library .amb-primary { background: @amb_dk_accent; color: @amb_dk_on_accent; }
 #mainWindow.darkMode #library .amb-primary:hover { background: shade(@amb_dk_accent, 0.9); }
 
+#library .amb-secondary {
+    min-height: 32px;
+    padding: 0 14px 0 12px;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background: @amb_layer;
+    color: @amb_text;
+}
+#library .amb-secondary:hover { background: @amb_hover; }
+#mainWindow.darkMode #library .amb-secondary { background: @amb_dk_layer; color: @amb_dk_text; }
+#mainWindow.darkMode #library .amb-secondary:hover { background: @amb_dk_hover; }
+
 #library .amb-section {
     margin: 22px 0 12px;
     font-size: 9pt;

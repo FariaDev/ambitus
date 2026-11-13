@@ -132,6 +132,13 @@ LibraryView::LibraryView(fs::path storeFile, fs::path indexFile, Actions a):
     gtk_widget_set_hexpand(subtitle, true);
     gtk_widget_set_valign(subtitle, GTK_ALIGN_CENTER);
     gtk_container_add(GTK_CONTAINER(head), subtitle);
+    GtkWidget* boardBtn = iconButton("view-grid-symbolic", _("New board"), "amb-secondary");
+    onClicked(boardBtn, [this] {
+        if (actions.newBoard) {
+            actions.newBoard(sourceFolder(current));
+        }
+    });
+    gtk_container_add(GTK_CONTAINER(head), boardBtn);
     GtkWidget* newBtn = iconButton("list-add-symbolic", _("New notebook"), "amb-primary");
     onClicked(newBtn, [this] {
         if (actions.newNotebook) {

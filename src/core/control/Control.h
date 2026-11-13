@@ -92,6 +92,8 @@ public:
 public:
     /// Asymchronously closes the current document and replaces it by a new file
     void newFile(fs::path filepath = {});
+    /// Ambitus: a new board, one page that grows (see ambitus/Board.h)
+    void newBoard(fs::path filepath = {});
 
     /// @brief Shows an open file dialog and opens the selected file after closing the previously opened file
     void askToOpenFile();

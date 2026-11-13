@@ -4980,3 +4980,12 @@ msgstr "Só a página"
 
 msgid "Menu"
 msgstr "Menu"
+
+msgid "New board"
+msgstr "Novo quadro"
+
+msgid "Boards"
+msgstr "Quadros"
+
+msgid "Untitled board"
+msgstr "Quadro sem título"
