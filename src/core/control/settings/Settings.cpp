@@ -246,6 +246,7 @@ void Settings::loadDefault() {
     this->trySelectOnStrokeFiltered = false;
 
     this->snapRecognizedShapesEnabled = false;
+    this->scratchOutEnabled = true;
     this->restoreLineWidthEnabled = false;
 
     this->inTransaction = false;
@@ -710,6 +711,8 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->latexSettings.temporaryFileExt = std::string{reinterpret_cast<char*>(value)};
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("snapRecognizedShapesEnabled")) == 0) {
         this->snapRecognizedShapesEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("scratchOutEnabled")) == 0) {
+        this->scratchOutEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("restoreLineWidthEnabled")) == 0) {
         this->restoreLineWidthEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("preferredLocale")) == 0) {
@@ -1194,6 +1197,7 @@ void Settings::save() {
     SAVE_BOOL_PROP(trySelectOnStrokeFiltered);
 
     SAVE_BOOL_PROP(snapRecognizedShapesEnabled);
+    SAVE_BOOL_PROP(scratchOutEnabled);
     SAVE_BOOL_PROP(restoreLineWidthEnabled);
 
     SAVE_INT_PROP(numIgnoredStylusEvents);
@@ -2363,6 +2367,16 @@ auto Settings::getTrySelectOnStrokeFiltered() const -> bool { return this->trySe
 void Settings::setSnapRecognizedShapesEnabled(bool enabled) { this->snapRecognizedShapesEnabled = enabled; }
 
 auto Settings::getSnapRecognizedShapesEnabled() const -> bool { return this->snapRecognizedShapesEnabled; }
+
+void Settings::setScratchOutEnabled(bool enabled) {
+    if (this->scratchOutEnabled == enabled) {
+        return;
+    }
+    this->scratchOutEnabled = enabled;
+    save();
+}
+
+auto Settings::getScratchOutEnabled() const -> bool { return this->scratchOutEnabled; }
 
 
 void Settings::setRestoreLineWidthEnabled(bool enabled) { this->restoreLineWidthEnabled = enabled; }

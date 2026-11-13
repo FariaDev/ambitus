@@ -85,6 +85,9 @@ protected:
 
     void strokeRecognizerDetected(std::unique_ptr<Stroke> recognized, Layer* layer);
 
+    /// Ambitus: if the stroke is a scribble over other strokes, erases them and drops the scribble
+    bool scratchOut(Layer* layer);
+
     /// Finalizes the stroke using the provided pressure as last point
     void finalizeStroke(double pressure);
 

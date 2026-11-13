@@ -100,6 +100,17 @@ struct ActionProperties<Action::SEARCH_NOTEBOOKS> {
 };
 
 template <>
+struct ActionProperties<Action::SCRATCH_OUT> {
+    using state_type = bool;
+    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->getScratchOutEnabled(); }
+    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+        bool enabled = g_variant_get_boolean(p);
+        g_simple_action_set_state(ga, p);
+        ctrl->getSettings()->setScratchOutEnabled(enabled);
+    }
+};
+
+template <>
 struct ActionProperties<Action::ANNOTATE_PDF> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
         ctrl->clearSelectionEndText();

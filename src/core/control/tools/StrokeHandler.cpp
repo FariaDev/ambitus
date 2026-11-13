@@ -9,22 +9,24 @@
 
 #include <gdk/gdk.h>  // for GdkEventKey
 
-#include "control/Control.h"                                // for Control
-#include "control/ToolEnums.h"                              // for DRAWING_TYPE_ST...
-#include "control/ToolHandler.h"                            // for ToolHandler
-#include "control/layer/LayerController.h"                  // for LayerController
-#include "control/settings/Settings.h"                      // for Settings
-#include "control/settings/SettingsEnums.h"                 // for EmptyLastPageAppendType
-#include "control/shaperecognizer/ShapeRecognizer.h"        // for ShapeRecognizer
-#include "control/tools/InputHandler.h"                     // for InputHandler::P...
-#include "control/tools/SnapToGridInputHandler.h"           // for SnapToGridInput...
-#include "gui/inputdevices/PositionInputData.h"             // for PositionInputData
-#include "model/Document.h"                                 // for Document
+#include "ambitus/ScratchOut.h"                       // for detectScribble, crossesOut
+#include "control/Control.h"                          // for Control
+#include "control/ToolEnums.h"                        // for DRAWING_TYPE_ST...
+#include "control/ToolHandler.h"                      // for ToolHandler
+#include "control/layer/LayerController.h"            // for LayerController
+#include "control/settings/Settings.h"                // for Settings
+#include "control/settings/SettingsEnums.h"           // for EmptyLastPageAppendType
+#include "control/shaperecognizer/ShapeRecognizer.h"  // for ShapeRecognizer
+#include "control/tools/InputHandler.h"               // for InputHandler::P...
+#include "control/tools/SnapToGridInputHandler.h"     // for SnapToGridInput...
+#include "gui/inputdevices/PositionInputData.h"       // for PositionInputData
+#include "model/Document.h"                           // for Document
 #include "model/Element.h"
 #include "model/Layer.h"                                    // for Layer
 #include "model/LineStyle.h"                                // for LineStyle
 #include "model/Stroke.h"                                   // for Stroke, STROKE_...
 #include "model/XojPage.h"                                  // for XojPage
+#include "undo/DeleteUndoAction.h"                          // for DeleteUndoAction
 #include "undo/InsertUndoAction.h"                          // for InsertUndoAction
 #include "undo/RecognizerUndoAction.h"                      // for RecognizerUndoA...
 #include "undo/UndoRedoHandler.h"                           // for UndoRedoHandler
@@ -168,6 +170,10 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zo
 
     Layer* layer = page->getSelectedLayer();
 
+    if (scratchOut(layer)) {
+        return;
+    }
+
     UndoRedoHandler* undo = control->getUndoRedoHandler();
     undo->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, stroke.get()));
 
@@ -210,6 +216,62 @@ void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zo
     this->viewPool->dispatchAndClear(xoj::view::StrokeToolView::FINALIZATION_REQUEST, Range());
 
     page->fireElementChanged(ptr);
+}
+
+bool StrokeHandler::scratchOut(Layer* layer) {
+    if (!control->getSettings()->getScratchOutEnabled() || stroke->getToolType() != StrokeTool::PEN ||
+        control->getToolHandler()->getDrawingType() != DRAWING_TYPE_DEFAULT) {
+        return false;
+    }
+    using ambitus::scratch::Pt;
+    auto toPts = [](const Stroke& s) {
+        std::vector<Pt> pts;
+        pts.reserve(s.getPointVector().size());
+        for (auto const& p: s.getPointVector()) {
+            pts.emplace_back(p.x, p.y);
+        }
+        return pts;
+    };
+    const auto scribble = toPts(*stroke);
+    ambitus::scratch::Scribble shape;
+    if (!ambitus::scratch::detectScribble(scribble, shape)) {
+        return false;
+    }
+
+    const Range box(stroke->getBoundingBox());
+    std::vector<const Element*> victims;
+    for (auto const* e: layer->getElementsView()) {
+        if (e->getType() != ELEMENT_STROKE || !box.intersect(Range(e->getBoundingBox())).isValid()) {
+            continue;
+        }
+        auto const* s = static_cast<const Stroke*>(e);
+        double tolerance = std::max(3.0, 0.5 * (stroke->getWidth() + s->getWidth()));
+        if (ambitus::scratch::crossesOut(shape, scribble, toPts(*s), tolerance)) {
+            victims.push_back(e);
+        }
+    }
+    if (victims.empty()) {
+        return false;  // nothing under it: the zigzag stays as ink
+    }
+
+    auto del = std::make_unique<DeleteUndoAction>(page, true);
+    Range range = box;
+    Document* doc = control->getDocument();
+    doc->lock();
+    for (auto const* v: victims) {
+        range = range.unite(Range(v->getBoundingBox()));
+        auto [ptr, pos] = layer->removeElement(v);
+        if (pos != Element::InvalidIndex) {
+            del->addElement(layer, std::move(ptr), pos);
+        }
+    }
+    doc->unlock();
+    control->getUndoRedoHandler()->addUndoAction(std::move(del));
+
+    this->viewPool->dispatchAndClear(xoj::view::StrokeToolView::CANCELLATION_REQUEST, box);
+    stroke.reset();
+    page->fireRangeChanged(range);
+    return true;
 }
 
 void StrokeHandler::strokeRecognizerDetected(std::unique_ptr<Stroke> recognized, Layer* layer) {

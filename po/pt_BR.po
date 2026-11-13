@@ -4956,3 +4956,6 @@ msgstr "Crescer a página para baixo (+2 cm)"
 
 msgid "Grow the page by 2 cm"
 msgstr "Crescer a página em 2 cm"
+
+msgid "Scratch Out to Erase"
+msgstr "Riscar para apagar"

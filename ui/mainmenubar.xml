@@ -601,6 +601,10 @@
      <attribute name="action">win.select-default-tool</attribute>
      <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;d</attribute>
     </item>
+    <item>
+     <attribute name="label" translatable="yes">Scratch Out to Erase</attribute>
+     <attribute name="action">win.scratch-out</attribute>
+    </item>
    </section>
    <section>
     <submenu>

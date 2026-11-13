@@ -16,6 +16,7 @@ constexpr const char* ACTION_NAMES[] = {  // Action to string conversion map
         "quit",
         "library",
         "search-notebooks",
+        "scratch-out",
         "arrange-selection-order",
         "undo",
         "redo",

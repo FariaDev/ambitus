@@ -547,6 +547,10 @@ public:
      */
     bool getSnapRecognizedShapesEnabled() const;
 
+    /// Ambitus: a zigzag drawn with the pen over strokes erases them
+    void setScratchOutEnabled(bool enabled);
+    bool getScratchOutEnabled() const;
+
     /**
      * Set line width restoring for resized edit selctions enabled
      */
@@ -1141,6 +1145,9 @@ private:
      * Whether snapping for recognized shapes is enabled
      */
     bool snapRecognizedShapesEnabled{};
+
+    /// Ambitus: scratch out to erase
+    bool scratchOutEnabled{};
 
     /**
      * Whether the line width should be preserved in a resizing operation

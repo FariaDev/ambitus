@@ -43,6 +43,7 @@ enum class Action : size_t {
     QUIT,
     LIBRARY,           ///< Ambitus: show the notebook library
     SEARCH_NOTEBOOKS,  ///< Ambitus: library with the keyboard in its search
+    SCRATCH_OUT,       ///< Ambitus: toggle scratch out to erase
 
     // Menu edit
     ARRANGE_SELECTION_ORDER,

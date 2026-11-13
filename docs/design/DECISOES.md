@@ -90,3 +90,19 @@ para o app. O `build.py` de cada rodada gera as variantes autocontidas
   vão até a próxima. Fica na `GtkOverlay` acima das páginas
   (`gui/PageGrowHandle`), sem mexer no render do Xournal++; o ponteiro é lido
   por um *emission hook* porque o `InputContext` encerra o sinal `event`.
+
+## Riscar para apagar (2026-11-13)
+
+- Um zigue-zague feito com a caneta por cima de traços apaga esses traços e
+  some; Ctrl+Z traz de volta. Liga e desliga em **Ferramentas → Riscar para
+  apagar** (ligado por padrão, guardado em `settings.xml` como
+  `scratchOutEnabled`).
+- Conta como rabisco o traço que vai e volta pelo menos 4 vezes na direção
+  principal, cada vez por mais de um terço do comprimento; escrita à mão anda
+  para a frente na linha e não conta. Apaga o traço que fica pelo menos 60%
+  dentro da caixa do rabisco e que o rabisco de fato cruza. Sem nada embaixo,
+  o zigue-zague fica como tinta.
+- Só traços por enquanto (texto, imagem e LaTeX ficam). Só a caneta no modo
+  normal; marca-texto e reconhecedor de formas não disparam.
+- Geometria em `ambitus/ScratchOut` (com testes), ligação em
+  `StrokeHandler::scratchOut`.
