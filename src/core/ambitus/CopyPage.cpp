@@ -33,6 +33,8 @@ constexpr double COPY_DPI = 150.0;
 }  // namespace
 
 void copyPageAsImage(Control* ctrl) {
+    // a selection is out of its layer and a text being typed is not in the page yet: put them back, as a save does
+    ctrl->clearSelectionEndText();
     Document* doc = ctrl->getDocument();
     GdkPixbuf* image = nullptr;
     {

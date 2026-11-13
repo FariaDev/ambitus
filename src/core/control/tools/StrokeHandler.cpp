@@ -86,7 +86,8 @@ void StrokeHandler::restartHold(double x, double y, double zoom) {
         return;  // a tremor of the hand: still held
     }
     stopHold();
-    if (!stroke || stroke->getToolType() != StrokeTool::PEN ||
+    // only the pen itself: the laser pointer draws with a StrokeHandler too, and its strokes are not ink
+    if (!stroke || stroke->getToolType() != StrokeTool::PEN || control->getToolHandler()->getToolType() != TOOL_PEN ||
         control->getToolHandler()->getDrawingType() != DRAWING_TYPE_DEFAULT) {
         return;
     }

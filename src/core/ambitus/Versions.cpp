@@ -12,7 +12,6 @@
 
 #include <glib.h>
 
-#include "util/PathUtil.h"
 #include "util/StringUtils.h"
 #include "util/i18n.h"
 
@@ -90,10 +89,19 @@ bool keep(const fs::path& root, const fs::path& notebook, Clock::time_point now,
     }
     const fs::path folder = folderFor(root, notebook);
     fs::create_directories(folder, ec);
+    // the save comes after this copy: never take the room it needs (a margin of 64 MiB beyond the copy)
+    const auto size = fs::file_size(notebook, ec);
+    const auto space = fs::space(folder, ec);
+    if (ec || space.available < size + (std::uintmax_t{64} << 20)) {
+        g_warning("Ambitus: no version of %s: not enough room", char_cast(notebook.u8string().c_str()));
+        return false;
+    }
     const fs::path tmp = folder / ".copiando";
     fs::copy_file(notebook, tmp, fs::copy_options::overwrite_existing, ec);
     if (ec) {
         g_warning("Ambitus: no version of %s: %s", char_cast(notebook.u8string().c_str()), ec.message().c_str());
+        std::error_code ignored;
+        fs::remove(tmp, ignored);  // a half copy would only take room
         return false;
     }
     fs::rename(tmp, folder / nameFor(now), ec);
@@ -109,7 +117,10 @@ bool keep(const fs::path& root, const fs::path& notebook, Clock::time_point now,
     return true;
 }
 
-fs::path defaultRoot() { return Util::getDataSubfolder("versions"); }
+fs::path defaultRoot() {
+    // like Util::getDataSubfolder("versions"), without its error dialog: keep() makes the folder, or skips quietly
+    return fs::path(g_get_user_data_dir()) / "xournalpp" / "versions";
+}
 
 void keepBeforeSave(const fs::path& notebook) {
     try {

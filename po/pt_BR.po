@@ -5016,6 +5016,9 @@ msgstr "Versão restaurada. O estado de antes também está na lista."
 msgid "The version could not be restored."
 msgstr "Não deu para restaurar a versão."
 
+msgid "The notebook as it is now could not be kept aside, so nothing was changed."
+msgstr "Não deu para guardar o caderno como está agora, então nada foi mudado."
+
 msgid "The version could not be opened."
 msgstr "Não deu para abrir a versão."
 

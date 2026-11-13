@@ -55,7 +55,10 @@ void openCopy(Control* ctrl, const fs::path& notebook, const versions::Version& 
     g_date_time_unref(dt);
     const fs::path copy = Util::getCacheSubfolder("versions-open") / fs::u8path(name);
     std::error_code ec;
-    fs::copy_file(v.file, copy, fs::copy_options::overwrite_existing, ec);
+    // opened before: that copy may have been edited since, so it is opened as it is
+    if (!fs::exists(copy, ec)) {
+        fs::copy_file(v.file, copy, ec);
+    }
     if (ec) {
         toast(ctrl, _("The version could not be opened."));
         return;
@@ -66,10 +69,25 @@ void openCopy(Control* ctrl, const fs::path& notebook, const versions::Version& 
 /// The notebook goes back to the version; what is on disk now is kept as a version first
 void restore(Control* ctrl, const fs::path& notebook, const versions::Version& v) {
     auto doRestore = [ctrl, notebook, v] {
-        versions::keep(versions::defaultRoot(), notebook, versions::Clock::now(), std::chrono::seconds(0), 30);
         std::error_code ec;
-        fs::copy_file(v.file, notebook, fs::copy_options::overwrite_existing, ec);
+        // next to the notebook first: keep() below may drop the oldest copy, which may be this one
+        fs::path incoming = notebook;
+        incoming.replace_filename(".ambitus-restaurando-" + notebook.filename().string());
+        fs::copy_file(v.file, incoming, fs::copy_options::overwrite_existing, ec);
         if (ec) {
+            fs::remove(incoming, ec);
+            toast(ctrl, _("The version could not be restored."));
+            return;
+        }
+        if (fs::exists(notebook, ec) &&
+            !versions::keep(versions::defaultRoot(), notebook, versions::Clock::now(), std::chrono::seconds(0), 30)) {
+            fs::remove(incoming, ec);
+            toast(ctrl, _("The notebook as it is now could not be kept aside, so nothing was changed."));
+            return;
+        }
+        fs::rename(incoming, notebook, ec);  // whole or not at all
+        if (ec) {
+            fs::remove(incoming, ec);
             toast(ctrl, _("The version could not be restored."));
             return;
         }

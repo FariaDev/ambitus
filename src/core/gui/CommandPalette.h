@@ -11,6 +11,7 @@
 #pragma once
 
 #include <functional>
+#include <string>
 #include <vector>
 
 #include <gtk/gtk.h>
@@ -22,6 +23,9 @@ namespace ambitus {
 class CommandPalette {
 public:
     CommandPalette(GtkOverlay* overlay, GtkWindow* window, std::function<GMenuModel*()> menu, GtkWidget* focusBack);
+    ~CommandPalette();
+    CommandPalette(const CommandPalette&) = delete;
+    CommandPalette& operator=(const CommandPalette&) = delete;
 
     void open();
     void close();
@@ -42,6 +46,8 @@ private:
     GtkWidget* empty = nullptr;
     std::vector<Command> commands;  ///< what can be done now, taken at open
     std::vector<size_t> shown;      ///< indices into commands, in the order of the rows
+    std::string shownQuery;         ///< the text the rows are for
+    guint closeIdle = 0;            ///< the close after a focus out, waiting for a click on a row
 };
 
 }  // namespace ambitus

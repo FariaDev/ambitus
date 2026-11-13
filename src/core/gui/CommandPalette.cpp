@@ -57,6 +57,10 @@ CommandPalette::CommandPalette(GtkOverlay* overlay, GtkWindow* window, std::func
                          // Xournal++'s SearchBar binds Return to "next-match" for every GtkSearchEntry: no "activate"
                          // here
                          if (e->keyval == GDK_KEY_Return || e->keyval == GDK_KEY_KP_Enter) {
+                             // "search-changed" comes ~150 ms after the last key: the list may be of an older text
+                             if (self->shownQuery != gtk_entry_get_text(GTK_ENTRY(self->entry))) {
+                                 self->refresh();
+                             }
                              self->runSelected();
                              return TRUE;
                          }
@@ -73,10 +77,16 @@ CommandPalette::CommandPalette(GtkOverlay* overlay, GtkWindow* window, std::func
                      this);
     // a click elsewhere closes it, after a click on a row has run
     g_signal_connect(entry, "focus-out-event", G_CALLBACK(+[](GtkWidget*, GdkEvent*, CommandPalette* self) -> gboolean {
-                         g_idle_add(
+                         if (self->closeIdle) {
+                             return FALSE;
+                         }
+                         self->closeIdle = g_idle_add(
                                  +[](gpointer d) -> gboolean {
                                      auto* self = static_cast<CommandPalette*>(d);
-                                     if (self->isOpen() && !gtk_widget_has_focus(self->entry)) {
+                                     self->closeIdle = 0;
+                                     // Alt+Tab to another window is not a click elsewhere: it stays open
+                                     if (self->isOpen() && !gtk_widget_has_focus(self->entry) &&
+                                         gtk_window_is_active(self->window)) {
                                          self->close();
                                      }
                                      return G_SOURCE_REMOVE;
@@ -95,6 +105,12 @@ CommandPalette::CommandPalette(GtkOverlay* overlay, GtkWindow* window, std::func
     gtk_widget_hide(frame);
     gtk_widget_set_no_show_all(frame, true);
     gtk_overlay_add_overlay(overlay, frame);
+}
+
+CommandPalette::~CommandPalette() {
+    if (closeIdle) {
+        g_source_remove(closeIdle);
+    }
 }
 
 GActionGroup* CommandPalette::groupOf(const std::string& action, std::string& name) const {
@@ -146,7 +162,8 @@ void CommandPalette::refresh() {
     }
     g_list_free(rows);
 
-    shown = matchCommands(commands, gtk_entry_get_text(GTK_ENTRY(entry)), MAX_ROWS);
+    shownQuery = gtk_entry_get_text(GTK_ENTRY(entry));
+    shown = matchCommands(commands, shownQuery, MAX_ROWS);
     for (size_t i: shown) {
         auto const& c = commands[i];
         std::string label = c.label;
