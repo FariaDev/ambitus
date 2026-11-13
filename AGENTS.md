@@ -11,7 +11,7 @@ Ambitus é o Xournal++ modificado do Lucas, irmão do Summa (`FariaDev/summa`). 
 ## Regras
 
 - **Manter o `.xopp` compatível com o Xournal++.** O tutor do Summa lê os cadernos com `xournalpp --create-img` e lê o texto e o LaTeX do arquivo; é isso que faz os dois programas conversarem sem mudança no Summa. Mudança de formato (página que cresce, canvas infinito) precisa de plano de compatibilidade antes.
-- **Os cadernos vêm do Summa.** A biblioteca de cadernos, a busca, o índice e modelo de tinta (`desk/notebook-ink-*`) e o plugin Lua `MesaPagina` saem do Summa e são reimplementados aqui. O código antigo fica numa tag do Summa (nome previsto: `cadernos-antes-do-xournal`; confirme no repo). O código é do Lucas, então pode entrar aqui sob GPL.
+- **Os cadernos vêm do Summa.** A biblioteca de cadernos, a busca, o índice e modelo de tinta (`desk/notebook-ink-*`) e o plugin Lua `MesaPagina` saem do Summa e são reimplementados aqui. O código antigo fica na tag `cadernos-antes-do-xournal` do Summa (commit `5a98aa2c`). O código é do Lucas, então pode entrar aqui sob GPL.
 - **O caminho contrário não vale:** código do Xournal++ ou deste repositório não entra no Summa.
 - **Archey Notes e Traços servem só de inspiração** de interface e fluxo. Não copie código de lá.
 - **Nada público** (push para repositório público, release, PR fora deste repo) sem o ok explícito do Lucas.
