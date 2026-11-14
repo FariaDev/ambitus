@@ -149,7 +149,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     initXournalWidget();
     this->growHandle = std::make_unique<ambitus::PageGrowHandle>(control, xournal.get(), overlay);
-    this->studioPalette = std::make_unique<ambitus::StudioPalette>(overlay);
+    this->studioPalette = std::make_unique<ambitus::StudioPalette>(control, overlay);
     this->radialMenu = std::make_unique<ambitus::RadialMenu>(control, xournal.get(), overlay);
     this->boardNavigator = std::make_unique<ambitus::BoardNavigator>(control, xournal.get(), overlay);
     this->toast = std::make_unique<ambitus::Toast>(overlay);

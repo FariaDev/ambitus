@@ -5142,3 +5142,63 @@ msgstr "Sem título"
 
 msgid "Open another notebook"
 msgstr "Abrir outro caderno"
+
+msgid "Marker"
+msgstr "Marca-texto"
+
+msgid "LaTeX"
+msgstr "LaTeX"
+
+msgid "Violet"
+msgstr "Violeta"
+
+msgid "Thickness"
+msgstr "Espessura"
+
+msgid "Stroke"
+msgstr "Traço"
+
+msgid "Solid"
+msgstr "Contínuo"
+
+msgid "Pressure changes the thickness"
+msgstr "Pressão muda a espessura"
+
+msgid "Smooth the stroke"
+msgstr "Suavizar o traço"
+
+msgid "Erases"
+msgstr "Apaga"
+
+msgid "The whole stroke"
+msgstr "O traço inteiro"
+
+msgid "Only where it passes"
+msgstr "Só onde passa"
+
+msgid "Size"
+msgstr "Tamanho"
+
+msgid "Select by"
+msgstr "Selecionar por"
+
+msgid "Lasso"
+msgstr "Laço"
+
+msgid "Rectangle"
+msgstr "Retângulo"
+
+msgid "Object"
+msgstr "Objeto"
+
+msgctxt "eraser size"
+msgid "Fine"
+msgstr "Fina"
+
+msgctxt "eraser size"
+msgid "Medium"
+msgstr "Média"
+
+msgctxt "eraser size"
+msgid "Thick"
+msgstr "Grossa"
