@@ -20,7 +20,9 @@
 #include "util/GtkUtil.h"
 #include "util/i18n.h"
 
+#include "AmbitusMotion.h"
 #include "AmbitusTip.h"
+#include "FocusReveal.h"
 #include "MainWindow.h"
 #include "RadialMenu.h"
 #include "TitleBar.h"
@@ -28,6 +30,11 @@
 namespace ambitus {
 
 namespace {
+
+constexpr int PALETTE_TOP = 12;       ///< The palette's distance from the top of the window
+constexpr int REVEAL_DROP = 3;        ///< How far above its place it starts, in the Focus mode
+constexpr guint REVEAL_POLL_MS = 50;  ///< How often the Focus mode looks at the pointer
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Every tool of the panel. The ids are what the settings save: never change one.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -617,6 +624,15 @@ struct PaletteState {
     int radialSel = 0;                                      ///< The position being edited
     int radialHover = -1;                                   ///< The position under the pointer in the ring
     std::vector<std::pair<std::string, GtkWidget*>> chips;  ///< One for each option
+
+    // the Focus mode: the palette comes down when the pointer reaches the top of the page
+    GtkWidget* root = nullptr;  ///< The event box that goes on the overlay
+    GtkWidget* area = nullptr;  ///< The pages: its top is the strip
+    bool reveal = false;        ///< In the Focus mode
+    bool pressed = false;       ///< A button of the pointer was down at the last look
+    FocusReveal focus;
+    guint pollId = 0;  ///< Looks at the pointer while hidden or waiting to go away
+    guint tickId = 0;  ///< Follows the frames while it comes down or fades
 };
 
 namespace {
@@ -1780,7 +1796,7 @@ std::string paletteColorHex(uint32_t rgb) {
 
 std::string paletteColorName(uint32_t rgb) { return colorName(rgb); }
 
-StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay) {
+StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay, GtkWidget* area) {
     state = new PaletteState;
     state->control = control;
     state->tools = parsePaletteTools(control->getSettings()->getAmbitusPaletteTools());
@@ -1792,10 +1808,18 @@ StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay) {
     root = gtk_event_box_new();
     gtk_event_box_set_visible_window(GTK_EVENT_BOX(root), false);
     g_object_set_data_full(
-            G_OBJECT(root), "amb-palette", state, +[](gpointer p) { delete static_cast<PaletteState*>(p); });
+            G_OBJECT(root), "amb-palette", state, +[](gpointer p) {
+                auto* st = static_cast<PaletteState*>(p);
+                if (st->pollId) {
+                    g_source_remove(st->pollId);
+                }
+                delete st;
+            });
+    state->root = root;
+    state->area = area;
     gtk_widget_set_halign(root, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(root, GTK_ALIGN_START);
-    gtk_widget_set_margin_top(root, 12);
+    gtk_widget_set_margin_top(root, PALETTE_TOP);
 
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     addClass(box, "amb-palette");
@@ -1865,11 +1889,149 @@ StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay) {
     gtk_overlay_add_overlay(overlay, root);
 }
 
+namespace {
+/// How the palette sits while it comes down and fades: opaque and in its place, or not yet
+void drawReveal(PaletteState* st, double level) {
+    const double e = motion::easeOut(level);
+    gtk_widget_set_opacity(st->root, e);
+    gtk_widget_set_margin_top(st->root, PALETTE_TOP - static_cast<int>(std::lround(REVEAL_DROP * (1 - e))));
+}
+
+void drawResting(PaletteState* st) {
+    gtk_widget_set_opacity(st->root, 1);
+    gtk_widget_set_margin_top(st->root, PALETTE_TOP);
+}
+
+bool popoverOpen(PaletteState* st) {
+    if (gtk_widget_get_visible(st->panel)) {
+        return true;
+    }
+    return std::any_of(st->pops.all.begin(), st->pops.all.end(),
+                       [](GtkWidget* p) { return gtk_widget_get_visible(p); });
+}
+
+/// Where the pointer is, in the coordinates of `w`; false when it is not known
+bool pointerIn(GtkWidget* w, int& x, int& y, bool& pressed) {
+    GdkWindow* win = gtk_widget_get_window(w);
+    GdkSeat* seat = gdk_display_get_default_seat(gtk_widget_get_display(w));
+    if (!win || !seat) {
+        return false;
+    }
+    GdkModifierType mask{};
+    gdk_window_get_device_position(win, gdk_seat_get_pointer(seat), &x, &y, &mask);
+    if (!gtk_widget_get_has_window(w)) {
+        GtkAllocation a;
+        gtk_widget_get_allocation(w, &a);
+        x -= a.x;
+        y -= a.y;
+    }
+    pressed = mask & (GDK_BUTTON1_MASK | GDK_BUTTON2_MASK | GDK_BUTTON3_MASK);
+    return true;
+}
+
+/// The pointer is on the strip, on the palette, or something opened from the palette is on screen
+bool revealHot(PaletteState* st) {
+    bool pressed = false;
+    int x = 0, y = 0;
+    const bool known = pointerIn(st->area, x, y, pressed);
+    st->pressed = pressed;
+    if (!known) {
+        return false;
+    }
+    const int w = gtk_widget_get_allocated_width(st->area);
+    if (x >= 0 && x < w && y >= 0 && y < FocusReveal::ZONE_HEIGHT) {
+        return true;
+    }
+    if (!gtk_widget_get_visible(st->root)) {
+        return false;
+    }
+    if (popoverOpen(st)) {
+        return true;
+    }
+    int rx = 0, ry = 0;
+    if (!gtk_widget_translate_coordinates(st->root, st->area, 0, 0, &rx, &ry)) {
+        return false;
+    }
+    return x >= rx && x < rx + gtk_widget_get_allocated_width(st->root) && y >= ry &&
+           y < ry + gtk_widget_get_allocated_height(st->root);
+}
+
+void revealStep(PaletteState* st, gint64 now);
+
+gboolean revealTick(GtkWidget*, GdkFrameClock* clock, gpointer data) {
+    auto* st = static_cast<PaletteState*>(data);
+    revealStep(st, gdk_frame_clock_get_frame_time(clock));
+    if (st->reveal && st->focus.animating()) {
+        return G_SOURCE_CONTINUE;
+    }
+    st->tickId = 0;
+    return G_SOURCE_REMOVE;
+}
+
+/// Looks at the pointer and moves the palette: called by the timer and, while it moves, at every frame
+void revealStep(PaletteState* st, gint64 now) {
+    if (!st->reveal) {
+        return;
+    }
+    const bool wasHidden = st->focus.hidden();
+    const bool animate = !motion::reducedMotion(st->root);
+    const bool hot = revealHot(st);  // also looks at the buttons: before reading `pressed`
+    const double level = st->focus.update(now, hot, st->pressed, animate);
+    if (st->focus.hidden()) {
+        if (!wasHidden) {
+            gtk_widget_hide(st->root);
+        }
+        return;
+    }
+    if (wasHidden) {
+        refreshAudio(st);
+        drawReveal(st, level);
+        gtk_widget_show(st->root);
+    } else {
+        drawReveal(st, level);
+    }
+    if (st->focus.animating() && !st->tickId) {
+        st->tickId = gtk_widget_add_tick_callback(st->root, revealTick, st, nullptr);
+    }
+}
+
+void stopReveal(PaletteState* st) {
+    st->reveal = false;
+    if (st->pollId) {
+        g_source_remove(st->pollId);
+        st->pollId = 0;
+    }
+    if (st->tickId) {
+        gtk_widget_remove_tick_callback(st->root, st->tickId);
+        st->tickId = 0;
+    }
+    st->focus.reset();
+    drawResting(st);
+}
+}  // namespace
+
 void StudioPalette::setVisible(bool visible) {
+    stopReveal(state);
     gtk_widget_set_visible(root, visible);
     if (visible) {
         refreshAudio(state);
     }
+}
+
+void StudioPalette::setRevealOnHover() {
+    if (state->reveal) {
+        return;  // already so: the mode is applied more than once, and it must not hide the palette again
+    }
+    stopReveal(state);
+    state->reveal = true;
+    gtk_widget_hide(root);
+    state->pollId = g_timeout_add(
+            REVEAL_POLL_MS,
+            +[](gpointer data) -> gboolean {
+                revealStep(static_cast<PaletteState*>(data), g_get_monotonic_time());
+                return G_SOURCE_CONTINUE;
+            },
+            state);
 }
 
 }  // namespace ambitus

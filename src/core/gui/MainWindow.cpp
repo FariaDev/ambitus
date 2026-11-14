@@ -152,7 +152,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     initXournalWidget();
     this->growHandle = std::make_unique<ambitus::PageGrowHandle>(control, xournal.get(), overlay);
-    this->studioPalette = std::make_unique<ambitus::StudioPalette>(control, overlay);
+    this->studioPalette = std::make_unique<ambitus::StudioPalette>(control, overlay, winXournal);
     this->radialMenu = std::make_unique<ambitus::RadialMenu>(control, xournal.get(), overlay);
     this->pageMenu = std::make_unique<ambitus::PageMenu>(control, xournal.get(), overlay);
     this->radialMenu->setPageMenu(this->pageMenu.get());
@@ -333,7 +333,11 @@ void MainWindow::applyEditorMode() {
     }
     setSidebarVisible(classic && settings->isSidebarVisible());
     if (studioPalette) {
-        studioPalette->setVisible(mode == ambitus::EditorMode::STUDIO);
+        if (focus) {
+            studioPalette->setRevealOnHover();
+        } else {
+            studioPalette->setVisible(mode == ambitus::EditorMode::STUDIO);
+        }
     }
     if (boardNavigator) {
         boardNavigator->setVisible(board);

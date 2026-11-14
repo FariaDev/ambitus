@@ -14,6 +14,10 @@
  * The same panel has a second tab, "Radial menu": the eight positions of the ring that opens on the right button. Each
  * takes a tool or an action; the choice lives in the settings of Ambitus too and the ring reads it every time it opens.
  *
+ * In the Focus mode the same palette is not on screen: it comes down when the pointer reaches the top of the page,
+ * stays while the pointer is there or on it, and goes away 1.5 s after the pointer leaves (FocusReveal.h has the
+ * times).
+ *
  * The favourite pens (up to four) come first: each keeps a tool (pen or marker), a colour and a thickness, is saved
  * from the options of the pen and of the marker, and is taken off with the right button. The keys 1-4 call them.
  *
@@ -122,9 +126,13 @@ struct PaletteState;
 
 class StudioPalette {
 public:
-    StudioPalette(Control* control, GtkOverlay* overlay);
+    /// `area` is the widget with the pages: the Focus mode watches the top of it
+    StudioPalette(Control* control, GtkOverlay* overlay, GtkWidget* area);
 
+    /// Studio mode (true): always there. Classic mode (false): hidden. Both end any reveal in course
     void setVisible(bool visible);
+    /// Focus mode: hidden until the pointer reaches the top of the page (see FocusReveal.h)
+    void setRevealOnHover();
 
 private:
     GtkWidget* root = nullptr;
