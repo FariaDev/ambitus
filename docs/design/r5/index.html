@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ambitus — protótipo r5: telas e detalhes</title>
+<style>
+@font-face{font-family:"IBM Plex Sans";src:url("../r1/fonts/IBMPlexSans-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"IBM Plex Sans";src:url("../r1/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");font-weight:600}
+@font-face{font-family:"IBM Plex Mono";src:url("../r1/fonts/IBMPlexMono-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"STIX Two Text";src:url("../r1/fonts/STIXTwoText.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"STIX Two Text";src:url("../r1/fonts/STIXTwoText-Italic.woff2") format("woff2");font-weight:400;font-style:italic}
+:root{--bg:#fff;--stage:#f4f4f4;--fg:#161616;--muted:#525252;--faint:#6f6f6f;--border:#e0e0e0;--border-strong:#8d8d8d;--raised:#fff;
+ --hover:#e8e8e8;--active:#d4d4d4;--selected:#dedede;--accent-fill:#303030;--accent-fg:#fff;--code:#f4f4f4;--violet:#8044ca;
+ --shadow-pop:0 8px 24px -10px rgb(0 0 0/.18);--shadow-dialog:0 16px 48px -16px rgb(0 0 0/.22)}
+*{box-sizing:border-box}
+body{margin:0;overflow-x:hidden;background:#f4f4f4;color:var(--fg);font:400 15px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:40px 28px 80px}
+h1{font:400 34px/1.2 "STIX Two Text",Georgia,serif;margin:0 0 6px}
+h2{font:400 24px/1.3 "STIX Two Text",Georgia,serif;margin:52px 0 12px;padding-top:12px;border-top:1px solid var(--border)}
+h3{font-size:15px;font-weight:600;margin:20px 0 6px}
+p,ul,ol{max-width:800px}
+li{margin:3px 0}
+.sub{color:var(--muted)}
+.card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:20px 22px;margin:16px 0}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.rec{color:var(--violet)}
+.cap{font-size:12.5px;color:var(--faint);margin:8px 0 0;max-width:800px}
+code,kbd{font:400 12.5px "IBM Plex Mono",monospace;background:var(--code);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+img.shot{display:block;max-width:100%;border:1px solid var(--border);border-radius:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button{font:inherit;color:inherit;cursor:pointer}
+input[type=range]{accent-color:var(--accent-fill)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:4px;border:0;background:var(--accent-fill);color:var(--accent-fg);font-weight:600;font-size:13px}
+.btn2{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:4px;border:0;background:var(--code);color:var(--fg);font-size:13px}
+.btn2:hover{background:var(--hover)}
+.ghost{border:0;background:transparent;color:var(--muted);font-size:13px;padding:4px 8px;border-radius:4px}
+.ghost:hover{background:var(--hover);color:var(--fg)}
+.ib{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--muted);border:0;background:transparent}
+.ib:hover{background:var(--hover);color:var(--fg)}
+.ib.on{background:var(--selected);color:var(--fg)}
+.sw{appearance:none;position:relative;margin:0;flex:none;cursor:pointer;width:40px;height:20px;border:1px solid var(--border-strong);background:var(--border-strong);border-radius:999px}
+.sw::before{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:999px;transition:transform .12s}
+.sw:checked{background:var(--accent-fill);border-color:var(--accent-fill)}
+.sw:checked::before{transform:translateX(20px)}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%}
+.win{border:1px solid #c6c6c6;border-radius:8px;overflow:hidden;background:#fff;box-shadow:var(--shadow-dialog)}
+.tb{display:flex;align-items:center;height:40px;border-bottom:1px solid var(--border);font-size:13px;padding:0 6px}
+.tb .tab{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;color:var(--muted)}
+.tb .tab.cur{color:var(--fg);font-weight:600;box-shadow:inset 0 -2px 0 var(--fg)}
+.tb .sp{flex:1}
+.opt{border:1px solid var(--border);border-radius:4px;padding:10px 14px;background:#fff;cursor:pointer;text-align:left}
+.opt b{display:block;font-weight:600;font-size:14px}
+.opt span{color:var(--faint);font-size:12.5px}
+.opt.on{background:var(--selected);border-color:var(--border-strong)}
+.pop{background:var(--raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-pop);padding:12px}
+.lbl{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin:0 0 6px}
+.seg{display:inline-flex;background:var(--code);border-radius:4px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;padding:4px 10px;border-radius:4px;font-size:12.5px;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--fg);font-weight:600;box-shadow:0 0 0 1px var(--border)}
+table.tx{border-collapse:collapse;width:100%;font-size:13.5px}
+table.tx td,table.tx th{border-bottom:1px solid var(--border);padding:7px 8px;text-align:left;vertical-align:top}
+table.tx th{font-weight:600;color:var(--muted);font-size:12px}
+table.tx td:first-child{color:var(--faint);text-decoration:line-through;text-decoration-color:#c6c6c6}
+
+/* setup */
+.setup{display:grid;grid-template-columns:38% 1fr;min-height:470px}
+@media(max-width:760px){.setup{grid-template-columns:1fr}.setup .art{min-height:200px}}
+.setup .art{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;border-right:1px solid var(--border)}
+.setup .art .glyph{font:400 120px/1 "STIX Two Text",serif;font-style:italic}
+.setup .pane{padding:22px 26px;display:flex;flex-direction:column}
+.steps{display:flex;flex-wrap:wrap;gap:4px 10px;margin-bottom:16px;font-size:12.5px}
+.steps span{display:inline-flex;align-items:center;gap:5px;padding:2px 6px;border-radius:4px;color:var(--muted)}
+.steps span i{font-style:normal;font-size:10.5px;background:var(--code);border-radius:2px;padding:0 4px;color:var(--muted)}
+.steps span.cur{background:var(--accent-fill);color:#fff;font-weight:600}
+.steps span.cur i{background:#555;color:#fff}
+.steps span.done i{background:transparent}
+.setup h4{font:400 26px/1.25 "STIX Two Text",serif;margin:0 0 14px}
+.setup .foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding-top:18px}
+.setup .foot .sp{flex:1}
+.row{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px}
+.row small{display:block;color:var(--faint);font-size:12px}
+.pad{height:120px;border:1px dashed var(--border-strong);border-radius:4px;background:#fff;position:relative;cursor:crosshair}
+.papers{display:flex;gap:10px;flex-wrap:wrap}
+.paper{width:86px;cursor:pointer;text-align:center;font-size:12px;color:var(--muted)}
+.paper .pg{height:104px;border:1px solid var(--border);border-radius:2px;background:#fff;margin-bottom:4px;outline:2px solid transparent;outline-offset:2px}
+.paper.on .pg{outline-color:var(--fg)}
+.paper.on{color:var(--fg);font-weight:600}
+
+/* biblioteca */
+.lib{display:grid;grid-template-columns:200px 1fr;min-height:430px}
+@media(max-width:760px){.lib{grid-template-columns:1fr}.lib .side{display:none}}
+.lib .side{background:var(--stage);padding:12px;font-size:13px;border-right:1px solid var(--border)}
+.lib .side .it{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px}
+.lib .side .it.on{background:var(--selected);font-weight:600}
+.lib .side .it em{margin-left:auto;font-style:normal;color:var(--faint);font-size:12px}
+.lib .body{padding:18px 22px}
+.lib h5{font:400 22px/1.2 "STIX Two Text",serif;margin:0}
+.cont{display:flex;gap:16px;align-items:center;border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0 18px}
+.cont .pg{width:78px;height:100px;border:1px solid var(--border);border-radius:2px;flex:none;background:#fff}
+.cont b{font-weight:600}
+.cont small{display:block;color:var(--faint);font-size:12px}
+.covers{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:16px}
+.cv .c{height:130px;border-radius:4px;position:relative;overflow:hidden;color:#fff;padding:10px;display:flex;align-items:flex-end;font:400 15px/1.15 "STIX Two Text",serif}
+.cv .m{font:11px "IBM Plex Mono";color:var(--faint);margin-top:4px}
+.statusl{font:11.5px "IBM Plex Mono";color:var(--faint);border-top:1px solid var(--border);padding:6px 22px}
+
+/* barra de seleção */
+.sel-stage{background:var(--stage);border-radius:8px;padding:30px;display:flex;justify-content:center}
+.sheet{width:520px;max-width:100%;height:260px;background:#fff;box-shadow:0 1px 3px rgb(0 0 0/.12);position:relative}
+.selbar{position:absolute;display:flex;align-items:center;gap:2px;padding:4px;background:var(--raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-pop);font-size:12.5px;white-space:nowrap}
+.selbar .ib{width:auto;padding:0 8px;gap:6px}
+.selbar .sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+
+/* clássico */
+.cl .menu{display:flex;gap:16px;font-size:12.5px;padding:6px 12px;border-bottom:1px solid var(--border);color:var(--fg)}
+.cl .bar{display:flex;align-items:center;gap:2px;padding:4px 8px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.cl .bar .sep{width:1px;height:20px;background:var(--border);margin:0 6px}
+.cl .bar .zoom{font-size:12.5px;color:var(--muted);padding:0 6px}
+.cl .wk{display:flex;height:280px}
+.cl .thumbs{width:110px;background:#fff;border-right:1px solid var(--border);padding:10px}
+.cl .thumbs .t{height:90px;border:1px solid var(--border);border-radius:2px;margin:0 auto 4px;width:70px;background:#fff}
+.cl .thumbs .t.on{outline:2px solid var(--fg);outline-offset:2px}
+.cl .thumbs small{display:block;text-align:center;font-size:11px;color:var(--muted);margin-bottom:10px}
+.cl .canvas{flex:1;background:var(--stage);display:flex;justify-content:center;padding-top:16px;overflow:hidden}
+.cl .canvas .p{width:300px;background:#fff;box-shadow:0 1px 3px rgb(0 0 0/.12)}
+.cl .status{display:flex;align-items:center;gap:14px;padding:6px 12px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+.cl .status .sp{flex:1}
+
+/* preferências */
+.prefs{display:grid;grid-template-columns:220px 1fr;min-height:470px}
+@media(max-width:760px){.prefs{grid-template-columns:1fr}}
+.prefs .nav{background:var(--stage);padding:16px 12px;border-right:1px solid var(--border)}
+.prefs .nav h6{font:600 20px/1.2 "IBM Plex Sans";margin:4px 8px 12px}
+.prefs .nav .srch{display:flex;align-items:center;gap:8px;padding:6px 10px;color:var(--faint);font-size:13px;margin-bottom:8px}
+.prefs .nav .it{display:block;width:100%;text-align:left;border:0;background:transparent;padding:8px 12px;border-radius:4px;font-size:13.5px;color:var(--muted);position:relative}
+.prefs .nav .it:hover{background:var(--hover);color:var(--fg)}
+.prefs .nav .it.on{background:var(--selected);color:var(--fg);font-weight:500}
+.prefs .nav .it.on::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:2px;border-radius:999px;background:var(--accent-fill)}
+.prefs .pane{padding:22px 34px}
+.prefs .pane h6{font:600 15px/1.2 "IBM Plex Sans";margin:0 0 6px}
+.field{display:flex;align-items:center;gap:8px;background:var(--code);border-radius:4px;padding:6px 10px;font-size:13px;min-width:220px}
+</style>
+</head>
+<body><main>
+<h1>Telas e detalhes</h1>
+<p class="sub">Protótipo r5. Fecha o que faltava decidir antes de implementar: o setup, a tela de início, o caderno novo, as Preferências, as opções de cada ferramenta, as canetas favoritas, a barra de seleção, o modo Clássico, os textos e dois detalhes do r4. Os tokens e os ícones Lucide são os do Summa, e o setup segue o desenho do setup do Summa. Tudo é clicável.</p>
+<ol style="columns:2;font-size:14px">
+ <li><a href="#setup">Setup de primeira vez</a></li><li><a href="#inicio">Tela de início</a></li><li><a href="#novo">Caderno novo</a></li>
+ <li><a href="#prefs">Preferências</a></li><li><a href="#opcoes">Tocar de novo: opções da ferramenta</a></li><li><a href="#fav">Canetas favoritas</a></li>
+ <li><a href="#selecao">Barra de seleção</a></li><li><a href="#classico">Modo Clássico</a></li><li><a href="#textos">Textos que dizem Xournal++</a></li><li><a href="#r4">Detalhes do r4</a></li>
+</ol>
+
+<!-- =============================== 1 -->
+<h2 id="setup">1. Setup de primeira vez</h2>
+<p>Hoje o Ambitus não tem setup: abre direto na biblioteca, com as configurações do Xournal++. A proposta é a mesma forma do setup do Summa: o símbolo grande à esquerda, um cartão à direita com as etapas numeradas e o título em STIX. São seis etapas, e quase tudo já vem escolhido, então dá para passar com “Próximo” sem ler.</p>
+<div class="grid2" style="grid-template-columns:1fr 2fr">
+ <div><span class="tag">Referência · setup do Summa</span><img class="shot" src="img/summa-setup.png" alt=""></div>
+ <div class="cap" style="margin:24px 0 0">Mesma grade, mesmos chips de etapa e o mesmo “Pular” discreto. O ∂ entra no lugar do ∫. Se o Summa estiver instalado, o Ambitus lê o idioma e o acento dele e já começa igual.</div>
+</div>
+<div class="win" style="margin-top:14px"><div class="setup" id="setupbox"></div></div>
+<p class="cap">Use Próximo e Voltar. Na etapa 3, escreva no quadro com o mouse.</p>
+
+<!-- =============================== 2 -->
+<h2 id="inicio">2. Tela de início</h2>
+<p>A biblioteca de hoje já está perto do certo. Faltam três coisas:</p>
+<ul>
+ <li><b>“Continuar”</b> no topo, com a miniatura da página onde você parou: um clique e você volta para o mesmo caderno, na mesma página.</li>
+ <li><b>A capa segue a cor da matéria</b>, a cor do quadradinho na lateral. Hoje toda capa é violeta ou cinza.</li>
+ <li><b>O caminho do arquivo vai para uma linha discreta no pé</b> ao passar o mouse. Sai o balão preto enorme da captura.</li>
+</ul>
+<div class="grid2">
+ <div><span class="tag">Hoje</span><img class="shot" src="img/hoje-lib.png" alt=""></div>
+ <div class="cap">O balão com o caminho inteiro cobre as capas. O rótulo “∫ Summa” ao lado de Matérias diz de onde vêm as matérias. Ele continua, mas como texto cinza comum.</div>
+</div>
+<div class="win" style="margin-top:14px">
+ <div class="tb"><span class="tab cur">GRID Biblioteca</span><span class="tab">PLUS</span><span class="sp"></span><span class="ib">MORE</span><span class="ib">MINUS</span><span class="ib">SQUARE</span><span class="ib">X</span></div>
+ <div class="lib">
+  <div class="side">
+   <div class="field" style="min-width:0;margin-bottom:10px;background:#fff">SEARCH <span style="color:var(--faint)">Buscar nos cadernos</span></div>
+   <div class="it on">CLOCK Recentes</div><div class="it">GRID Todos <em>11</em></div>
+   <div style="font-size:11.5px;color:var(--faint);margin:14px 8px 4px">Matérias · do Summa</div>
+   <div class="it"><span class="dot" style="width:10px;height:10px;border-radius:2px;background:#5b4a8a"></span>Cálculo I <em>8</em></div>
+   <div class="it"><span class="dot" style="width:10px;height:10px;border-radius:2px;background:#2f5f6e"></span>Física II <em>2</em></div>
+   <div class="it"><span class="dot" style="width:10px;height:10px;border-radius:2px;background:#8a5a3c"></span>Álgebra Linear <em>1</em></div>
+  </div>
+  <div class="body">
+   <div style="display:flex;align-items:center;gap:8px"><h5>Recentes</h5><span style="flex:1"></span><button class="btn2">GRID Novo quadro</button><button class="btn">PLUS Novo caderno</button></div>
+   <div class="cont"><div class="pg" id="contpg"></div><div style="flex:1"><small>Continuar de onde parou</small><b>Limites — aula 3</b><small>Cálculo I · página 4 de 6 · ontem, 22:10</small></div><button class="btn">Continuar</button></div>
+   <div class="covers" id="covers"></div>
+  </div>
+ </div>
+ <div class="statusl" id="statusl">Passe o mouse numa capa</div>
+</div>
+<h3>Primeira vez, sem cadernos</h3>
+<div class="card" style="text-align:center;padding:36px">
+ <div style="font:italic 400 64px/1 'STIX Two Text',serif">∂</div>
+ <p style="margin:10px auto 16px;color:var(--muted)">Seus cadernos aparecem aqui.</p>
+ <button class="btn">PLUS Novo caderno</button> <button class="btn2">FOLDER Abrir uma pasta</button>
+ <p class="cap" style="margin:14px auto 0">Se o Summa tiver um cofre, a pasta dele já vem ligada pelo setup e este estado quase nunca aparece.</p>
+</div>
+
+<!-- =============================== 3 -->
+<h2 id="novo">3. Caderno novo</h2>
+<p>Hoje, “Novo caderno” abre um “Sem título” no modo Clássico, com pauta azul, margem rosa e zoom de 138%. A proposta é um diálogo pequeno com nome, matéria e papel. O caderno abre no <b>Estúdio</b>, já salvo na pasta da matéria, e por isso a primeira versão já fica guardada.</p>
+<div class="grid2">
+ <div><span class="tag">Hoje</span><img class="shot" src="img/hoje-new.png" alt=""></div>
+ <div>
+  <span class="tag rec">Proposta</span>
+  <div class="pop" style="max-width:420px;box-shadow:var(--shadow-dialog);padding:18px 20px">
+   <div style="font:400 20px 'STIX Two Text',serif;margin-bottom:12px">Caderno novo</div>
+   <div class="lbl">Nome</div><div class="field" style="margin-bottom:12px">Limites — aula 4<span class="caret"></span></div>
+   <div class="lbl">Matéria</div><div class="field" style="margin-bottom:12px;justify-content:space-between"><span><span class="dot" style="width:10px;height:10px;border-radius:2px;background:#5b4a8a"></span> Cálculo I</span>CHEVRON</div>
+   <div class="lbl">Papel</div>
+   <div class="papers" id="papers"></div>
+   <div style="display:flex;gap:8px;margin-top:16px;align-items:center"><span class="seg"><button class="on">A4</button><button>Carta</button><button>Infinito</button></span><span style="flex:1"></span><button class="ghost">Cancelar</button><button class="btn">Criar</button></div>
+  </div>
+  <p class="cap">O papel <b>Summa</b> é o pautado com as linhas em cinza claro e a margem em violeta suave, e vira o padrão. O pautado azul do Xournal++ continua na lista. “Infinito” é o quadro que já existe. Para o <code>.xopp</code> nada muda: são só as cores do fundo da página, e o Xournal++ abre igual.</p>
+ </div>
+</div>
+
+<!-- =============================== 4 -->
+<h2 id="prefs">4. Preferências</h2>
+<p>Hoje são as Preferências do Xournal++: diálogo cinza, abas centralizadas, caixas de seleção e textos como “%F-Note-%H-%M”. A proposta é a tela de Configurações do Summa: navegação à esquerda com busca, linhas com interruptor, em tela cheia. Ficam só as escolhas que importam no dia a dia. <b>Nada some:</b> a última seção, “Avançado”, abre as Preferências completas do Xournal++.</p>
+<div class="grid2">
+ <div><span class="tag">Hoje</span><img class="shot" src="img/hoje-prefs.png" alt=""></div>
+ <div class="cap">Para quem conhece o Xournal++, as Preferências completas continuam a um clique. Para o dia a dia, a tela abaixo.</div>
+</div>
+<div class="win" style="margin-top:14px"><div class="prefs" id="prefsbox"></div></div>
+
+<!-- =============================== 5 -->
+<h2 id="opcoes">5. Tocar de novo na ferramenta: as opções</h2>
+<p>Com a ferramenta já escolhida, um segundo toque no botão dela abre as opções, logo abaixo da paleta. O primeiro toque continua só escolhendo. É assim que as opções do Xournal++ espalhadas em menus (forma da ponta, tracejado, tipo de borracha, tipo de seleção) ficam a um toque de distância sem ocupar a paleta.</p>
+<div class="card">
+ <span class="tag rec">Proposta · clique numa ferramenta duas vezes</span>
+ <div style="background:var(--stage);border-radius:8px;padding:20px;min-height:330px" id="toolopts"></div>
+</div>
+
+<!-- =============================== 6 -->
+<h2 id="fav">6. Canetas favoritas</h2>
+<p>Recomendo <b>sim, mas pequeno</b>. Uma favorita guarda ferramenta, cor e espessura juntas: “caneta violeta fina”, “marca-texto amarelo”. Ela nasce no botão <i>Guardar como favorita</i> das opções acima e aparece no começo da paleta, como um ponto com o ícone dentro. Cabem até quatro. Botão direito numa favorita tira ela. Sem favoritas, a paleta fica exatamente como no r4.</p>
+<div class="card">
+ <span class="tag rec">Proposta · com duas favoritas</span>
+ <div style="background:var(--stage);border-radius:8px;padding:20px;display:flex;justify-content:center" id="favs"></div>
+ <p class="cap">Escolher uma favorita troca ferramenta, cor e espessura de uma vez. A tecla <kbd>1</kbd>–<kbd>4</kbd> chama cada uma; hoje esses números trocam a cor, e passariam a valer para as favoritas quando existirem.</p>
+</div>
+
+<!-- =============================== 7 -->
+<h2 id="selecao">7. Barra de seleção</h2>
+<p>Ao selecionar com o laço, aparece uma barra flutuante logo acima da seleção, com o que se faz com ela. Hoje essas ações estão espalhadas no menu Editar e no botão direito.</p>
+<div class="sel-stage"><div class="sheet" id="sheet"></div></div>
+<p class="cap">“Converter em texto” só aparece quando a seleção tem escrita à mão. A cor muda a tinta do que está selecionado. ⋯ guarda o resto: Mandar ao Summa, Copiar como imagem, Duplicar, Trazer para frente e Mandar para trás. A barra some enquanto você arrasta a seleção e volta quando você solta.</p>
+
+<!-- =============================== 8 -->
+<h2 id="classico">8. Modo Clássico</h2>
+<p>O Clássico existe para quem quer a barra completa. Hoje ele tem duas fileiras de ícones Lucide antigos pintados de cinza-azulado, gravação de áudio em vermelho, cores saturadas (verde-limão, ciano), borda vermelha na página atual e número de página em vermelho. A proposta mantém todas as funções, mas:</p>
+<ul>
+ <li><b>uma fileira só</b> por padrão: arquivo, histórico, as mesmas ferramentas e cores do Estúdio, e zoom. A segunda fileira (navegação, áudio, alinhamento de texto) volta pelo “Personalizar barra” do Xournal++, que continua lá;</li>
+ <li>os <b>ícones Lucide atuais em cinza neutro</b>, os mesmos do Estúdio e do Summa;</li>
+ <li>a página atual marcada pelo <b>anel do acento</b> na miniatura, sem borda vermelha;</li>
+ <li>o fundo atrás das páginas no <b>cinza do Summa</b>.</li>
+</ul>
+<div class="grid2">
+ <div><span class="tag">Hoje</span><img class="shot" src="img/hoje-classic.png" alt=""></div>
+ <div class="cap">Fileira 1: arquivo e PDF, navegação, áudio, tela cheia, texto. Fileira 2: 25 botões de ferramentas e cores.</div>
+</div>
+<div class="win cl" style="margin-top:14px" id="classic"></div>
+
+<!-- =============================== 9 -->
+<h2 id="textos">9. Textos que ainda dizem “Xournal++”</h2>
+<p>São 42 textos na tradução. A regra proposta: onde o texto fala <b>do programa</b>, diz Ambitus. Onde fala <b>do formato</b> ou da origem, mantém Xournal++, porque é verdade e importa para a compatibilidade. O Sobre credita o Xournal++ e a licença GPL.</p>
+<div class="card" style="padding:8px 14px">
+<table class="tx">
+ <tr><th>Hoje</th><th>Proposta</th></tr>
+ <tr><td>Xournal++ travou da última vez. Gostaria de restaurar o último arquivo editado?</td><td>O Ambitus fechou sem querer da última vez. Quer abrir o caderno como estava? <span style="color:var(--faint)">[Abrir como estava] [Agora não]</span></td></tr>
+ <tr><td>Ops... Xournal++ encontrou um erro fatal</td><td>O Ambitus encontrou um erro e precisa fechar. O caderno aberto foi guardado.</td></tr>
+ <tr><td>Desculpe, o Xournal++ só consegue abrir um arquivo por vez.</td><td>Abra um caderno por vez; os outros abrem em abas.</td></tr>
+ <tr><td>Preferências Xournal++</td><td>Configurações <span style="color:var(--faint)">(e “Preferências completas do Xournal++” no Avançado)</span></td></tr>
+ <tr><td>Sobre Xournal++</td><td>Sobre o Ambitus <span style="color:var(--faint)">— “baseado no Xournal++ (GPL-2.0)”, com link e créditos</span></td></tr>
+ <tr><td>As alterações de plugin só são aplicadas após Xournal++ ser reiniciado</td><td>As mudanças nos plugins valem depois de reabrir o Ambitus.</td></tr>
+ <tr><td>Arquivos Xournal++</td><td>Cadernos (.xopp, o formato do Xournal++) <span style="color:var(--faint)">— mantém o nome do formato</span></td></tr>
+ <tr><td>…versão de formato mais recente que a suportada por esta versão do Xournal++…</td><td>…mais recente do que este Ambitus conhece… <span style="color:var(--faint)">(e o resto igual)</span></td></tr>
+</table>
+</div>
+<p class="cap">Junto vem a revisão do tom: frases curtas, em segunda pessoa e sem “Desculpe”, como as do Summa. O <code>.desktop</code> e o tipo de arquivo também dizem “Caderno do Ambitus”.</p>
+
+<!-- =============================== 10 -->
+<h2 id="r4">10. Detalhes do r4</h2>
+<div class="grid2">
+ <div class="card">
+  <span class="tag">Onde se personaliza a paleta e o radial</span>
+  <p style="margin:0">Em dois lugares que mexem na mesma coisa: no <b>⋯ da paleta</b>, na hora, e em <b>Configurações → Ferramentas</b>, para quem procura nas configurações (está no protótipo da seção 4). Não existe terceiro lugar.</p>
+ </div>
+ <div class="card">
+  <span class="tag">A página na conversa, depois de enviada</span>
+  <div style="display:flex;justify-content:flex-end"><div style="background:var(--code);border-radius:8px;padding:8px;max-width:280px">
+   <div style="display:flex;gap:8px;align-items:center;border:1px solid var(--border);background:#fff;border-radius:4px;padding:4px 8px 4px 4px;margin-bottom:6px"><div style="width:30px;height:38px;border:1px solid var(--border);border-radius:2px;flex:none" id="msgpg"></div><div style="font-size:12px;line-height:1.3"><b>Limites — aula 3</b><br><span style="color:var(--faint)">página 2 · abrir no Ambitus</span></div></div>
+   <div style="font-size:13.5px">Por que esse limite dá 1?</div></div></div>
+  <p class="cap">O cartão fica na mensagem como as imagens anexadas. Um clique abre o caderno no Ambitus, na mesma página. Se a página mudou depois, ele abre do mesmo jeito: o cartão aponta para o caderno, não guarda uma cópia.</p>
+ </div>
+</div>
+
+<h2>Ordem de implementação, depois do seu ok</h2>
+<ol>
+ <li>Ícones, cores e fundo neutro (r3), mais o papel Summa.</li>
+ <li>Paleta com ⋯, opções ao tocar de novo e favoritas (r4, seções 5 e 6).</li>
+ <li>Barra de seleção e menu radial personalizável.</li>
+ <li>Caderno novo, tela de início e textos.</li>
+ <li>Configurações no estilo do Summa e setup de primeira vez.</li>
+ <li>Modo Clássico enxuto.</li>
+ <li>No Summa: página como anexo, clipe no chat lateral e chat solto igual ao preso.</li>
+</ol>
+</main>
+<script>
+const P={
+ pencil:'<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+ highlighter:'<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>',
+ eraser:'<path d="M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21"/><path d="m5.082 11.09 8.828 8.828"/>',
+ lasso:'<path d="M3.704 14.467a10 8 0 1 1 3.115 2.375"/><path d="M7 22a5 5 0 0 1-2-3.994"/><circle cx="5" cy="16" r="2"/>',
+ type:'<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
+ sigma:'<path d="M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2"/>',
+ more:'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+ plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+ minus:'<path d="M5 12h14"/>',
+ x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+ square:'<rect width="14" height="14" x="5" y="5" rx="1"/>',
+ grid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+ search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+ clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+ folder:'<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+ chevron:'<path d="m6 9 6 6 6-6"/>',
+ check:'<path d="M20 6 9 17l-5-5"/>',
+ save:'<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+ file:'<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/>',
+ folderopen:'<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+ undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+ redo:'<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/>',
+ convert:'<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
+ copy:'<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+ trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+ star:'<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
+ zoomin:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/>',
+ zoomout:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/>',
+ fit:'<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+ pdf:'<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>',
+ pages:'<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>',
+ send:'<path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/>',
+};
+const ic=n=>`<svg class="i" viewBox="0 0 24 24">${P[n]}</svg>`;
+document.querySelector('main').innerHTML=document.querySelector('main').innerHTML.replace(/\b(GRID|PLUS|MORE|MINUS|SQUARE|X|SEARCH|CLOCK|FOLDER|CHEVRON)\b(?![^<]*>)/g,m=>ic(m.toLowerCase()));
+
+/* papel */
+const ruled=(line,margin,step=10)=>{let s='';for(let y=24;y<104;y+=step)s+=`<line x1="0" x2="86" y1="${y}" y2="${y}" stroke="${line}" stroke-width=".6"/>`;return s+(margin?`<line x1="14" x2="14" y1="0" y2="104" stroke="${margin}" stroke-width=".6"/>`:'');};
+const PAPERS={summa:['Summa',ruled('#c6c6c6','#b89cea')],xopp:['Pautado azul',ruled('#7fb2f0','#f0609e')],grid:['Quadriculado',(()=>{let s='';for(let v=8;v<104;v+=8)s+=`<line x1="0" x2="86" y1="${v}" y2="${v}" stroke="#dedede" stroke-width=".6"/><line y1="0" y2="104" x1="${v}" x2="${v}" stroke="#dedede" stroke-width=".6"/>`;return s})()],dots:['Pontilhado',(()=>{let s='';for(let y=8;y<104;y+=8)for(let x=8;x<86;x+=8)s+=`<circle cx="${x}" cy="${y}" r=".7" fill="#a8a8a8"/>`;return s})()],plain:['Liso','']};
+const paperSvg=k=>`<svg viewBox="0 0 86 104" width="100%" height="100%" preserveAspectRatio="none">${PAPERS[k][1]}</svg>`;
+function papers(el,sel,onpick){el.innerHTML=Object.keys(PAPERS).map(k=>`<div class="paper ${k===sel?'on':''}" data-p="${k}"><div class="pg">${paperSvg(k)}</div>${PAPERS[k][0]}</div>`).join('');
+ el.onclick=e=>{const p=e.target.closest('[data-p]');if(p){papers(el,p.dataset.p,onpick);onpick&&onpick(p.dataset.p);}};}
+papers(document.getElementById('papers'),'summa');
+
+/* setup */
+const SET={i:0,lang:'pt',theme:'system',accent:'graphite',folder:'summa',paper:'summa',hand:'right',ink:false};
+const STEPS=['Boas-vindas','Cadernos','Caneta','Papel','Summa','Pronto'];
+const ART=['Vamos preparar o Ambitus.','Onde ficam os cadernos.','Experimente a caneta.','A folha de todo dia.','Os dois conversam.','Tudo pronto.'];
+function setup(){
+ const el=document.getElementById("setupbox"),s=SET;
+ const body=[
+  ()=>`<h4>Boas-vindas ao Ambitus.</h4>
+   <div class="lbl">Idioma</div><div style="display:flex;gap:8px;margin-bottom:14px"><button class="opt ${s.lang==='pt'?'on':''}" data-k="lang" data-v="pt"><b>Português</b><span>do Brasil</span></button><button class="opt ${s.lang==='en'?'on':''}" data-k="lang" data-v="en"><b>English</b><span>dá para trocar depois</span></button></div>
+   <div class="lbl">Tema</div><div class="seg" style="margin-bottom:14px">${[['system','Do sistema'],['light','Claro'],['dark','Escuro']].map(([v,n])=>`<button class="${s.theme===v?'on':''}" data-k="theme" data-v="${v}">${n}</button>`).join('')}</div>
+   <div class="lbl">Cor de acento</div><div style="display:flex;gap:18px">${[['graphite','#303030','Grafite'],['violet','#8044ca','Violeta']].map(([v,c,n])=>`<button data-k="accent" data-v="${v}" style="border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px"><span class="dot" style="width:24px;height:24px;background:${c};outline:2px solid ${s.accent===v?c:'transparent'};outline-offset:2px"></span>${n}</button>`).join('')}</div>
+   <p class="cap">Lidos do Summa: português, grafite.</p>`,
+  ()=>`<h4>Onde ficam os seus cadernos?</h4>
+   <div style="display:flex;flex-direction:column;gap:8px">
+   <button class="opt ${s.folder==='summa'?'on':''}" data-k="folder" data-v="summa"><b>A mesma pasta do Summa <span style="font-weight:400;color:var(--violet);font-size:11.5px">recomendado</span></b><span>~/Estudos/cofre · as matérias do Summa viram as pastas da biblioteca</span></button>
+   <button class="opt ${s.folder==='own'?'on':''}" data-k="folder" data-v="own"><b>Uma pasta só do Ambitus</b><span>~/Documentos/Cadernos</span></button>
+   <button class="opt ${s.folder==='pick'?'on':''}" data-k="folder" data-v="pick"><b>Escolher outra…</b><span>qualquer pasta, inclusive uma sincronizada</span></button></div>
+   <p class="cap">Os cadernos são arquivos .xopp comuns: abrem no Xournal++ também.</p>`,
+  ()=>`<h4>Experimente a caneta.</h4>
+   <div class="pad" id="pad"><svg id="padsvg" width="100%" height="100%" style="position:absolute;inset:0"></svg><span style="position:absolute;left:10px;top:8px;font-size:12px;color:var(--faint)">escreva aqui</span></div>
+   <div class="row"><span>Mão com que você escreve<small>a paleta e o radial abrem do lado oposto</small></span><span class="seg">${[['right','Direita'],['left','Esquerda']].map(([v,n])=>`<button class="${s.hand===v?'on':''}" data-k="hand" data-v="${v}">${n}</button>`).join('')}</span></div>
+   <div class="row"><span>O dedo na tela move a página<small>só a caneta escreve; com o dedo você rola e dá zoom</small></span><input type="checkbox" class="sw" checked></div>
+   <div class="row" style="border:0"><span>Botão da caneta abre o menu radial<small>desligado, ele vira borracha enquanto segurado</small></span><input type="checkbox" class="sw" checked></div>`,
+  ()=>`<h4>A folha de todo dia.</h4><div class="papers" id="spapers"></div>
+   <div class="row" style="border:0;margin-top:10px"><span>Tamanho</span><span class="seg"><button class="on">A4</button><button>Carta</button></span></div>
+   <p class="cap">Cada caderno novo pode trocar. Isto é só o padrão.</p>`,
+  ()=>`<h4>O Summa está aqui.</h4>
+   <div class="row"><span>${ic('check')} Ponte com o Summa ligada<small>“Mandar ao Summa” e o Conferir passam a página direto</small></span><input type="checkbox" class="sw" checked></div>
+   <div class="row" style="border:0"><span>Buscar também na escrita à mão<small>as páginas com tinta vão ao seu modelo e viram texto para a busca. Sai do computador: por isso começa desligado.</small></span><input type="checkbox" class="sw" ${s.ink?'checked':''} data-k="ink"></div>
+   <p class="cap">Sem o Summa instalado, esta etapa diz o que ele é e segue sem ele.</p>`,
+  ()=>`<h4>Tudo pronto.</h4>
+   <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13.5px;align-items:center">
+   <span><kbd>P</kbd> <kbd>M</kbd> <kbd>E</kbd></span><span>caneta, marca-texto, borracha</span>
+   <span><kbd>S</kbd> <kbd>T</kbd> <kbd>X</kbd></span><span>seleção, texto, LaTeX</span>
+   <span><kbd>Ctrl</kbd>+<kbd>/</kbd></span><span>qualquer comando pelo nome</span>
+   <span><kbd>Ctrl</kbd>+<kbd>K</kbd></span><span>buscar nos cadernos</span>
+   <span>segurar parado</span><span>endireita o traço em reta, círculo, seta…</span></div>
+   <p class="cap">Estes atalhos ficam também em Ajuda → Atalhos.</p>`];
+ el.innerHTML=`<div class="art"><div class="glyph">∂</div><div>${ART[s.i]}</div></div>
+  <div class="pane"><div class="steps">${STEPS.map((n,k)=>`<span class="${k===s.i?'cur':k<s.i?'done':''}"><i>${k<s.i?'✓':k+1}</i>${n}</span>`).join('')}</div>
+  ${body[s.i]()}
+  <div class="foot">${s.i?'<button class="btn2" data-go="-1">Voltar</button>':''}<span class="sp"></span>${s.i<5?'<button class="ghost" data-go="99">Pular e usar o padrão</button>':''}<button class="btn" data-go="1">${s.i===0?'Começar':s.i===5?'Abrir a biblioteca':'Próximo'}</button></div></div>`;
+ if(s.i===3)papers(document.getElementById('spapers'),s.paper,p=>s.paper=p);
+ if(s.i===2){const pad=document.getElementById('pad'),sv=document.getElementById('padsvg');let d=null;
+  pad.onpointerdown=e=>{const r=pad.getBoundingClientRect();d=document.createElementNS('http://www.w3.org/2000/svg','path');d.setAttribute('fill','none');d.setAttribute('stroke','#161616');d.setAttribute('stroke-width','2');d.setAttribute('stroke-linecap','round');d.pts=`M${e.clientX-r.left} ${e.clientY-r.top}`;sv.append(d);};
+  pad.onpointermove=e=>{if(!d)return;const r=pad.getBoundingClientRect();d.pts+=` L${e.clientX-r.left} ${e.clientY-r.top}`;d.setAttribute('d',d.pts);};
+  window.onpointerup=()=>d=null;}
+}
+document.getElementById("setupbox").addEventListener('click',e=>{const b=e.target.closest('[data-go],[data-k]');if(!b)return;
+ if(b.dataset.go){const g=+b.dataset.go;SET.i=g===99?5:Math.max(0,Math.min(5,SET.i+g));if(g===1&&SET.i===5&&b.textContent==='Abrir a biblioteca')SET.i=0;}
+ else if(b.dataset.k==='ink'){SET.ink=b.checked;return;}
+ else SET[b.dataset.k]=b.dataset.v;
+ setup();});
+setup();
+
+/* biblioteca */
+const page=(w,h)=>`<svg viewBox="0 0 78 100" width="${w}" height="${h}" preserveAspectRatio="none">${ruled('#e0e0e0','#d6c6f2',9).replace(/86/g,'78')}<g fill="none" stroke="#161616" stroke-width="1" stroke-linecap="round"><path d="M18 22c3-8 6-9 7-2s4 6 6-1"/><path d="M36 19v10M31 24h10"/><path d="M18 40h40"/><path d="M18 49c3-6 6-6 7 0s4 4 6-1"/><path d="M38 49h18"/><path d="M18 67c3-8 6-9 7-2"/></g></svg>`;
+document.getElementById('contpg').innerHTML=page(78,100);
+document.getElementById('msgpg').innerHTML=page(30,38);
+const topo=c=>`<svg viewBox="0 0 100 130" style="position:absolute;inset:0;width:100%;height:100%;opacity:.25" preserveAspectRatio="none"><g fill="none" stroke="#fff" stroke-width=".7">${[10,18,26,34,42].map(r=>`<ellipse cx="62" cy="40" rx="${r*1.2}" ry="${r}"/>`).join('')}</g></svg>`;
+const NB=[['Limites — aula 3','#5b4a8a','Cálculo I/Aulas/Limites — aula 3.xopp'],['Rascunho à mão','#5b4a8a','Cálculo I/Aulas/Rascunho à mão.xopp'],['Lista 2','#2f5f6e','Física II/Lista 2.xopp'],['Resumo para a P1','#5b4a8a','Cálculo I/Resumo para a P1.xopp'],['Espaços vetoriais','#8a5a3c','Álgebra Linear/Espaços vetoriais.xopp']];
+document.getElementById('covers').innerHTML=NB.map(([n,c,p])=>`<div class="cv" data-path="${p}"><div class="c" style="background:${c}">${topo()}<span style="position:relative">${n}</span></div><div class="m">${p.split('/')[0]} · hoje</div></div>`).join('');
+document.getElementById('covers').addEventListener('mouseover',e=>{const c=e.target.closest('[data-path]');if(c)document.getElementById('statusl').textContent='~/Estudos/cofre/'+c.dataset.path;});
+
+/* preferências */
+const PREF={tab:0};
+const PSECT=[
+ ['Cadernos',()=>`<h6>Cadernos</h6>
+  <div class="row"><span>Pasta dos cadernos<small>a mesma do Summa</small></span><span class="field">${ic('folder')} ~/Estudos/cofre</span></div>
+  <div class="row"><span>Salvar sozinho<small>a cada minuto e ao trocar de aba</small></span><input type="checkbox" class="sw" checked></div>
+  <div class="row"><span>Guardar versões anteriores<small>uma por dez minutos de trabalho; as 30 mais novas</small></span><input type="checkbox" class="sw" checked></div>
+  <div class="row"><span>Papel dos cadernos novos</span><span class="seg"><button class="on">Summa</button><button>Quadriculado</button><button>Liso</button><button>…</button></span></div>`],
+ ['Caneta e toque',()=>`<h6>Caneta e toque</h6>
+  <div class="row"><span>Mão com que você escreve</span><span class="seg"><button class="on">Direita</button><button>Esquerda</button></span></div>
+  <div class="row"><span>Pressão da caneta muda a espessura</span><input type="checkbox" class="sw" checked></div>
+  <div class="row"><span>O dedo na tela move a página</span><input type="checkbox" class="sw" checked></div>
+  <div class="row"><span>Botão da caneta abre o menu radial</span><input type="checkbox" class="sw" checked></div>
+  <div class="row"><span>Ignorar a palma da mão</span><input type="checkbox" class="sw" checked></div>`],
+ ['Ferramentas',()=>`<h6>Ferramentas</h6>
+  <div class="row"><span>Segurar parado endireita o traço<small>reta, círculo, retângulo, seta</small></span><input type="checkbox" class="sw" checked></div>
+  <div class="row"><span>Uma tecla por ferramenta<small>P, M, E, S, T, X</small></span><input type="checkbox" class="sw" checked></div>
+  <div class="row"><span>Paleta e menu radial<small>o que fica à mão, as cores e as favoritas</small></span><button class="btn2">Personalizar…</button></div>`],
+ ['Aparência',()=>`<h6>Aparência</h6>
+  <div class="row"><span>Tema</span><span class="seg"><button class="on">Do sistema</button><button>Claro</button><button>Escuro</button></span></div>
+  <div class="row"><span>Cor de acento<small>a mesma do Summa, se ele estiver aberto</small></span><span style="display:flex;gap:12px"><span class="dot" style="width:20px;height:20px;background:#303030;outline:2px solid #303030;outline-offset:2px"></span><span class="dot" style="width:20px;height:20px;background:#8044ca"></span></span></div>
+  <div class="row"><span>Idioma</span><span class="seg"><button class="on">Português</button><button>English</button></span></div>`],
+ ['Summa',()=>`<h6>Summa</h6>
+  <div class="row"><span>Ponte com o Summa<small>“Mandar ao Summa”, Conferir pela página</small></span><input type="checkbox" class="sw" checked></div>
+  <div class="row"><span>Buscar também na escrita à mão<small>as páginas com tinta vão ao seu modelo e viram texto na busca</small></span><input type="checkbox" class="sw"></div>`],
+ ['Avançado',()=>`<h6>Avançado</h6>
+  <p style="font-size:13.5px;color:var(--muted);margin:0 0 12px">LaTeX, áudio, dispositivos de entrada, nomes padrão dos arquivos, plugins e tudo o mais que o Xournal++ oferece.</p>
+  <button class="btn2">Abrir as Preferências completas do Xournal++</button>`],
+];
+function prefs(){document.getElementById("prefsbox").innerHTML=`<div class="nav"><h6>Configurações</h6><div class="srch">${ic('search')} Buscar</div>${PSECT.map((s,i)=>`<button class="it ${i===PREF.tab?'on':''}" data-t="${i}">${s[0]}</button>`).join('')}</div><div class="pane">${PSECT[PREF.tab][1]()}</div>`;}
+document.getElementById("prefsbox").addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(b){PREF.tab=+b.dataset.t;prefs();}});
+prefs();
+
+/* opções da ferramenta */
+const TO={tool:'pencil',open:'pencil'};
+const TOOLS=['pencil','highlighter','eraser','lasso','type','sigma'];
+const OPTS={
+ pencil:()=>`<div class="lbl">Espessura</div><input type="range" min="1" max="20" value="4" style="width:100%">
+  <div class="lbl" style="margin-top:10px">Traço</div><span class="seg"><button class="on">Contínuo</button><button>Tracejado</button><button>Pontilhado</button></span>
+  <div class="row" style="padding:8px 0 4px"><span>Pressão muda a espessura</span><input type="checkbox" class="sw" checked></div>
+  <div class="row" style="border:0;padding:4px 0"><span>Suavizar o traço</span><input type="checkbox" class="sw"></div>
+  <button class="btn2" style="margin-top:8px;width:100%;justify-content:center">${ic('star')} Guardar como favorita</button>`,
+ highlighter:()=>`<div class="lbl">Espessura</div><input type="range" min="4" max="30" value="12" style="width:100%">
+  <div class="lbl" style="margin-top:10px">Cor</div><div style="display:flex;gap:8px">${['#facc15','#86efac','#f9a8d4','#93c5fd','#c4b5fd'].map((c,i)=>`<span class="dot" style="background:${c};width:18px;height:18px;outline:2px solid ${i?'transparent':'#161616'};outline-offset:2px"></span>`).join('')}</div>
+  <div class="row" style="border:0;padding:10px 0 4px"><span>Traçar sempre em reta<small>marca linhas de texto sem tremer</small></span><input type="checkbox" class="sw" checked></div>
+  <button class="btn2" style="margin-top:8px;width:100%;justify-content:center">${ic('star')} Guardar como favorita</button>`,
+ eraser:()=>`<div class="lbl">Apaga</div><div style="display:flex;flex-direction:column;gap:6px">
+  <button class="opt on"><b>O traço inteiro</b><span>toque num traço e ele some</span></button><button class="opt"><b>Só onde passa</b><span>como uma borracha de verdade</span></button></div>
+  <div class="lbl" style="margin-top:10px">Tamanho</div><span class="seg"><button>Fina</button><button class="on">Média</button><button>Grossa</button></span>`,
+ lasso:()=>`<div class="lbl">Selecionar por</div><div style="display:flex;flex-direction:column;gap:6px">
+  <button class="opt on"><b>Laço</b><span>contorne à mão</span></button><button class="opt"><b>Retângulo</b><span>arraste uma caixa</span></button><button class="opt"><b>Objeto</b><span>toque num traço, texto ou imagem</span></button></div>`,
+ type:()=>`<div class="lbl">Fonte</div><span class="seg"><button class="on">IBM Plex Sans</button><button>STIX Two</button><button>Mono</button></span>
+  <div class="lbl" style="margin-top:10px">Tamanho</div><span class="seg"><button>12</button><button class="on">14</button><button>18</button><button>24</button></span>`,
+ sigma:()=>`<div class="lbl">Tamanho da fórmula</div><span class="seg"><button>Pequena</button><button class="on">Normal</button><button>Grande</button></span>
+  <p class="cap">Clicar numa fórmula já existente edita ela.</p>`,
+};
+const TNAME={pencil:'Caneta',highlighter:'Marca-texto',eraser:'Borracha',lasso:'Seleção',type:'Texto',sigma:'LaTeX'};
+function toolopts(){const el=document.getElementById('toolopts');
+ el.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div class="pop" style="display:inline-flex;gap:2px;padding:4px">${TOOLS.map(t=>`<button class="ib ${t===TO.tool?'on':''}" data-tool="${t}">${ic(t)}</button>`).join('')}<span style="width:1px;height:20px;background:var(--border);margin:6px"></span><button class="ib">${ic('more')}</button></div>
+ ${TO.open?`<div class="pop" style="width:300px"><div style="display:flex;align-items:center;margin-bottom:8px"><b style="font-size:13.5px">${TNAME[TO.open]}</b><span style="flex:1"></span><button class="ib" style="width:24px;height:24px" data-close="1">${ic('x')}</button></div>${OPTS[TO.open]()}</div>`:`<p class="cap" style="text-align:center">Toque de novo em ${TNAME[TO.tool].toLowerCase()} para ver as opções.</p>`}</div>`;}
+document.getElementById('toolopts').addEventListener('click',e=>{const b=e.target.closest('[data-tool],[data-close]');if(!b)return;
+ if(b.dataset.close){TO.open=null;}else{const t=b.dataset.tool;if(t===TO.tool)TO.open=TO.open?null:t;else{TO.tool=t;TO.open=null;}}toolopts();});
+toolopts();
+
+/* favoritas */
+const favIcon=(t,c)=>`<button class="ib" style="position:relative" title="favorita"><span class="dot" style="width:24px;height:24px;background:${c};display:flex;align-items:center;justify-content:center;color:#fff"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px">${P[t]}</svg></span></button>`;
+document.getElementById('favs').innerHTML=`<div class="pop" style="display:inline-flex;align-items:center;gap:2px;padding:4px">${favIcon('pencil','#8044ca')}${favIcon('highlighter','#d4a50c')}<span style="width:1px;height:20px;background:var(--border);margin:0 6px"></span>${TOOLS.map((t,i)=>`<button class="ib ${i===0?'on':''}">${ic(t)}</button>`).join('')}<button class="ib">${ic('more')}</button><span style="width:1px;height:20px;background:var(--border);margin:0 6px"></span>${['#161616','#8044ca','#2548c7','#c2410c','#0f7b55'].map((c,i)=>`<button class="ib"><span class="dot" style="background:${c};outline:2px solid ${i?'transparent':'#161616'};outline-offset:2px"></span></button>`).join('')}</div>`;
+
+/* seleção */
+document.getElementById('sheet').innerHTML=`<svg viewBox="0 0 520 260" width="100%" height="100%" preserveAspectRatio="none" style="position:absolute;inset:0">${(()=>{let s='';for(let y=40;y<260;y+=22)s+=`<line x1="0" x2="520" y1="${y}" y2="${y}" stroke="#e8e8e8"/>`;return s})()}
+ <g fill="none" stroke="#161616" stroke-width="2" stroke-linecap="round"><path d="M150 140c8-26 18-30 22-8s12 20 18-6"/><path d="M206 116v30M194 131h24"/><path d="M232 146c4-22 16-28 20-8 2 10 8 12 14 2"/><path d="M290 125h22M290 136h22"/><path d="M332 150c6-36 18-42 24-10s14 10 16-14"/></g>
+ <rect x="138" y="104" width="250" height="60" fill="rgb(48 48 48/.05)" stroke="#303030" stroke-dasharray="4 3"/></svg>
+ <div class="selbar" style="left:50%;top:44px;transform:translateX(-50%)"><button class="ib">${ic('convert')} Converter em texto</button><span class="sep"></span><button class="ib">${ic('copy')}</button><button class="ib">${ic('trash')}</button><span class="sep"></span>${['#161616','#8044ca','#2548c7','#c2410c'].map(c=>`<button class="ib" style="width:28px;padding:0"><span class="dot" style="background:${c};width:12px;height:12px"></span></button>`).join('')}<span class="sep"></span><button class="ib" style="padding:0 6px">${ic('more')}</button></div>`;
+
+/* clássico */
+const B=n=>`<button class="ib" title="${n}">${ic(n)}</button>`;
+document.getElementById('classic').innerHTML=`<div class="tb"><span class="tab">${ic('grid')} Biblioteca</span><span class="tab cur">Limites — aula 3</span><span class="sp"></span><span class="seg" style="margin-right:8px"><button class="on">Clássico</button><button>Estúdio</button><button>Foco</button></span><span class="ib">${ic('more')}</span></div>
+ <div class="menu"><span>Arquivo</span><span>Editar</span><span>Visualizar</span><span>Navegação</span><span>Jornal</span><span>Ferramentas</span><span>Ajuda</span></div>
+ <div class="bar">${B('save')}${B('folderopen')}${B('pdf')}<span class="sep"></span>${B('undo')}${B('redo')}<span class="sep"></span>${TOOLS.map((t,i)=>`<button class="ib ${i===0?'on':''}">${ic(t)}</button>`).join('')}${B('more')}<span class="sep"></span>${['#161616','#8044ca','#2548c7','#c2410c','#0f7b55'].map((c,i)=>`<button class="ib"><span class="dot" style="background:${c};outline:2px solid ${i?'transparent':'#161616'};outline-offset:2px"></span></button>`).join('')}<span class="sep"></span>${[3,6,9].map((d,i)=>`<button class="ib ${i===1?'on':''}"><span class="dot" style="width:${d}px;height:${d}px;background:currentColor"></span></button>`).join('')}<span style="flex:1"></span>${B('zoomout')}<span class="zoom">100%</span>${B('zoomin')}${B('fit')}${B('pages')}</div>
+ <div class="wk"><div class="thumbs"><div class="t on">${page(70,90)}</div><small style="font-weight:600;color:var(--fg)">1</small><div class="t"></div><small>2</small></div><div class="canvas"><div class="p">${page(300,385)}</div></div></div>
+ <div class="status"><span>Página 1 de 6</span><span>Camada 1</span><span class="sp"></span><span>100%</span></div>`;
+</script>
+</body>
+</html>
