@@ -5203,3 +5203,46 @@ msgstr "Média"
 msgctxt "eraser size"
 msgid "Thick"
 msgstr "Grossa"
+
+msgid "Write"
+msgstr "Escrever"
+
+msgid "Select"
+msgstr "Selecionar"
+
+msgid "Shapes"
+msgstr "Formas"
+
+msgid "Insert"
+msgstr "Inserir"
+
+msgid "Shape recognizer"
+msgstr "Reconhecer formas"
+
+msgid "Line"
+msgstr "Linha"
+
+msgid "Arrow"
+msgstr "Seta"
+
+msgid "Ellipse"
+msgstr "Elipse"
+
+msgid "All tools"
+msgstr "Todas as ferramentas"
+
+msgid "Another color"
+msgstr "Outra cor"
+
+msgid "Pin to the palette"
+msgstr "Prender na paleta"
+
+msgid "Remove from the palette"
+msgstr "Tirar da paleta"
+
+#, c-format
+msgid "%d in the palette"
+msgstr "%d na paleta"
+
+msgid "Restore the default"
+msgstr "Restaurar o padrão"

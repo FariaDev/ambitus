@@ -753,6 +753,57 @@ popover.amb-optpop switch:checked slider { background: @amb_on_accent; border-co
 #mainWindow.darkMode popover.amb-optpop switch:checked slider { background: @amb_dk_on_accent; border-color: @amb_dk_on_accent; }
 #mainWindow.darkMode popover.amb-optpop scale marks indicator { background: @amb_dk_border_strong; }
 
+/* ---------- painel ⋯ da paleta: todas as ferramentas ----------
+   O .pop .groups do protótipo (docs/design/r4): três colunas de grupos, linhas com ícone, nome, tecla em mono apagada e
+   o alfinete; rodapé com a contagem e o "Restaurar o padrão". */
+
+.amb-palette button.amb-pal-more:checked { background: @amb_selected; color: @amb_text; }
+
+popover.amb-optpop .amb-pick-row { border-radius: 4px; }
+popover.amb-optpop .amb-pick-row:hover { background: @amb_hover; }
+popover.amb-optpop .amb-pick,
+popover.amb-optpop .amb-pin,
+popover.amb-optpop .amb-lnk {
+    background: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 4px;
+    min-height: 0;
+    min-width: 0;
+    color: @amb_text;
+}
+popover.amb-optpop .amb-pick { padding: 5px 6px; font-size: 10pt; }
+popover.amb-optpop .amb-pick-key {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: @amb_text3;
+    margin-left: 14px;
+}
+/* alfinete: apagado quando a ferramenta não está na paleta, aceso (cheio) quando está */
+popover.amb-optpop .amb-pin { min-width: 22px; min-height: 22px; padding: 0; opacity: 0.55; }
+popover.amb-optpop .amb-pin:hover { background: @amb_active; opacity: 1; }
+popover.amb-optpop .amb-pin.on { opacity: 1; }
+popover.amb-optpop .amb-pick-foot {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid @amb_border;
+}
+popover.amb-optpop .amb-pick-count { color: @amb_text2; font-size: 9.5pt; }
+popover.amb-optpop .amb-lnk { padding: 4px 8px; font-size: 9.5pt; }
+popover.amb-optpop .amb-lnk:hover { background: @amb_hover; }
+
+#mainWindow.darkMode .amb-palette button.amb-pal-more:checked { background: @amb_dk_selected; color: @amb_dk_text; }
+#mainWindow.darkMode popover.amb-optpop .amb-pick-row:hover { background: @amb_dk_hover; }
+#mainWindow.darkMode popover.amb-optpop .amb-pick,
+#mainWindow.darkMode popover.amb-optpop .amb-pin,
+#mainWindow.darkMode popover.amb-optpop .amb-lnk { color: @amb_dk_text; }
+#mainWindow.darkMode popover.amb-optpop .amb-pick-key { color: @amb_dk_text3; }
+#mainWindow.darkMode popover.amb-optpop .amb-pin:hover { background: @amb_dk_active; }
+#mainWindow.darkMode popover.amb-optpop .amb-pick-foot { border-top-color: @amb_dk_border; }
+#mainWindow.darkMode popover.amb-optpop .amb-pick-count { color: @amb_dk_text2; }
+#mainWindow.darkMode popover.amb-optpop .amb-lnk:hover { background: @amb_dk_hover; }
+
 /* Quadro: minimapa (desenhado no código) e pílula do zoom */
 .amb-board-pill {
     background: @amb_bg;

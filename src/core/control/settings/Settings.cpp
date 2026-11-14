@@ -249,6 +249,8 @@ void Settings::loadDefault() {
     this->snapRecognizedShapesEnabled = false;
     this->scratchOutEnabled = true;
     this->editorMode = 0;
+    this->ambitusPaletteTools.clear();
+    this->ambitusPaletteColors.clear();
     this->restoreLineWidthEnabled = false;
 
     this->inTransaction = false;
@@ -728,6 +730,10 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->scratchOutEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("editorMode")) == 0) {
         this->editorMode = std::clamp<int>(g_ascii_strtoll(reinterpret_cast<const char*>(value), nullptr, 10), 0, 2);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteTools")) == 0) {
+        this->ambitusPaletteTools = reinterpret_cast<const char*>(value);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteColors")) == 0) {
+        this->ambitusPaletteColors = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("restoreLineWidthEnabled")) == 0) {
         this->restoreLineWidthEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("preferredLocale")) == 0) {
@@ -1214,6 +1220,8 @@ void Settings::save() {
     SAVE_BOOL_PROP(snapRecognizedShapesEnabled);
     SAVE_BOOL_PROP(scratchOutEnabled);
     SAVE_INT_PROP(editorMode);
+    SAVE_STRING_PROP(ambitusPaletteTools);
+    SAVE_STRING_PROP(ambitusPaletteColors);
     SAVE_BOOL_PROP(restoreLineWidthEnabled);
 
     SAVE_INT_PROP(numIgnoredStylusEvents);
@@ -2403,6 +2411,26 @@ void Settings::setEditorMode(int mode) {
 }
 
 auto Settings::getEditorMode() const -> int { return this->editorMode; }
+
+void Settings::setAmbitusPaletteTools(const std::string& tools) {
+    if (this->ambitusPaletteTools == tools) {
+        return;
+    }
+    this->ambitusPaletteTools = tools;
+    save();
+}
+
+auto Settings::getAmbitusPaletteTools() const -> const std::string& { return this->ambitusPaletteTools; }
+
+void Settings::setAmbitusPaletteColors(const std::string& colors) {
+    if (this->ambitusPaletteColors == colors) {
+        return;
+    }
+    this->ambitusPaletteColors = colors;
+    save();
+}
+
+auto Settings::getAmbitusPaletteColors() const -> const std::string& { return this->ambitusPaletteColors; }
 
 
 void Settings::setRestoreLineWidthEnabled(bool enabled) { this->restoreLineWidthEnabled = enabled; }

@@ -555,6 +555,14 @@ public:
     void setEditorMode(int mode);
     int getEditorMode() const;
 
+    /// Ambitus: the tools of the Studio palette, ids separated by commas (empty: the default ones)
+    void setAmbitusPaletteTools(const std::string& tools);
+    const std::string& getAmbitusPaletteTools() const;
+
+    /// Ambitus: the colours of the Studio palette, RRGGBB separated by commas (empty: the default ones)
+    void setAmbitusPaletteColors(const std::string& colors);
+    const std::string& getAmbitusPaletteColors() const;
+
     /**
      * Set line width restoring for resized edit selctions enabled
      */
@@ -1155,6 +1163,10 @@ private:
 
     /// Ambitus: screen mode of the editor
     int editorMode{};
+
+    /// Ambitus: tools and colours of the Studio palette, as saved
+    std::string ambitusPaletteTools;
+    std::string ambitusPaletteColors;
 
     /**
      * Whether the line width should be preserved in a resizing operation
