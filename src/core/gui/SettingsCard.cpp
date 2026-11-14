@@ -463,9 +463,9 @@ void SettingsCard::buildNotebooks() {
     const int minutes = std::max(1, settings->getAutosaveTimeout());
     std::string when;
     if (minutes == 1) {
-        when = _("every minute and when you switch tab");
+        when = _("every minute");
     } else {
-        gchar* text = g_strdup_printf(_("every %d minutes and when you switch tab"), minutes);
+        gchar* text = g_strdup_printf(_("every %d minutes"), minutes);
         when = text;
         g_free(text);
     }

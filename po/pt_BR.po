@@ -5518,11 +5518,11 @@ msgstr "Pasta dos cadernos"
 msgid "the same as Summa"
 msgstr "a mesma do Summa"
 
-msgid "every minute and when you switch tab"
-msgstr "a cada minuto e ao trocar de aba"
+msgid "every minute"
+msgstr "a cada minuto"
 
-msgid "every %d minutes and when you switch tab"
-msgstr "a cada %d minutos e ao trocar de aba"
+msgid "every %d minutes"
+msgstr "a cada %d minutos"
 
 msgid "Save automatically"
 msgstr "Salvar sozinho"
