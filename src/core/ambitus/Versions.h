@@ -4,8 +4,9 @@
  * Earlier versions of a notebook. Before a save writes over the file, the file
  * as it was is copied aside (at most one copy every ten minutes, the newest
  * thirty kept), in Ambitus's data folder: the notebook folder, that Summa reads,
- * gets nothing new and the .xopp stays as it is. A copy can be opened in a tab
- * of its own or put back in place of the notebook.
+ * gets nothing new and the .xopp stays as it is. A copy is read in the right
+ * panel of the window (VersionsPanel), in place of the page, or put back in
+ * place of the notebook (VersionsRestore).
  *
  * @license GNU GPLv2 or later
  */
@@ -45,6 +46,18 @@ fs::path defaultRoot();
 
 /// What SaveJob calls before writing: keep() with ten minutes and thirty copies; never fails the save
 void keepBeforeSave(const fs::path& notebook);
+
+/// A day of the list of versions: the copies made on it, as indices into the list that was grouped
+struct DayGroup {
+    enum class Day { Today, Yesterday, Other };
+    Day day = Day::Other;
+    Clock::time_point first;  ///< the newest copy of the day, for the name of a day that is neither today nor yesterday
+    std::vector<size_t> items;
+};
+
+/// The copies, newest first, grouped by the local day they were made on (newest day first); days without a copy are
+/// left out
+std::vector<DayGroup> groupByDay(const std::vector<Version>& newestFirst, Clock::time_point now);
 
 /// Like "hoje, 14:32", "ontem, 09:10" or "3 de nov., 18:05", in local time
 std::string describe(Clock::time_point when, Clock::time_point now);

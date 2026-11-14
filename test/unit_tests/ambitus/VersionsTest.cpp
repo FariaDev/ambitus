@@ -85,3 +85,67 @@ TEST(Versions, theDateSaysTodayOrYesterday) {
     EXPECT_EQ(describe(now - hours(24), now).rfind("yesterday, ", 0), 0u);
     EXPECT_EQ(describe(now - hours(24 * 40), now).find("today"), std::string::npos);
 }
+
+namespace {
+Version at(Clock::time_point when) {
+    Version v;
+    v.when = when;
+    return v;
+}
+
+/// The days are the local ones: the test fixes the zone, so "midnight" is where it says
+struct FixedZone {
+    std::string before;
+    bool had;
+    FixedZone() {
+        const char* tz = g_getenv("TZ");
+        had = tz != nullptr;
+        before = tz ? tz : "";
+        g_setenv("TZ", "UTC", true);
+        tzset();
+    }
+    ~FixedZone() {
+        if (had) {
+            g_setenv("TZ", before.c_str(), true);
+        } else {
+            g_unsetenv("TZ");
+        }
+        tzset();
+    }
+};
+}  // namespace
+
+TEST(Versions, groupedByTheDayTheyWereMadeOn) {
+    FixedZone zone;
+    // 2025-11-13 12:00 UTC
+    const auto now = Clock::from_time_t(1'763'035'200);
+    std::vector<Version> list = {
+            at(now - hours(1)),   // today 11:00
+            at(now - hours(11)),  // today 01:00
+            at(now - hours(13)),  // yesterday 23:00
+            at(now - hours(30)),  // yesterday 06:00
+            at(now - hours(60)),  // two days before, 00:00 of the 11th
+            at(now - hours(24 * 9)),
+    };
+    auto groups = groupByDay(list, now);
+    ASSERT_EQ(groups.size(), 4u);
+    EXPECT_EQ(groups[0].day, DayGroup::Day::Today);
+    EXPECT_EQ(groups[0].items, (std::vector<size_t>{0, 1}));
+    EXPECT_EQ(groups[1].day, DayGroup::Day::Yesterday);
+    EXPECT_EQ(groups[1].items, (std::vector<size_t>{2, 3}));
+    EXPECT_EQ(groups[2].day, DayGroup::Day::Other);
+    EXPECT_EQ(groups[2].items, (std::vector<size_t>{4}));
+    EXPECT_EQ(groups[2].first, list[4].when);
+    EXPECT_EQ(groups[3].day, DayGroup::Day::Other);
+    EXPECT_EQ(groups[3].items, (std::vector<size_t>{5}));
+}
+
+TEST(Versions, noCopiesNoDays) { EXPECT_TRUE(groupByDay({}, Clock::now()).empty()); }
+
+TEST(Versions, onlyOldCopiesLeaveTodayOut) {
+    FixedZone zone;
+    const auto now = Clock::from_time_t(1'763'035'200);
+    auto groups = groupByDay({at(now - hours(24 * 3))}, now);
+    ASSERT_EQ(groups.size(), 1u);
+    EXPECT_EQ(groups[0].day, DayGroup::Day::Other);
+}

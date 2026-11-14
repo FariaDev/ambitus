@@ -130,6 +130,39 @@ void keepBeforeSave(const fs::path& notebook) {
     }
 }
 
+std::vector<DayGroup> groupByDay(const std::vector<Version>& newestFirst, Clock::time_point now) {
+    // a day as a number that grows with the calendar, in local time
+    auto dayOf = [](Clock::time_point t) {
+        GDateTime* dt = g_date_time_new_from_unix_local(Clock::to_time_t(t));
+        const int day = g_date_time_get_year(dt) * 400 + g_date_time_get_day_of_year(dt);
+        g_date_time_unref(dt);
+        return day;
+    };
+    const int today = dayOf(now);
+    GDateTime* n = g_date_time_new_from_unix_local(Clock::to_time_t(now));
+    GDateTime* y = g_date_time_add_days(n, -1);
+    const int yesterday = g_date_time_get_year(y) * 400 + g_date_time_get_day_of_year(y);
+    g_date_time_unref(y);
+    g_date_time_unref(n);
+
+    std::vector<DayGroup> groups;
+    int lastDay = -1;
+    for (size_t i = 0; i < newestFirst.size(); i++) {
+        const int day = dayOf(newestFirst[i].when);
+        if (groups.empty() || day != lastDay) {
+            DayGroup g;
+            g.day = day == today     ? DayGroup::Day::Today :
+                    day == yesterday ? DayGroup::Day::Yesterday :
+                                       DayGroup::Day::Other;
+            g.first = newestFirst[i].when;
+            groups.push_back(std::move(g));
+            lastDay = day;
+        }
+        groups.back().items.push_back(i);
+    }
+    return groups;
+}
+
 std::string describe(Clock::time_point when, Clock::time_point now) {
     GDateTime* w = g_date_time_new_from_unix_local(Clock::to_time_t(when));
     GDateTime* n = g_date_time_new_from_unix_local(Clock::to_time_t(now));

@@ -11,7 +11,6 @@
 #include "ambitus/ConvertInk.h"
 #include "ambitus/CopyPage.h"
 #include "ambitus/SendPage.h"
-#include "ambitus/VersionsDialog.h"
 #include "control/AudioController.h"
 #include "control/Control.h"
 #include "control/NavigationHistory.h"
@@ -149,7 +148,7 @@ struct ActionProperties<Action::COMMAND_PALETTE> {
 
 template <>
 struct ActionProperties<Action::EARLIER_VERSIONS> {
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ambitus::showVersions(ctrl); }
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getWindow()->toggleVersions(); }
 };
 
 template <>

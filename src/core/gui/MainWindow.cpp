@@ -56,6 +56,7 @@
 #include "TitleBar.h"            // for TitleBar
 #include "Toast.h"               // for Toast
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
+#include "VersionsPanel.h"
 #include "XournalView.h"         // for XournalView
 #include "config-dev.h"          // for TOOLBAR_CONFIG
 #include "filesystem.h"          // for path, exists
@@ -157,6 +158,9 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     this->radialMenu->setPageMenu(this->pageMenu.get());
     this->selectionBar = std::make_unique<ambitus::SelectionBar>(control, xournal.get(), overlay);
     this->boardNavigator = std::make_unique<ambitus::BoardNavigator>(control, xournal.get(), overlay);
+    // before the notices, so they go over the preview of a version
+    this->versionsPanel = std::make_unique<ambitus::VersionsPanel>(control, overlay, winXournal, xournal->getWidget());
+    gtk_box_pack_end(GTK_BOX(gtk_widget_get_parent(winXournal)), versionsPanel->getWidget(), false, false, 0);
     this->toast = std::make_unique<ambitus::Toast>(overlay, winXournal);
     ambitus::CommandPalette::Notebooks paletteBooks;
     paletteBooks.all = [this] { return library->allNotebooks(); };
@@ -287,6 +291,9 @@ void MainWindow::tabsChanged() {
         items.push_back(std::move(it));
     }
     titleBar->setTabs(std::move(items));
+    if (versionsPanel) {
+        versionsPanel->tabsChanged();
+    }
 }
 
 void MainWindow::setEditorMode(ambitus::EditorMode mode) {
@@ -386,6 +393,19 @@ void MainWindow::showToastAction(const std::string& text, const std::string& act
 void MainWindow::showToastError(const std::string& text, const std::string& detail) {
     if (toast) {
         toast->showError(text, detail);
+    }
+}
+
+void MainWindow::toggleVersions() {
+    if (versionsPanel) {
+        showEditor();
+        versionsPanel->toggle();
+    }
+}
+
+void MainWindow::versionsRestored() {
+    if (versionsPanel) {
+        versionsPanel->restored();
     }
 }
 
@@ -567,7 +587,13 @@ void MainWindow::initXournalWidget() {
 
     setGtkTouchscreenScrollingForDeviceMapping();
 
-    gtk_box_append(GTK_BOX(get("boxContents")), winXournal);
+    // Ambitus: the pages, and at their right the panel of versions (added once the window is built)
+    GtkWidget* pageRow = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_hexpand(winXournal, true);
+    gtk_widget_set_vexpand(winXournal, true);
+    gtk_box_pack_start(GTK_BOX(pageRow), winXournal, true, true, 0);
+    gtk_box_pack_start(GTK_BOX(get("boxContents")), pageRow, true, true, 0);
+    gtk_widget_show(pageRow);
 
     scrollHandling = std::make_unique<ScrollHandling>(GTK_SCROLLED_WINDOW(winXournal));
 

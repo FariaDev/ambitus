@@ -52,6 +52,7 @@ class SelectionBar;
 class BoardNavigator;
 class Toast;
 class CommandPalette;
+class VersionsPanel;
 enum class EditorMode;
 }
 namespace ambitus::library {
@@ -131,6 +132,10 @@ public:
     void showToastError(const std::string& text, const std::string& detail);
     /// Ambitus: the command palette (see ambitus::CommandPalette)
     void openCommandPalette();
+    /// Ambitus: File → Earlier versions opens the panel of versions at the right of the page, or closes it
+    void toggleVersions();
+    /// Ambitus: the notebook was put back to a version (out of the preview, the list follows)
+    void versionsRestored();
     void showEditor();
     bool isLibraryShown() const;
     /// Ambitus: Classic (all the bars), Studio (floating palette) or Focus (only the page)
@@ -241,6 +246,8 @@ private:
     std::unique_ptr<ambitus::SelectionBar> selectionBar;
     std::unique_ptr<ambitus::Toast> toast;
     std::unique_ptr<ambitus::CommandPalette> commandPalette;
+    /// Ambitus: the versions of the notebook, at the right of the page, and the preview of one over it
+    std::unique_ptr<ambitus::VersionsPanel> versionsPanel;
     /// Ambitus: minimap and zoom of a board
     std::unique_ptr<ambitus::BoardNavigator> boardNavigator;
     /// Ambitus: client side title bar

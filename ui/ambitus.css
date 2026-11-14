@@ -750,6 +750,119 @@ headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_
 #mainWindow.darkMode .amb-cmd .amb-cmd-key,
 #mainWindow.darkMode .amb-cmd .amb-cmd-empty { color: @amb_dk_text3; }
 
+/* ---------- painel de versões (protótipo r6, seção 5) ----------
+   O painel à direita da página (250 px, borda à esquerda): título com o ✕, os dias em caixa alta pequena, a linha com
+   a miniatura 30×38 e a hora, a marcada em @amb_selected. A prévia de uma cópia fica sobre a página, no fundo
+   "palco" (@amb_layer), com a faixa no alto: olho, hora · só leitura, "Voltar à atual" (fantasma) e "Restaurar esta"
+   (primário). */
+
+.amb-vers {
+    background: @amb_bg;
+    color: @amb_text;
+    border-left: 1px solid @amb_border;
+    font-size: 13px;
+}
+.amb-vers .amb-vers-head { padding: 8px 8px 8px 14px; border-bottom: 1px solid @amb_border; }
+.amb-vers .amb-vers-title { font-weight: 600; }
+.amb-vers button.amb-vers-close {
+    background-image: none;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    border-radius: 4px;
+    min-width: 26px;
+    min-height: 26px;
+    padding: 0;
+    color: @amb_text2;
+}
+.amb-vers button.amb-vers-close:hover { background: @amb_hover; color: @amb_text; }
+.amb-vers button.amb-vers-close:active { background: @amb_active; color: @amb_text; }
+.amb-vers scrolledwindow,
+.amb-vers list.amb-vers-list { background: transparent; }
+.amb-vers .amb-vers-group { font-size: 11px; color: @amb_text3; padding: 10px 14px 4px 14px; }
+.amb-vers row.amb-vers-row {
+    padding: 6px 14px;
+    background: transparent;
+    color: @amb_text;
+}
+.amb-vers row.amb-vers-row:hover { background: @amb_hover; }
+.amb-vers row.amb-vers-row:selected { background: @amb_selected; color: @amb_text; }
+.amb-vers .amb-vers-time,
+.amb-vers row.amb-vers-row:selected .amb-vers-time { color: @amb_text; }
+.amb-vers .amb-vers-sub,
+.amb-vers row.amb-vers-row:selected .amb-vers-sub { color: @amb_text3; font-size: 11.5px; }
+.amb-vers .amb-vers-thumb { color: @amb_border; }
+.amb-vers .amb-vers-empty { color: @amb_text3; padding: 14px; }
+.amb-vers .amb-vers-foot { color: @amb_text3; font-size: 12.5px; padding: 8px 14px; }
+
+.amb-vers-preview { background: @amb_layer; }
+.amb-vers-preview scrolledwindow.amb-vers-stage,
+.amb-vers-preview scrolledwindow.amb-vers-stage viewport { background: transparent; outline: none; }
+.amb-vers-preview .amb-vers-pages { background: @amb_layer; }
+.amb-vers-preview .amb-vers-banner {
+    background: @amb_bg;
+    color: @amb_text;
+    border-bottom: 1px solid @amb_border;
+    padding: 8px 14px;
+    font-size: 13px;
+}
+.amb-vers-preview .amb-vers-banner image { color: @amb_text2; }
+.amb-vers-preview .amb-vers-banner button {
+    background-image: none;
+    box-shadow: none;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+}
+.amb-vers-preview .amb-vers-banner button.amb-vers-ghost {
+    background: transparent;
+    color: @amb_text2;
+    padding: 4px 8px;
+    min-height: 0;
+}
+.amb-vers-preview .amb-vers-banner button.amb-vers-ghost:hover { background: @amb_hover; color: @amb_text; }
+.amb-vers-preview .amb-vers-banner button.amb-vers-ghost:active { background: @amb_active; color: @amb_text; }
+.amb-vers-preview .amb-vers-banner button.amb-vers-primary {
+    background: @amb_accent;
+    color: @amb_on_accent;
+    font-weight: 600;
+    padding: 0 14px;
+    min-height: 28px;
+}
+.amb-vers-preview .amb-vers-banner button.amb-vers-primary:hover { background: shade(@amb_accent, 1.25); }
+.amb-vers-preview .amb-vers-banner button.amb-vers-primary:active { background: shade(@amb_accent, 1.5); }
+
+#mainWindow.darkMode .amb-vers { background: @amb_dk_bg; color: @amb_dk_text; border-left-color: @amb_dk_border; }
+#mainWindow.darkMode .amb-vers .amb-vers-head { border-bottom-color: @amb_dk_border; }
+#mainWindow.darkMode .amb-vers button.amb-vers-close { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-vers button.amb-vers-close:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-vers button.amb-vers-close:active { background: @amb_dk_active; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-vers .amb-vers-group { color: @amb_dk_text3; }
+#mainWindow.darkMode .amb-vers row.amb-vers-row { color: @amb_dk_text; }
+#mainWindow.darkMode .amb-vers row.amb-vers-row:hover { background: @amb_dk_hover; }
+#mainWindow.darkMode .amb-vers row.amb-vers-row:selected { background: @amb_dk_selected; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-vers .amb-vers-time,
+#mainWindow.darkMode .amb-vers row.amb-vers-row:selected .amb-vers-time { color: @amb_dk_text; }
+#mainWindow.darkMode .amb-vers .amb-vers-sub,
+#mainWindow.darkMode .amb-vers row.amb-vers-row:selected .amb-vers-sub { color: @amb_dk_text3; }
+#mainWindow.darkMode .amb-vers .amb-vers-thumb { color: @amb_dk_border; }
+#mainWindow.darkMode .amb-vers .amb-vers-empty,
+#mainWindow.darkMode .amb-vers .amb-vers-foot { color: @amb_dk_text3; }
+#mainWindow.darkMode .amb-vers-preview,
+#mainWindow.darkMode .amb-vers-preview .amb-vers-pages { background: @amb_dk_layer; }
+#mainWindow.darkMode .amb-vers-preview .amb-vers-banner {
+    background: @amb_dk_bg;
+    color: @amb_dk_text;
+    border-bottom-color: @amb_dk_border;
+}
+#mainWindow.darkMode .amb-vers-preview .amb-vers-banner image { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-vers-preview .amb-vers-banner button.amb-vers-ghost { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-vers-preview .amb-vers-banner button.amb-vers-ghost:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-vers-preview .amb-vers-banner button.amb-vers-ghost:active { background: @amb_dk_active; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-vers-preview .amb-vers-banner button.amb-vers-primary { background: @amb_dk_accent; color: @amb_dk_on_accent; }
+#mainWindow.darkMode .amb-vers-preview .amb-vers-banner button.amb-vers-primary:hover { background: shade(@amb_dk_accent, 0.9); }
+#mainWindow.darkMode .amb-vers-preview .amb-vers-banner button.amb-vers-primary:active { background: shade(@amb_dk_accent, 0.8); }
+
 /* ---------- paleta flutuante do modo Estúdio ---------- */
 
 .amb-palette {
@@ -1089,6 +1202,9 @@ headerbar.amb-titlebar button.amb-tab,
 .amb-palette button,
 .amb-selbar button,
 .amb-notice button,
+.amb-vers button,
+.amb-vers row.amb-vers-row,
+.amb-vers-preview .amb-vers-banner button,
 popover.amb-selpop button.amb-selpop-item,
 .amb-board-pill button,
 menu menuitem,

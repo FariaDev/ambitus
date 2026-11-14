@@ -4989,29 +4989,49 @@ msgstr "Comandos"
 msgid "Earlier versions…"
 msgstr "Versões anteriores…"
 
-msgid "Earlier versions of {1}"
-msgstr "Versões anteriores de {1}"
-
-msgid "A copy is kept before each save, at most one every ten minutes. The newest thirty stay."
-msgstr "Uma cópia é guardada antes de cada gravação, no máximo uma a cada dez minutos. Ficam as trinta mais novas."
-
 msgid "No version yet. The first one is kept the next time the notebook is saved."
 msgstr "Ainda não há versões. A primeira é guardada na próxima vez que o caderno for salvo."
 
 msgid "Save the notebook first: its versions are kept from then on."
 msgstr "Salve o caderno primeiro: as versões são guardadas a partir daí."
 
-msgid "Restore…"
-msgstr "Restaurar…"
+msgid "Versions"
+msgstr "Versões"
 
-msgid "Restore"
-msgstr "Restaurar"
+msgid "Today"
+msgstr "Hoje"
 
-msgid "Restore this version?"
-msgstr "Restaurar esta versão?"
+msgid "Yesterday"
+msgstr "Ontem"
 
-msgid "The notebook goes back to how it was {1}. How it is now is kept in the list."
-msgstr "O caderno volta ao estado de {1}. Como ele está agora fica guardado na lista."
+msgid "%B %-d"
+msgstr "%-d de %B"
+
+msgid "%B %-d, %Y"
+msgstr "%-d de %B de %Y"
+
+msgid "Now"
+msgstr "Agora"
+
+msgid "the current one"
+msgstr "a atual"
+
+msgid "{1} page"
+msgid_plural "{1} pages"
+msgstr[0] "{1} página"
+msgstr[1] "{1} páginas"
+
+msgid "{1} · read only"
+msgstr "{1} · só leitura"
+
+msgid "Back to the current one"
+msgstr "Voltar à atual"
+
+msgid "Restore this one"
+msgstr "Restaurar esta"
+
+msgid "One every ten minutes of work; the 30 newest stay."
+msgstr "Uma a cada dez minutos de trabalho; ficam as 30 mais novas."
 
 msgid "Version from {1} restored. The one before it was kept."
 msgstr "Versão de {1} restaurada. A de antes ficou guardada."
@@ -5033,9 +5053,6 @@ msgstr "Não deu para guardar o caderno como está agora, então nada foi mudado
 
 msgid "The version could not be opened."
 msgstr "Não deu para abrir a versão."
-
-msgid "{1} (version of {2})"
-msgstr "{1} (versão de {2})"
 
 msgid "today, {1}"
 msgstr "hoje, {1}"
