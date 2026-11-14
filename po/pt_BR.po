@@ -5278,10 +5278,6 @@ msgid "More"
 msgstr "Mais"
 
 msgctxt "Selection bar"
-msgid "Copy as image"
-msgstr "Copiar como imagem"
-
-msgctxt "Selection bar"
 msgid "Bring to front"
 msgstr "Trazer para frente"
 

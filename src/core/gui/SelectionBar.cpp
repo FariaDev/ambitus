@@ -223,7 +223,7 @@ GtkWidget* SelectionBar::buildMenu() {
         gtk_box_pack_start(GTK_BOX(box), b, false, false, 0);
     };
     item("xopp-send", _("Send to Summa"), "win.send-page-to-summa", nullptr);
-    item("xopp-tool-image", C_("Selection bar", "Copy as image"), "win.copy-page-as-image", nullptr);
+    // no "copy as image" here: Xournal++ only copies the whole page, and doing it ends the selection
     GtkWidget* sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     addClass(sep, "amb-selpop-sep");
     gtk_box_pack_start(GTK_BOX(box), sep, false, false, 0);
