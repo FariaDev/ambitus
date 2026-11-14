@@ -690,7 +690,10 @@ void syncMode(GtkWidget* button) {
     Item const* it = itemOf(button);
     GActionGroup* g = winActions(button);
     if (it && g) {
+        // set_active also emits "clicked": the handler must not take it for a touch and apply the action again
+        g_object_set_data(G_OBJECT(button), "amb-syncing", GINT_TO_POINTER(1));
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), boolState(g, it->action));
+        g_object_set_data(G_OBJECT(button), "amb-syncing", nullptr);
     }
 }
 
@@ -701,6 +704,9 @@ GtkWidget* modeButton(Item const& it) {
     gtk_widget_set_valign(b, GTK_ALIGN_CENTER);
     g_object_set_data(G_OBJECT(b), "amb-item", const_cast<Item*>(&it));
     g_signal_connect(b, "clicked", G_CALLBACK(+[](GtkButton* w, gpointer) {
+                         if (g_object_get_data(G_OBJECT(w), "amb-syncing")) {
+                             return;
+                         }
                          activateItem(GTK_WIDGET(w), *itemOf(GTK_WIDGET(w)), true);
                          syncMode(GTK_WIDGET(w));
                      }),
