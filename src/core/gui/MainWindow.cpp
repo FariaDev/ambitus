@@ -20,6 +20,7 @@
 #include "control/settings/Settings.h"                  // for Settings
 #include "control/settings/SettingsEnums.h"             // for SCROLLBAR_HIDE_HO...
 #include "control/zoom/ZoomControl.h"                   // for ZoomControl
+#include "gui/AmbitusColors.h"                          // for stageColor
 #include "gui/FloatingToolbox.h"                        // for FloatingToolbox
 #include "gui/GladeGui.h"                               // for GladeGui
 #include "gui/PdfFloatingToolbox.h"                     // for PdfFloatingToolbox
@@ -361,7 +362,7 @@ void MainWindow::applyEditorMode() {
             gtk_style_context_add_provider(gtk_widget_get_style_context(contents), GTK_STYLE_PROVIDER(band),
                                            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 1);
         }
-        auto c = settings->getBackgroundColor();
+        auto c = ambitus::stageColor(settings, darkMode);
         if (board) {  // the band is part of the board: the colour of its paper
             control->getDocument()->lock_shared();
             if (auto p = control->getDocument()->getPage(0)) {

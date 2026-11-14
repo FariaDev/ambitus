@@ -11,8 +11,10 @@
 #include "control/Control.h"                // for Control
 #include "control/settings/Settings.h"      // for Settings
 #include "control/tools/EditSelection.h"    // for EditSelection
+#include "gui/AmbitusColors.h"              // for stageColor
 #include "gui/Layout.h"                     // for Layout
 #include "gui/LegacyRedrawable.h"           // for Redrawable
+#include "gui/MainWindow.h"                 // for MainWindow
 #include "gui/PageView.h"                   // for XojPageView
 #include "gui/Shadow.h"                     // for Shadow
 #include "gui/XournalView.h"                // for XournalView
@@ -229,23 +231,10 @@ static void gtk_xournal_realize(GtkWidget* widget) {
 }
 
 static void gtk_xournal_draw_shadow(GtkXournal* xournal, cairo_t* cr, int left, int top, int width, int height,
-                                    bool selected) {
+                                    bool /*selected*/) {
     Settings* settings = xournal->view->getControl()->getSettings();
-    bool showShadow = settings->isShowPageShadow();
-    if (selected) {
-        if (showShadow) {
-            Shadow::drawShadow(cr, left - 2, top - 2, width + 4, height + 4);
-        }
-
-        // Draw border
-        Util::cairo_set_source_rgbi(cr, settings->getBorderColor());
-        cairo_set_line_width(cr, 2.0);
-        cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
-        cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
-
-        cairo_rectangle(cr, left - 1, top - 1, width + 2, height + 2);
-        cairo_stroke(cr);
-    } else if (showShadow) {
+    // Ambitus: the current page has no border (the Xournal++ one was red); the sidebar marks it with a ring
+    if (settings->isShowPageShadow()) {
         Shadow::drawShadow(cr, left, top, width, height);
     }
 }
@@ -307,7 +296,9 @@ static auto gtk_xournal_draw(GtkWidget* widget, cairo_t* cr) -> gboolean {
     const auto& views = xournal->view->getViewPages();
     // Ambitus: a board has no edge to show: the canvas around it is its paper, without shadow or border
     const bool board = xournal->view->getControl()->isBoardOpen() && !views.empty();
-    Util::cairo_set_source_rgbi(cr, board ? views[0]->getPage()->getBackgroundColor() : settings->getBackgroundColor());
+    Util::cairo_set_source_rgbi(
+            cr, board ? views[0]->getPage()->getBackgroundColor() :
+                        ambitus::stageColor(settings, xournal->view->getControl()->getWindow()->isDarkTheme()));
     cairo_paint(cr);
 
     // Add a padding for the shadow of the pages

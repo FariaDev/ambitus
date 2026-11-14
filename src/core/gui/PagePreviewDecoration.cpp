@@ -4,6 +4,7 @@
 
 #include "control/Control.h"
 #include "control/settings/Settings.h"
+#include "gui/AmbitusColors.h"
 #include "gui/MainWindow.h"
 #include "util/raii/CairoWrappers.h"
 
@@ -30,7 +31,7 @@ void PagePreviewDecoration::drawPageNumberBelowPreview(cairo_t* cr, SidebarPrevi
     std::string pageNumber = std::to_string(pageEntry->getIndex() + 1);
     Color color = control->getWindow()->isDarkTheme() ? Colors::white : Colors::xopp_darkslategray;
     if (pageEntry->isSelected()) {
-        color = control->getSettings()->getBorderColor();
+        color = ambitus::accentColor(control->getWindow()->isDarkTheme());  // Ambitus: the accent, not the red border
     }
     Util::cairo_set_source_rgbi(cr, color);
     cairo_select_font_face(cr, FONT_NAME, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
@@ -52,8 +53,9 @@ void PagePreviewDecoration::drawPageNumberWithCircleBackground(cairo_t* cr, Side
     cairo_text_extents(cr, pageNumber.c_str(), &extents);
 
     // Set the color for drawing the circle. This circle is required to provide good contrast for the page number.
+    const bool dark = control->getWindow()->isDarkTheme();
     if (pageEntry->isSelected()) {
-        Color color = control->getSettings()->getBorderColor();
+        Color color = ambitus::accentColor(dark);
         Util::cairo_set_source_rgbi(cr, color, CIRCLE_LABEL_OPACITY);
     } else {
         Util::cairo_set_source_rgbi(cr, Colors::xopp_darkslategray, CIRCLE_LABEL_OPACITY);
@@ -80,7 +82,7 @@ void PagePreviewDecoration::drawPageNumberWithCircleBackground(cairo_t* cr, Side
 
     // Draw the page number in the center of the previously drawn circle
     cairo_move_to(cr, x - addititionalWidth / 2 - (extents.width / 2 + extents.x_bearing), y + CIRCLE_TEXT_Y);
-    Util::cairo_set_source_argb(cr, Colors::white);
+    Util::cairo_set_source_argb(cr, pageEntry->isSelected() ? ambitus::onAccentColor(dark) : Colors::white);
     cairo_show_text(cr, pageNumber.c_str());
 }
 
@@ -94,8 +96,9 @@ void PagePreviewDecoration::drawPageNumberWithSquareBackground(cairo_t* cr, Side
     cairo_text_extents(cr, pageNumber.c_str(), &extents);
 
     // Select the color for painting the square background
+    const bool dark = control->getWindow()->isDarkTheme();
     if (pageEntry->isSelected()) {
-        Util::cairo_set_source_rgbi(cr, control->getSettings()->getBorderColor());
+        Util::cairo_set_source_rgbi(cr, ambitus::accentColor(dark));
     } else {
         Util::cairo_set_source_rgbi(cr, Colors::xopp_darkslategray);
 
@@ -124,6 +127,6 @@ void PagePreviewDecoration::drawPageNumberWithSquareBackground(cairo_t* cr, Side
 
     // Draw the page number in the center of the square
     cairo_move_to(cr, x + recWidth / 2 - (extents.width / 2 + extents.x_bearing), y + SQUARE_TEXT_Y);
-    Util::cairo_set_source_argb(cr, Colors::white);
+    Util::cairo_set_source_argb(cr, pageEntry->isSelected() ? ambitus::onAccentColor(dark) : Colors::white);
     cairo_show_text(cr, pageNumber.c_str());
 }

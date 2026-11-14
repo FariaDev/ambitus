@@ -7,6 +7,8 @@
 #include "control/Control.h"                // for Control
 #include "control/jobs/XournalScheduler.h"  // for XournalScheduler
 #include "control/settings/Settings.h"      // for Settings
+#include "gui/AmbitusColors.h"              // for accentColor
+#include "gui/MainWindow.h"                 // for MainWindow
 #include "gui/Shadow.h"                     // for Shadow
 #include "model/XojPage.h"                  // for XojPage
 #include "util/Color.h"                     // for cairo_set_source_rgbi
@@ -101,8 +103,8 @@ void SidebarPreviewBaseEntry::paint(cairo_t* cr) {
     if (this->selected) {
         Shadow::drawShadow(cr, Shadow::getShadowTopLeftSize(), Shadow::getShadowTopLeftSize(),
                            round_cast<int>(width) + 4, round_cast<int>(height) + 4);
-        // Draw border
-        Util::cairo_set_source_rgbi(cr, sidebar->getControl()->getSettings()->getBorderColor());
+        // Draw the ring of the accent (Ambitus: it was the red border of Xournal++)
+        Util::cairo_set_source_rgbi(cr, ambitus::accentColor(sidebar->getControl()->getWindow()->isDarkTheme()));
         cairo_set_line_width(cr, 2);
         cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
         cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);

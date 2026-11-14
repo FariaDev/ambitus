@@ -199,7 +199,8 @@ void ToolMenuHandler::initToolItems() {
      * @brief Simple button, with a GTK stock icon name
      *      The corresponding action in ActionDatabase[action] should have no state (it can have a parameter)
      **/
-    auto emplaceStockItem = [this](const char* name, Cat c, Action action, const char* icon, std::string description) {
+    [[maybe_unused]] auto emplaceStockItem = [this](const char* name, Cat c, Action action, const char* icon,
+                                                    std::string description) {
         emplaceItem<ToolButton>(name, c, action, icon, description, false);
     };
     /**
@@ -214,8 +215,8 @@ void ToolMenuHandler::initToolItems() {
      * @brief Toggle button, with a GTK stock icon name
      *      The corresponding action in ActionDatabase[action] should have a boolean state and no parameter
      **/
-    auto emplaceStockItemTgl = [this](const char* name, Cat c, Action action, const char* icon,
-                                      std::string description) {
+    [[maybe_unused]] auto emplaceStockItemTgl = [this](const char* name, Cat c, Action action, const char* icon,
+                                                       std::string description) {
         emplaceItem<ToolButton>(name, c, action, icon, description, true);
     };
 
@@ -233,8 +234,8 @@ void ToolMenuHandler::initToolItems() {
      *      The corresponding action in ActionDatabase[action] should have a state and a parameter. The button is "on"
      *when the action state matches `target`.
      **/
-    auto emplaceStockItemWithTarget = [this](const char* name, Cat c, Action action, auto target, const char* icon,
-                                             std::string description) {
+    [[maybe_unused]] auto emplaceStockItemWithTarget = [this](const char* name, Cat c, Action action, auto target,
+                                                              const char* icon, std::string description) {
         emplaceItem<ToolButton>(name, c, action, makeGVariant(target), icon, description);
     };
 
@@ -300,9 +301,9 @@ void ToolMenuHandler::initToolItems() {
     emplaceCustomItem("COPY", Cat::MISC, Action::COPY, "edit-copy", _("Copy"));
     emplaceCustomItem("PASTE", Cat::MISC, Action::PASTE, "edit-paste", _("Paste"));
 
-    emplaceStockItem("SEARCH", Cat::MISC, Action::SEARCH, "edit-find", _("Search"));
+    emplaceCustomItem("SEARCH", Cat::MISC, Action::SEARCH, "edit-find", _("Search"));
 
-    emplaceStockItem("DELETE", Cat::MISC, Action::DELETE, "edit-delete", _("Delete"));
+    emplaceCustomItem("DELETE", Cat::MISC, Action::DELETE, "edit-delete", _("Delete"));
 
     emplaceCustomItemTgl("ROTATION_SNAPPING", Cat::MISC, Action::ROTATION_SNAPPING, "snapping-rotation",
                          _("Rotation Snapping"));
@@ -324,29 +325,29 @@ void ToolMenuHandler::initToolItems() {
     emplaceCustomItem("CUSTOMIZE_TOOLBAR", Cat::MISC, Action::CUSTOMIZE_TOOLBAR, "toolbars-customize",
                       _("Customize Toolbars"));
 
-    emplaceStockItem("ZOOM_OUT", Cat::NAVIGATION, Action::ZOOM_OUT, "zoom-out", _("Zoom out"));
-    emplaceStockItem("ZOOM_IN", Cat::NAVIGATION, Action::ZOOM_IN, "zoom-in", _("Zoom in"));
-    emplaceStockItemTgl("ZOOM_FIT", Cat::NAVIGATION, Action::ZOOM_FIT, "zoom-fit-best", _("Zoom fit to screen"));
-    emplaceStockItem("ZOOM_100", Cat::NAVIGATION, Action::ZOOM_100, "zoom-original", _("Zoom to 100%"));
+    emplaceCustomItem("ZOOM_OUT", Cat::NAVIGATION, Action::ZOOM_OUT, "zoom-out", _("Zoom out"));
+    emplaceCustomItem("ZOOM_IN", Cat::NAVIGATION, Action::ZOOM_IN, "zoom-in", _("Zoom in"));
+    emplaceCustomItemTgl("ZOOM_FIT", Cat::NAVIGATION, Action::ZOOM_FIT, "zoom-fit-best", _("Zoom fit to screen"));
+    emplaceCustomItem("ZOOM_100", Cat::NAVIGATION, Action::ZOOM_100, "zoom-original", _("Zoom to 100%"));
 
     /*
      * Menu Navigation
      * ------------------------------------------------------------------------
      */
 
-    emplaceStockItem("GOTO_FIRST", Cat::NAVIGATION, Action::GOTO_FIRST, "go-first", _("Go to first page"));
-    emplaceStockItem("GOTO_BACK", Cat::NAVIGATION, Action::GOTO_PREVIOUS, "go-previous", _("Back"));
+    emplaceCustomItem("GOTO_FIRST", Cat::NAVIGATION, Action::GOTO_FIRST, "go-first", _("Go to first page"));
+    emplaceCustomItem("GOTO_BACK", Cat::NAVIGATION, Action::GOTO_PREVIOUS, "go-previous", _("Back"));
     emplaceCustomItem("NAVIGATE_BACK", Cat::NAVIGATION, Action::NAVIGATE_BACK, "navigate-back", _("Jump back"));
     emplaceCustomItem("GOTO_PAGE", Cat::NAVIGATION, Action::GOTO_PAGE, "go-to", _("Go to page"));
     emplaceCustomItem("NAVIGATE_FORWARD", Cat::NAVIGATION, Action::NAVIGATE_FORWARD, "navigate-forward",
                       _("Jump forward"));
-    emplaceStockItem("GOTO_NEXT", Cat::NAVIGATION, Action::GOTO_NEXT, "go-next", _("Next"));
-    emplaceStockItem("GOTO_LAST", Cat::NAVIGATION, Action::GOTO_LAST, "go-last", _("Go to last page"));
+    emplaceCustomItem("GOTO_NEXT", Cat::NAVIGATION, Action::GOTO_NEXT, "go-next", _("Next"));
+    emplaceCustomItem("GOTO_LAST", Cat::NAVIGATION, Action::GOTO_LAST, "go-last", _("Go to last page"));
 
-    emplaceStockItem("GOTO_PREVIOUS_LAYER", Cat::NAVIGATION, Action::LAYER_GOTO_PREVIOUS, "go-previous",
-                     _("Go to previous layer"));
-    emplaceStockItem("GOTO_NEXT_LAYER", Cat::NAVIGATION, Action::LAYER_GOTO_NEXT, "go-next", _("Go to next layer"));
-    emplaceStockItem("GOTO_TOP_LAYER", Cat::NAVIGATION, Action::LAYER_GOTO_TOP, "go-top", _("Go to top layer"));
+    emplaceCustomItem("GOTO_PREVIOUS_LAYER", Cat::NAVIGATION, Action::LAYER_GOTO_PREVIOUS, "go-previous",
+                      _("Go to previous layer"));
+    emplaceCustomItem("GOTO_NEXT_LAYER", Cat::NAVIGATION, Action::LAYER_GOTO_NEXT, "go-next", _("Go to next layer"));
+    emplaceCustomItem("GOTO_TOP_LAYER", Cat::NAVIGATION, Action::LAYER_GOTO_TOP, "go-top", _("Go to top layer"));
 
     emplaceCustomItem("GOTO_NEXT_ANNOTATED_PAGE", Cat::NAVIGATION, Action::GOTO_NEXT_ANNOTATED_PAGE,
                       "page-annotated-next", _("Next annotated page"));
@@ -443,13 +444,13 @@ void ToolMenuHandler::initToolItems() {
     emplaceCustomItemWithTarget("HAND", Cat::SELECTION, Action::SELECT_TOOL, TOOL_HAND, "hand", _("Hand"));
 
     emplaceItem<FontButton>("SELECT_FONT", *control->getActionDatabase());
-    emplaceStockItemTgl("FORMAT_JUSTIFY", Cat::TOOLS, Action::TEXT_JUSTIFY, "format-justify-fill", _("Justify text"));
-    emplaceStockItemWithTarget("FORMAT_ALIGN_LEFT", Cat::TOOLS, Action::TEXT_ALIGNMENT, TextAlignment::LEFT,
-                               "format-justify-left", _("Align text to the left"));
-    emplaceStockItemWithTarget("FORMAT_ALIGN_CENTER", Cat::TOOLS, Action::TEXT_ALIGNMENT, TextAlignment::CENTER,
-                               "format-justify-center", _("Center text"));
-    emplaceStockItemWithTarget("FORMAT_ALIGN_RIGHT", Cat::TOOLS, Action::TEXT_ALIGNMENT, TextAlignment::RIGHT,
-                               "format-justify-right", _("Align text to the right"));
+    emplaceCustomItemTgl("FORMAT_JUSTIFY", Cat::TOOLS, Action::TEXT_JUSTIFY, "format-justify-fill", _("Justify text"));
+    emplaceCustomItemWithTarget("FORMAT_ALIGN_LEFT", Cat::TOOLS, Action::TEXT_ALIGNMENT, TextAlignment::LEFT,
+                                "format-justify-left", _("Align text to the left"));
+    emplaceCustomItemWithTarget("FORMAT_ALIGN_CENTER", Cat::TOOLS, Action::TEXT_ALIGNMENT, TextAlignment::CENTER,
+                                "format-justify-center", _("Center text"));
+    emplaceCustomItemWithTarget("FORMAT_ALIGN_RIGHT", Cat::TOOLS, Action::TEXT_ALIGNMENT, TextAlignment::RIGHT,
+                                "format-justify-right", _("Align text to the right"));
 
     emplaceCustomItemTgl("AUDIO_RECORDING", Cat::AUDIO, Action::AUDIO_RECORD, "audio-record",
                          _("Record Audio / Stop Recording"));
