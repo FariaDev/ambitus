@@ -42,7 +42,7 @@
      <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;s</attribute>
     </item>
     <item>
-     <attribute name="label" translatable="yes">Earlier versions…</attribute>
+     <attribute name="label" translatable="yes">Versions of this notebook</attribute>
      <attribute name="action">win.earlier-versions</attribute>
     </item>
    </section>

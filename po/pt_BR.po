@@ -4986,8 +4986,8 @@ msgstr "Nada com “%s”."
 msgid "Commands"
 msgstr "Comandos"
 
-msgid "Earlier versions…"
-msgstr "Versões anteriores…"
+msgid "Versions of this notebook"
+msgstr "Versões deste caderno"
 
 msgid "No version yet. The first one is kept the next time the notebook is saved."
 msgstr "Ainda não há versões. A primeira é guardada na próxima vez que o caderno for salvo."
