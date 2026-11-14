@@ -209,10 +209,11 @@ void Settings::loadDefault() {
 
     this->recolorParameters = {false, false, Recolor(ColorU8{198, 208, 245}, ColorU8{48, 52, 70})};
 
-    this->backgroundColor = Colors::xopp_gainsboro02;
+    this->backgroundColor = Color{0xfff4f4f4U};  // Ambitus: the neutral grey of the Summa
 
+    // Ambitus: the paper of the Summa (grey rules, soft violet margin); the dark pair is for dark paper
     // clang-format off
-	this->pageTemplateSettings.parse("xoj/template\ncopyLastPageSettings=true\nsize=595.275591x841.889764\nbackgroundType=lined\nbackgroundColor=#ffffff\n");
+	this->pageTemplateSettings.parse("xoj/template\ncopyLastPageSettings=true\nsize=595.275591x841.889764\nbackgroundType=lined\nbackgroundTypeConfig=f1=c6c6c6,f2=b89cea,af1=393939,af2=b89cea\nbackgroundColor=#ffffff\n");
     // clang-format on
 
 #ifdef ENABLE_AUDIO
@@ -583,6 +584,10 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
 
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("backgroundColor")) == 0) {
         this->backgroundColor = Color(g_ascii_strtoull(reinterpret_cast<const char*>(value), nullptr, 10));
+        // Ambitus: the former default (Xournal++ gainsboro) moves to the new one; any other saved value stays
+        if (this->backgroundColor == Colors::xopp_gainsboro02) {
+            this->backgroundColor = Color{0xfff4f4f4U};
+        }
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("addHorizontalSpace")) == 0) {
         this->addHorizontalSpace = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("addHorizontalSpaceAmount")) == 0) {

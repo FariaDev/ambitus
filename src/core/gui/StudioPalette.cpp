@@ -53,6 +53,17 @@ gboolean drawDot(GtkWidget* w, cairo_t* cr, Dot* dot) {
             cairo_stroke(cr);
         }
         cairo_set_source_rgb(cr, dot->r, dot->g, dot->b);
+        // the dark ink would vanish on the dark theme: a thin light ring keeps it visible
+        GdkRGBA text;
+        gtk_style_context_get_color(gtk_widget_get_style_context(button), gtk_widget_get_state_flags(button), &text);
+        if (text.green > 0.5 && dot->g < 0.2) {
+            cairo_arc(cr, cx, cy, dot->diameter / 2, 0, 2 * M_PI);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgb(cr, 0xf4 / 255.0, 0xf4 / 255.0, 0xf4 / 255.0);
+            cairo_set_line_width(cr, 1);
+            cairo_stroke(cr);
+            return true;
+        }
     } else {
         GdkRGBA fg;
         gtk_style_context_get_color(gtk_widget_get_style_context(button), gtk_widget_get_state_flags(button), &fg);
@@ -108,8 +119,8 @@ StudioPalette::StudioPalette(GtkOverlay* overlay) {
 
     gtk_box_pack_start(GTK_BOX(box), separator(), false, false, 0);
 
-    // the colours of the prototype: ink, blue, violet, magenta, green
-    const guint32 colors[] = {0x1d2433, 0x2d5fdc, 0x8044ca, 0xbd1c67, 0x028053};
+    // the colours of the Summa: ink, violet, blue, orange, green
+    const guint32 colors[] = {0x161616, 0x8044ca, 0x2548c7, 0xc2410c, 0x0f7b55};
     for (guint32 c: colors) {
         Dot dot{((c >> 16) & 0xff) / 255.0, ((c >> 8) & 0xff) / 255.0, (c & 0xff) / 255.0, 14, true};
         Color color(static_cast<uint8_t>(c >> 16), static_cast<uint8_t>(c >> 8), static_cast<uint8_t>(c));

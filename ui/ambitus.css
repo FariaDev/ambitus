@@ -19,6 +19,10 @@
 @define-color amb_text #161616;
 @define-color amb_text2 #525252;
 @define-color amb_text3 #6f6f6f;
+@define-color amb_border_strong #8d8d8d;
+@define-color amb_active #d4d4d4;
+@define-color amb_selected #dedede;
+@define-color amb_fg_strong #0e0e0e;
 @define-color amb_accent #303030;
 @define-color amb_on_accent #ffffff;
 
@@ -30,6 +34,10 @@
 @define-color amb_dk_text #f4f4f4;
 @define-color amb_dk_text2 #c6c6c6;
 @define-color amb_dk_text3 #a8a8a8;
+@define-color amb_dk_border_strong #6f6f6f;
+@define-color amb_dk_active #454545;
+@define-color amb_dk_selected #393939;
+@define-color amb_dk_fg_strong #ffffff;
 @define-color amb_dk_accent #e6e6e6;
 @define-color amb_dk_on_accent #161616;
 
@@ -254,10 +262,18 @@ menu menuitem,
     padding: 6px 12px;
     border-radius: 4px;
 }
+/* dica: a do Summa (fundo #0e0e0e e texto #ffffff no claro; #ffffff e #161616 no escuro).
+   A dica é uma janela própria, sem a classe .darkMode: o CSS não tem como escolher
+   o tema, então as cores seguem as do tema GTK, invertidas. */
 tooltip,
 tooltip.background {
     border-radius: 4px;
+    background-color: @theme_fg_color;
+    color: @theme_bg_color;
+    padding: 4px 8px;
+    font-size: 12px;
 }
+tooltip label { color: @theme_bg_color; font-size: 12px; }
 
 #mainWindow popover {
     background: @amb_bg;
@@ -684,3 +700,36 @@ headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_
 #mainWindow.darkMode .amb-board-pill button { color: @amb_dk_text2; }
 #mainWindow.darkMode .amb-board-pill button:hover { background: @amb_dk_hover; color: @amb_dk_text; }
 #mainWindow.darkMode .amb-board-pill separator { background: @amb_dk_border; }
+
+/* ---------- movimento ----------
+   Do Summa (docs/design/movimento.md): 120/180/320 ms e as curvas
+   cubic-bezier(.22,.61,.36,1) (saída) e cubic-bezier(.4,0,.2,1) (movimento).
+   Só cor e fundo mudam; nada de tamanho nem posição. */
+
+#mainWindow menubar > menuitem,
+#mainWindow toolbar button,
+#mainWindow toolbar menubutton > button,
+#mainWindow #bxSidebarTopActions button,
+#floatingToolbox button,
+#pdfFloatingToolGrid button,
+#library row.amb-nav,
+#library .amb-primary,
+#library .amb-secondary,
+#library button.amb-hit,
+popover.amb-coverpop .amb-ghost,
+button.amb-grow-pill,
+headerbar.amb-titlebar button,
+headerbar.amb-titlebar button.amb-tab,
+.amb-palette button,
+.amb-board-pill button,
+menu menuitem,
+.menu menuitem {
+    transition: background-color 120ms cubic-bezier(.22, .61, .36, 1),
+                color 120ms cubic-bezier(.22, .61, .36, 1);
+}
+
+/* interruptor: a bolinha muda de cor no ritmo do Summa (a posição não anima) */
+switch,
+switch slider {
+    transition: background-color 180ms cubic-bezier(.4, 0, .2, 1);
+}
