@@ -14,6 +14,7 @@
 #include <array>    // for array
 #include <atomic>   // for atomic_bool
 #include <cstddef>  // for size_t
+#include <functional>
 #include <memory>   // for unique_ptr
 #include <string>   // for string
 
@@ -124,6 +125,10 @@ public:
     void showLibrary();
     /// Ambitus: a short notice over the page that goes away by itself (see ambitus::Toast)
     void showToast(const std::string& text, bool busy = false);
+    /// Ambitus: a card with an action ("Undo") and the seconds left to use it
+    void showToastAction(const std::string& text, const std::string& actionLabel, std::function<void()> callback);
+    /// Ambitus: an error card that stays until closed; the technical detail goes to its "Copy the detail" button
+    void showToastError(const std::string& text, const std::string& detail);
     /// Ambitus: the command palette (see ambitus::CommandPalette)
     void openCommandPalette();
     void showEditor();

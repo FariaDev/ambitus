@@ -157,7 +157,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     this->radialMenu->setPageMenu(this->pageMenu.get());
     this->selectionBar = std::make_unique<ambitus::SelectionBar>(control, xournal.get(), overlay);
     this->boardNavigator = std::make_unique<ambitus::BoardNavigator>(control, xournal.get(), overlay);
-    this->toast = std::make_unique<ambitus::Toast>(overlay);
+    this->toast = std::make_unique<ambitus::Toast>(overlay, winXournal);
     this->commandPalette = std::make_unique<ambitus::CommandPalette>(
             overlay, GTK_WINDOW(this->window), [this] { return getMenuModel(); }, xournal->getWidget());
 
@@ -368,6 +368,19 @@ MainWindow::~MainWindow() = default;
 void MainWindow::showToast(const std::string& text, bool busy) {
     if (toast) {
         toast->show(text, busy);
+    }
+}
+
+void MainWindow::showToastAction(const std::string& text, const std::string& actionLabel,
+                                 std::function<void()> callback) {
+    if (toast) {
+        toast->showAction(text, actionLabel, std::move(callback));
+    }
+}
+
+void MainWindow::showToastError(const std::string& text, const std::string& detail) {
+    if (toast) {
+        toast->showError(text, detail);
     }
 }
 

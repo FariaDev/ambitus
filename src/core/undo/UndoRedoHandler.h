@@ -43,6 +43,8 @@ public:
     void addUndoAction(UndoActionPtr action);
     /// Ambitus: takes the last action out of the history (null when empty), to put it back wrapped
     UndoActionPtr takeLastUndoAction();
+    /// Ambitus: the last action of the history (null when empty), without taking it; to know nothing came after it
+    UndoAction* lastUndoAction() const;
 
     /// Ambitus: the history of a document kept aside while another one is in the window (tabs)
     struct State {

@@ -5010,8 +5010,17 @@ msgstr "Restaurar esta versão?"
 msgid "The notebook goes back to how it was {1}. How it is now is kept in the list."
 msgstr "O caderno volta ao estado de {1}. Como ele está agora fica guardado na lista."
 
-msgid "Version restored. The state before it is in the list too."
-msgstr "Versão restaurada. O estado de antes também está na lista."
+msgid "Version from {1} restored. The one before it was kept."
+msgstr "Versão de {1} restaurada. A de antes ficou guardada."
+
+msgid "Page {1} deleted."
+msgstr "Página {1} apagada."
+
+msgid "Copy the detail"
+msgstr "Copiar o detalhe"
+
+msgid "Copied"
+msgstr "Copiado"
 
 msgid "The version could not be restored."
 msgstr "Não deu para restaurar a versão."

@@ -759,7 +759,17 @@ void Control::deletePage() {
     doc->deletePage(pNr);
     this->doc->unlock();
 
-    this->undoRedo->addUndoAction(std::make_unique<InsertDeletePageUndoAction>(page, pNr, false));
+    auto deleteAction = std::make_unique<InsertDeletePageUndoAction>(page, pNr, false);
+    const UndoAction* deleted = deleteAction.get();
+    const auto deletedNo = pNr + 1;
+    this->undoRedo->addUndoAction(std::move(deleteAction));
+
+    // Ambitus: the page can be brought back from the notice, as long as nothing was done after deleting it
+    this->win->showToastAction(FS(_F("Page {1} deleted.") % deletedNo), _("Undo"), [this, deleted] {
+        if (this->undoRedo->lastUndoAction() == deleted) {
+            this->undoRedo->undo();
+        }
+    });
 
     if (pNr >= this->doc->getPageCount()) {
         pNr = this->doc->getPageCount() - 1;

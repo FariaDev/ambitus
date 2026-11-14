@@ -620,16 +620,69 @@ headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_
     box-shadow: none;
 }
 
-/* ---------- aviso curto (Toast) ---------- */
+/* ---------- avisos (Toast.cpp) ----------
+   A tarja é a do Summa (fundo fg-strong, texto do fundo, raio 4); o cartão, com ação ou de erro, é a superfície com
+   borda e raio 8. A caixa de cada um tem margem no widget para a sombra caber (o GtkRevealer cortaria o resto). */
 
 .amb-toast {
-    background: @amb_text;
+    background: @amb_fg_strong;
     color: @amb_bg;
-    border-radius: 8px;
-    padding: 10px 16px;
-    font-size: 10pt;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.18);
 }
-#mainWindow.darkMode .amb-toast { background: @amb_dk_layer2; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-toast {
+    background: @amb_dk_fg_strong;
+    color: @amb_dk_bg;
+    box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.8);
+}
+
+.amb-notice {
+    background: @amb_bg;
+    color: @amb_text;
+    border: 1px solid @amb_border;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.18);
+}
+.amb-notice.amb-notice-error .amb-notice-text { font-weight: 600; }
+.amb-notice .amb-notice-count {
+    color: @amb_text2;
+    font-size: 11px;
+    font-feature-settings: "tnum";
+    min-width: 28px;
+}
+.amb-notice button {
+    background-image: none;
+    box-shadow: none;
+    border: none;
+    border-radius: 4px;
+    min-height: 26px;
+    padding: 0 12px;
+    font-size: 12px;
+}
+.amb-notice button.amb-notice-btn { background: @amb_layer; color: @amb_text; }
+.amb-notice button.amb-notice-btn:hover { background: @amb_hover; }
+.amb-notice button.amb-notice-btn:active { background: @amb_active; }
+.amb-notice button.amb-notice-ghost { background: transparent; color: @amb_text2; padding: 2px 8px; }
+.amb-notice button.amb-notice-ghost:hover { background: @amb_hover; color: @amb_text; }
+.amb-notice button.amb-notice-ghost:active { background: @amb_active; color: @amb_text; }
+
+#mainWindow.darkMode .amb-notice {
+    background: @amb_dk_bg;
+    color: @amb_dk_text;
+    border-color: @amb_dk_border;
+    box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.8);
+}
+#mainWindow.darkMode .amb-notice .amb-notice-count { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-notice button.amb-notice-btn { background: @amb_dk_layer; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-notice button.amb-notice-btn:hover { background: @amb_dk_hover; }
+#mainWindow.darkMode .amb-notice button.amb-notice-btn:active { background: @amb_dk_active; }
+#mainWindow.darkMode .amb-notice button.amb-notice-ghost { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-notice button.amb-notice-ghost:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-notice button.amb-notice-ghost:active { background: @amb_dk_active; color: @amb_dk_text; }
 
 /* ---------- paleta de comandos (Ctrl+/) ---------- */
 
@@ -987,6 +1040,7 @@ headerbar.amb-titlebar button,
 headerbar.amb-titlebar button.amb-tab,
 .amb-palette button,
 .amb-selbar button,
+.amb-notice button,
 popover.amb-selpop button.amb-selpop-item,
 .amb-board-pill button,
 menu menuitem,
