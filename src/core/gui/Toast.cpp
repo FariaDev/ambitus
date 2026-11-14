@@ -9,7 +9,7 @@ namespace ambitus {
 
 namespace {
 /// The shadow of the notices is wider than what the revealer would show: the frame keeps this margin for it
-constexpr int SHADOW = 16;
+constexpr int SHADOW = 32;
 
 void addClass(GtkWidget* w, const char* c) { gtk_style_context_add_class(gtk_widget_get_style_context(w), c); }
 
