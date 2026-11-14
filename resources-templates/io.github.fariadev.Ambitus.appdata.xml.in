@@ -8,14 +8,12 @@
   <developer_name>FariaDev</developer_name>
   <description>
     <p>
-      Xournal++ is a hand note-taking software written in C++ with the target of
-      flexibility, functionality and speed. Stroke recognizer and other parts are
-      based on Xournal Code, which you can find at sourceforge. It supports GNU/Linux
-      (e.g. Ubuntu, Debian, Arch, SUSE), macOS and Windows. Supports pen input
-      from devices such as Wacom Tablets.
+      Ambitus is a hand note-taking app based on Xournal++ (GPL-2.0). It supports pen input
+      from devices such as Wacom Tablets. Notebooks are saved as .xopp, the Xournal++ format,
+      so they open in both programs.
     </p>
     <p>
-      Xournal++ features:
+      Ambitus features:
     </p>
     <ul>
       <li>Supports pressure-sensitive styluses and digital pen tables (e.g. Wacom, Huion, XP Pen, etc. tablets)</li>

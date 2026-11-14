@@ -127,7 +127,7 @@ msgstr "Versão do arquivo incompatível"
 
 #: ../src/core/control/Control.cpp:1666
 msgid "The file being loaded has a file format version newer than the one currently supported by this version of Xournal++, so it may not load properly. Open anyways?"
-msgstr "O arquivo que está sendo carregado tem uma versão de formato de arquivo mais recente que a atualmente suportada por esta versão do Xournal++, por isso pode não carregar corretamente. Abrir mesmo assim?"
+msgstr "Este arquivo tem uma versão de formato mais recente do que este Ambitus conhece, então pode não carregar direito. Abrir mesmo assim?"
 
 #: ../src/core/control/Control.cpp:1689
 msgid "Error reading PDF file \"{1}\"\n"
@@ -330,7 +330,7 @@ msgstr "Por favor, delete o arquivo manualmente"
 
 #: ../src/core/control/XournalMain.cpp:134
 msgid "Xournal++ crashed last time. Would you like to restore the last edited file?"
-msgstr "Xournal++ travou da última vez. Gostaria de restaurar o último arquivo editado?"
+msgstr "O Ambitus fechou sem querer da última vez. Quer abrir o caderno como estava?"
 
 #: ../src/core/control/XournalMain.cpp:137
 msgid "Recovery file detected"
@@ -338,11 +338,11 @@ msgstr "Arquivo de recuperação detectado"
 
 #: ../src/core/control/XournalMain.cpp:138
 msgid "Delete file"
-msgstr "Apagar Arquivo"
+msgstr "Descartar"
 
 #: ../src/core/control/XournalMain.cpp:138
 msgid "Restore file"
-msgstr "Restaurar arquivo"
+msgstr "Abrir como estava"
 
 #: ../src/core/control/XournalMain.cpp:158
 msgid "The background file \"{1}\" could not be found. It might have been moved, renamed or deleted."
@@ -388,8 +388,8 @@ msgstr "\n\n"
 #: ../src/core/control/XournalMain.cpp:459
 msgid "Sorry, Xournal++ can only open one file at once.\n"
 "Others are ignored."
-msgstr "Desculpe, o Xournal++ só consegue abrir um arquivo por vez.\n"
-"Os outros são ignorados."
+msgstr "Abra um caderno por vez.\n"
+"Só o primeiro foi aberto."
 
 #: ../src/core/control/XournalMain.cpp:409
 msgid "File {1} does not exist."
@@ -400,8 +400,8 @@ msgid "Filesystem error: {1}\n"
 "Sorry, Xournal++ cannot open the file: {2}\n"
 "Consider copying the file to a local directory."
 msgstr "Erro no sistema de arquivos: {1}\n"
-"Desculpe, Xournal++ não pode abrir o arquivo: {2}\n"
-"Considere copiar o arquivo para um diretório local."
+"O Ambitus não conseguiu abrir o arquivo: {2}\n"
+"Copie o arquivo para uma pasta local e tente de novo."
 
 #: ../src/core/control/XournalMain.cpp:616
 msgid "Jump to Page (first Page: 1)"
@@ -902,7 +902,7 @@ msgstr "Git commit"
 
 #: ../src/core/gui/dialog/AboutDialog.cpp:61
 msgid "See the full list of contributors"
-msgstr "Veja a lista completa de recursos dos colaboradores"
+msgstr "Veja a lista completa de colaboradores"
 
 #: ../src/core/gui/dialog/AboutDialog.cpp:63
 msgid "GNU GPLv2 or later"
@@ -1112,12 +1112,12 @@ msgstr "Arquivos Xournal"
 
 #: ../src/core/gui/dialog/FileChooserFiltersHelper.cpp:33
 msgid "Xournal++ files"
-msgstr "Arquivos Xournal++"
+msgstr "Cadernos (.xopp, o formato do Xournal++)"
 
 #: ../src/core/gui/dialog/FileChooserFiltersHelper.cpp:34
 #: ../src/core/gui/dialog/PageTemplateDialog.cpp:120
 msgid "Xournal++ template"
-msgstr "Modelo Xournal++"
+msgstr "Modelos (.xopt, o formato do Xournal++)"
 
 #: ../src/core/gui/dialog/FileChooserFiltersHelper.cpp:40
 msgid "Image files"
@@ -1142,7 +1142,7 @@ msgstr "Tema do editor LaTeX:"
 
 #: ../src/core/gui/dialog/LatexSettingsPanel.cpp:66
 msgid "GtkSourceView was disabled when building Xournal++! Some options will not be available."
-msgstr "GtkSourceView foi desativado ao compilar o Xournal++! Algumas opções não estarão disponíveis."
+msgstr "O GtkSourceView foi desativado na compilação do Ambitus. Algumas opções não ficam disponíveis."
 
 #: ../src/core/gui/dialog/LatexSettingsPanel.cpp:158
 msgid "Unable to open global template file at {1}. Does it exist?"
@@ -1424,7 +1424,7 @@ msgstr "Limpar lista"
 #: ../src/core/gui/menus/menubar/RecentDocumentsSubmenu.cpp:190
 msgctxt "In the submenu for removing recent documents, this will display on top of the list xournal++ files to separate them from PDF files"
 msgid "Xournal++ Files"
-msgstr "Arquivos Xournal++"
+msgstr "Cadernos (.xopp)"
 
 #: ../src/core/gui/menus/menubar/RecentDocumentsSubmenu.cpp:199
 msgctxt "In the submenu for removing recent documents, this will display on top of the list PDF files to separate them from xournal++ files"
@@ -2255,16 +2255,6 @@ msgstr "xoj-preview-extractor: abertura do arquivo de saída \"{1}\" falhou"
 msgid "xoj-preview-extractor: successfully extracted"
 msgstr "xoj-preview-extractor: extraído com sucesso"
 
-#: ../ui/about.glade:12
-msgid "About Xournal++"
-msgstr "Sobre Xournal++"
-
-#: ../ui/about.glade:93
-msgid "<span size=\"xx-large\" weight=\"bold\">Xournal++</span>\n"
-"<i>The next generation</i>"
-msgstr "<span size=\"xx-large\" weight=\"bold\">Xournal++</span>\n"
-"<i>A próxima geração</i>"
-
 #: ../ui/about.glade:133
 msgid "Icon Designers"
 msgstr "Designers do Ícone"
@@ -2277,15 +2267,15 @@ msgstr "Portado da base do Xournal\n"
 
 #: ../ui/about.glade:218
 msgid "Website"
-msgstr "Site na Web"
+msgstr "Site do Xournal++"
 
 #: ../ui/about.glade:246
 msgid "Source Code / Bug Tracker"
-msgstr "Código Fonte / Rastreador de Bug"
+msgstr "Código e erros do Xournal++"
 
 #: ../ui/about.glade:283
 msgid "With help from the community"
-msgstr "Obter ajuda da comunidade"
+msgstr "Com a ajuda da comunidade"
 
 #: ../ui/about.glade:311
 msgid "License"
@@ -2316,7 +2306,7 @@ msgstr "Relatório de falhas"
 
 #: ../ui/crashDialog.glade:23
 msgid "Oops... Xournal++ encountered a fatal error"
-msgstr "Ops... Xournal++ encontrou um erro fatal"
+msgstr "O Ambitus encontrou um erro e precisa fechar. O caderno aberto foi guardado."
 
 #: ../ui/crashDialog.glade:39
 msgid "Please consider filling a bug report (see button below). Attach the following log to your report."
@@ -2842,7 +2832,7 @@ msgstr "Plugins"
 
 #: ../ui/plugin.glade:81
 msgid "Plugin changes are only applied after Xournal++ is restarted"
-msgstr "As alterações de plugin só são aplicadas após Xournal++ ser reiniciado"
+msgstr "As mudanças nos plugins valem depois de reabrir o Ambitus."
 
 #: ../ui/pluginEntry.glade:59
 msgid "Author: "
@@ -2890,7 +2880,7 @@ msgstr "Inércia"
 
 #: ../ui/settings.glade:291
 msgid "Xournal++ Preferences"
-msgstr "Preferências Xournal++"
+msgstr "Configurações"
 
 #: ../ui/settings.glade:352
 msgid "<i>If the document already was saved you can find it in the same folder with the extension .autosave.xopp\n"
@@ -3031,7 +3021,7 @@ msgstr "Habilitar carregamento automatico do arquivo mais recente ao iniciar o a
 
 #: ../ui/settings.glade:834
 msgid "If enabled Xournal++ will open the most recent document automatically that you can continue editing your last saved document."
-msgstr "Se habilitado, o Xournal++ abrirá automaticamente o documento mais recente, para que você continue editando seu último documento salvo."
+msgstr "Se ligado, o Ambitus abre sozinho o documento mais recente, para você continuar de onde parou."
 
 #: ../ui/settings.glade:849
 msgid "Autoloading"
@@ -3285,7 +3275,7 @@ msgstr "<i>Você pode configurar dispositivos, não identificados pelo GTK como 
 
 #: ../ui/settings.glade:2341
 msgid "<i>If your hardware does not support hand recognition, Xournal++ can disable your touchscreen when your pen is near the screen.</i>"
-msgstr "<i>Se seu hardware não suporta o reconhecimento da mão, o Xournal++ pode desativar sua tela de toque quando sua caneta estiver próxima à tela.</i>"
+msgstr "<i>Se o seu aparelho não reconhece a palma da mão, o Ambitus pode desligar a tela de toque quando a caneta estiver perto da tela.</i>"
 
 #: ../ui/settings.glade:2355
 msgid "Enable internal Hand Recognition"
@@ -4688,12 +4678,11 @@ msgid "Xournalpp Developers"
 msgstr "Desenvolvedores Xournalpp"
 
 #: ../resources-templates/com.github.xournalpp.xournalpp.appdata.xml.in:10
-msgid "Xournal++ is a hand note-taking software written in C++ with the target of flexibility, functionality and speed. Stroke recognizer and other parts are based on Xournal Code, which you can find at sourceforge. It supports GNU/Linux (e.g. Ubuntu, Debian, Arch, SUSE), macOS and Windows. Supports pen input from devices such as Wacom Tablets."
-msgstr "Xournal++ é um software de anotações escrito em C++ com o alvo em flexibilidade, funcionalidade e velocidade. O reconhecedor de traço e outras partes baseiam-se no Xournal Code, que você pode encontrar no SourceForge. Ele suporta GNU/Linux (por exemplo, Ubuntu, Debian, Arch, SUSE), macOS e Windows. Suporta escrita à caneta a partir de dispositivos como as mesas digitalizadoras Wacom."
+msgid "Ambitus is a hand note-taking app based on Xournal++ (GPL-2.0). It supports pen input from devices such as Wacom Tablets. Notebooks are saved as .xopp, the Xournal++ format, so they open in both programs."
+msgstr "O Ambitus é um programa de anotações à mão, baseado no Xournal++ (GPL-2.0). Aceita escrita à caneta em dispositivos como as mesas digitalizadoras Wacom. Os cadernos são salvos em .xopp, o formato do Xournal++, e abrem nos dois programas."
 
-#: ../resources-templates/com.github.xournalpp.xournalpp.appdata.xml.in:17
-msgid "Xournal++ features:"
-msgstr "Recursos do Xournal++:"
+msgid "Ambitus features:"
+msgstr "Recursos do Ambitus:"
 
 #: ../resources-templates/com.github.xournalpp.xournalpp.appdata.xml.in:21
 msgid "Supports pressure-sensitive styluses and digital pen tables (e.g. Wacom, Huion, XP Pen, etc. tablets)"
@@ -4816,12 +4805,12 @@ msgid "Xournal note file"
 msgstr "Arquivo de nota do Xournal"
 
 #: ../resources-templates/com.github.xournalpp.xournalpp.xml.in:8
-msgid "Xournal++ note file"
-msgstr "Arquivo de nota do Xournal++"
+msgid "Ambitus notebook"
+msgstr "Caderno do Ambitus"
 
 #: ../resources-templates/com.github.xournalpp.xournalpp.xml.in:12
-msgid "Xournal++ page template file"
-msgstr "Arquivo de Página de Molde do Xournal++"
+msgid "Ambitus page template"
+msgstr "Modelo de página do Ambitus"
 
 
 #: ../ui/about.glade:12
@@ -4830,9 +4819,9 @@ msgstr "Sobre o Ambitus"
 
 #: ../ui/about.glade:93
 msgid "<span size=\"xx-large\" weight=\"bold\">Ambitus</span>\n"
-"<i>Based on Xournal++</i>"
+"<i>Based on Xournal++ (GPL-2.0)</i>"
 msgstr "<span size=\"xx-large\" weight=\"bold\">Ambitus</span>\n"
-"<i>Baseado no Xournal++</i>"
+"<i>Baseado no Xournal++ (GPL-2.0)</i>"
 
 # Ambitus: biblioteca de cadernos
 msgid "today"
