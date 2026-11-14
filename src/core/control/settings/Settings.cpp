@@ -248,6 +248,7 @@ void Settings::loadDefault() {
 
     this->snapRecognizedShapesEnabled = false;
     this->scratchOutEnabled = true;
+    this->ambitusHoldToSnap = true;
     this->editorMode = 0;
     this->ambitusPaletteTools.clear();
     this->ambitusPaletteColors.clear();
@@ -732,6 +733,8 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->scratchOutEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("editorMode")) == 0) {
         this->editorMode = std::clamp<int>(g_ascii_strtoll(reinterpret_cast<const char*>(value), nullptr, 10), 0, 2);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusHoldToSnap")) == 0) {
+        this->ambitusHoldToSnap = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteTools")) == 0) {
         this->ambitusPaletteTools = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteColors")) == 0) {
@@ -1225,6 +1228,7 @@ void Settings::save() {
 
     SAVE_BOOL_PROP(snapRecognizedShapesEnabled);
     SAVE_BOOL_PROP(scratchOutEnabled);
+    SAVE_BOOL_PROP(ambitusHoldToSnap);
     SAVE_INT_PROP(editorMode);
     SAVE_STRING_PROP(ambitusPaletteTools);
     SAVE_STRING_PROP(ambitusPaletteColors);
@@ -2409,6 +2413,16 @@ void Settings::setScratchOutEnabled(bool enabled) {
 }
 
 auto Settings::getScratchOutEnabled() const -> bool { return this->scratchOutEnabled; }
+
+void Settings::setAmbitusHoldToSnap(bool enabled) {
+    if (this->ambitusHoldToSnap == enabled) {
+        return;
+    }
+    this->ambitusHoldToSnap = enabled;
+    save();
+}
+
+auto Settings::getAmbitusHoldToSnap() const -> bool { return this->ambitusHoldToSnap; }
 
 void Settings::setEditorMode(int mode) {
     if (this->editorMode == mode) {

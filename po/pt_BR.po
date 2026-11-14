@@ -5324,3 +5324,6 @@ msgstr "Enviar a página ao Summa"
 msgctxt "Page menu"
 msgid "Delete page"
 msgstr "Apagar a página"
+
+msgid "Hold to straighten"
+msgstr "Segurar para endireitar"

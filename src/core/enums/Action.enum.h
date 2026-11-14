@@ -44,6 +44,7 @@ enum class Action : size_t {
     LIBRARY,             ///< Ambitus: show the notebook library
     SEARCH_NOTEBOOKS,    ///< Ambitus: library with the keyboard in its search
     SCRATCH_OUT,         ///< Ambitus: toggle scratch out to erase
+    HOLD_TO_SNAP,        ///< Ambitus: toggle holding the pen still to straighten the stroke into a shape
     SEND_PAGE_TO_SUMMA,  ///< Ambitus: the page on screen to the side chat of Summa
     CONVERT_TO_TEXT,     ///< Ambitus: the selected handwriting to text, read by Summa
     COPY_PAGE_AS_IMAGE,  ///< Ambitus: the page on screen to the clipboard, as a PNG

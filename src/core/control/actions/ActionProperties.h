@@ -115,6 +115,17 @@ struct ActionProperties<Action::SCRATCH_OUT> {
 };
 
 template <>
+struct ActionProperties<Action::HOLD_TO_SNAP> {
+    using state_type = bool;
+    static state_type initialState(Control* ctrl) { return ctrl->getSettings()->getAmbitusHoldToSnap(); }
+    static void callback(GSimpleAction* ga, GVariant* p, Control* ctrl) {
+        bool enabled = g_variant_get_boolean(p);
+        g_simple_action_set_state(ga, p);
+        ctrl->getSettings()->setAmbitusHoldToSnap(enabled);
+    }
+};
+
+template <>
 struct ActionProperties<Action::SEND_PAGE_TO_SUMMA> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ambitus::sendPageToSumma(ctrl); }
 };

@@ -551,6 +551,10 @@ public:
     void setScratchOutEnabled(bool enabled);
     bool getScratchOutEnabled() const;
 
+    /// Ambitus: holding the pen still at the end of a stroke straightens it into the shape it looks like
+    void setAmbitusHoldToSnap(bool enabled);
+    bool getAmbitusHoldToSnap() const;
+
     /// Ambitus: screen mode of the editor (0 classic, 1 studio, 2 focus)
     void setEditorMode(int mode);
     int getEditorMode() const;
@@ -1166,6 +1170,9 @@ private:
 
     /// Ambitus: scratch out to erase
     bool scratchOutEnabled{};
+
+    /// Ambitus: hold the pen still to straighten
+    bool ambitusHoldToSnap{};
 
     /// Ambitus: screen mode of the editor
     int editorMode{};

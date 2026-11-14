@@ -4,6 +4,8 @@
 #include <cmath>
 #include <utility>
 
+#include "AmbitusMotion.h"
+
 namespace ambitus {
 
 namespace {
@@ -14,19 +16,7 @@ constexpr gint64 FADE_IN_US = 180 * 1000;
 constexpr gint64 FADE_OUT_US = 120 * 1000;
 constexpr int GAP = 8;  ///< Between the button and the tip
 
-/// cubic-bezier(.22,.61,.36,1), the "ease-out" of the Summa for what appears or goes away
-double easeOut(double x) {
-    constexpr double x1 = .22, y1 = .61, x2 = .36, y2 = 1.;
-    auto bez = [](double t, double a, double b) {
-        return 3 * a * t * (1 - t) * (1 - t) + 3 * b * t * t * (1 - t) + t * t * t;
-    };
-    double lo = 0, hi = 1;
-    for (int i = 0; i < 30; i++) {
-        double mid = (lo + hi) / 2;
-        (bez(mid, x1, x2) < x ? lo : hi) = mid;
-    }
-    return bez((lo + hi) / 2, y1, y2);
-}
+using motion::easeOut;
 
 /// The tip that is shown, or about to be: there is only one at a time, so one window and one state serve all buttons
 struct Shared {
@@ -49,12 +39,7 @@ Shared& shared() {
     return s;
 }
 
-/// The system asked for less movement (GNOME: Accessibility, Reduce animation)
-bool reducedMotion(GtkWidget* w) {
-    gboolean animations = true;
-    g_object_get(gtk_widget_get_settings(w), "gtk-enable-animations", &animations, nullptr);
-    return !animations;
-}
+using motion::reducedMotion;
 
 void stopFade() {
     Shared& s = shared();

@@ -19,6 +19,10 @@
 #include "control/shaperecognizer/ShapeRecognizer.h"  // for ShapeRecognizer
 #include "control/tools/InputHandler.h"               // for InputHandler::P...
 #include "control/tools/SnapToGridInputHandler.h"     // for SnapToGridInput...
+#include "gui/AmbitusMotion.h"                        // for reducedMotion, BASE_US
+#include "gui/MainWindow.h"                           // for MainWindow
+#include "gui/PageView.h"                             // for XojPageView
+#include "gui/XournalView.h"                          // for XournalView
 #include "gui/inputdevices/PositionInputData.h"       // for PositionInputData
 #include "model/Document.h"                           // for Document
 #include "model/Element.h"
@@ -34,6 +38,7 @@
 #include "util/DispatchPool.h"                              // for DispatchPool
 #include "util/Range.h"                                     // for Range
 #include "util/Rectangle.h"                                 // for Rectangle, util
+#include "view/overlays/HoldSnapView.h"                     // for HoldSnapView
 #include "view/overlays/StrokeToolFilledHighlighterView.h"  // for StrokeToolFilledHighlighterView
 #include "view/overlays/StrokeToolFilledView.h"             // for StrokeToolFilledView
 #include "view/overlays/StrokeToolView.h"                   // for StrokeToolView
@@ -46,18 +51,26 @@ StrokeHandler::StrokeHandler(Control* control, const PageRef& page):
         InputHandler(control, page),
         snappingHandler(control->getSettings()),
         stabilizer(StrokeStabilizer::get(control->getSettings())),
-        viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::StrokeToolView>>()) {
+        viewPool(std::make_shared<xoj::util::DispatchPool<xoj::view::StrokeToolView>>()),
+        snapPool(std::make_shared<xoj::util::DispatchPool<xoj::view::HoldSnapView>>()) {
     snappingHandler.setPageRef(page);
 }
 
-StrokeHandler::~StrokeHandler() { stopHold(); }
+StrokeHandler::~StrokeHandler() {
+    stopHold();
+    if (snapSource) {
+        g_source_remove(snapSource);  // a shape that was still fading in is lost with the stroke, as any unfinished one
+        snapSource = 0;
+    }
+    snapPool->dispatchAndClear(xoj::view::HoldSnapView::DISMISS_REQUEST);
+}
 
 auto StrokeHandler::onKeyPressEvent(const KeyEvent&) -> bool { return false; }
 auto StrokeHandler::onKeyReleaseEvent(const KeyEvent&) -> bool { return false; }
 
 auto StrokeHandler::onMotionNotifyEvent(const PositionInputData& pos, double zoom) -> bool {
-    if (!stroke) {
-        return false;
+    if (!stroke || snapPending) {
+        return false;  // the shape is fading in: the rest of the gesture finds no stroke
     }
 
     if (pos.pressure == 0) {
@@ -88,11 +101,21 @@ void StrokeHandler::restartHold(double x, double y, double zoom) {
     stopHold();
     // only the pen itself: the laser pointer draws with a StrokeHandler too, and its strokes are not ink
     if (!stroke || stroke->getToolType() != StrokeTool::PEN || control->getToolHandler()->getToolType() != TOOL_PEN ||
-        control->getToolHandler()->getDrawingType() != DRAWING_TYPE_DEFAULT) {
+        control->getToolHandler()->getDrawingType() != DRAWING_TYPE_DEFAULT ||
+        !control->getSettings()->getAmbitusHoldToSnap()) {
         return;
     }
     holdX = x;
     holdY = y;
+    ringSource = g_timeout_add(
+            HOLD_MS / 2,
+            +[](gpointer self) -> gboolean {
+                auto* h = static_cast<StrokeHandler*>(self);
+                h->ringSource = 0;
+                h->showHoldRing();
+                return G_SOURCE_REMOVE;
+            },
+            this);
     holdSource = g_timeout_add(
             HOLD_MS,
             +[](gpointer self) -> gboolean {
@@ -109,6 +132,46 @@ void StrokeHandler::stopHold() {
         g_source_remove(holdSource);
         holdSource = 0;
     }
+    if (ringSource) {
+        g_source_remove(ringSource);
+        ringSource = 0;
+    }
+    if (!snapPending) {
+        snapPool->dispatchAndClear(xoj::view::HoldSnapView::DISMISS_REQUEST);  // the ring, if it was there
+    }
+}
+
+bool StrokeHandler::ensureSnapView() {
+    if (!snapPool->empty()) {
+        return true;
+    }
+    if (!control->getWindow()) {
+        return false;
+    }
+    XournalView* xournal = control->getWindow()->getXournal();
+    Document* doc = control->getDocument();
+    doc->lock_shared();
+    const size_t pageNr = doc->indexOf(page);
+    doc->unlock_shared();
+    XojPageView* view = xournal ? xournal->getViewFor(pageNr) : nullptr;
+    if (!view || view->getPage() != page) {
+        return false;
+    }
+    view->addOverlayView(std::make_unique<xoj::view::HoldSnapView>(this, view));
+    return true;
+}
+
+void StrokeHandler::showHoldRing() {
+    if (!stroke || snapPending || stroke->getPointCount() < 2) {
+        return;
+    }
+    // only where holding would straighten the stroke: a pause in the middle of a letter shows nothing
+    ShapeRecognizer reco;
+    if (!reco.recognizePatterns(stroke.get(), control->getSettings()->getStrokeRecognizerMinSize()) ||
+        !ensureSnapView()) {
+        return;
+    }
+    snapPool->dispatch(xoj::view::HoldSnapView::SHOW_RING_REQUEST, holdX, holdY);
 }
 
 void StrokeHandler::holdToShape() {
@@ -122,9 +185,56 @@ void StrokeHandler::holdToShape() {
     }
     finalizeStroke(1.0);
     Layer* layer = page->getSelectedLayer();
+
+    // with the animations off, or with no view of the page to draw on, it happens at once
+    bool animate = control->getWindow() &&
+                   !ambitus::motion::reducedMotion(control->getWindow()->getXournal()->getWidget()) && ensureSnapView();
+    if (!animate) {
+        // as on release with the shape recognizer: Ctrl+Z gives the hand-drawn stroke back
+        control->getUndoRedoHandler()->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, stroke.get()));
+        strokeRecognizerDetected(std::move(recognized), layer);  // the rest of the gesture finds no stroke
+        return;
+    }
+
+    // Cross-fade: the hand-drawn stroke goes out in 120 ms and the shape comes in in 180 ms, on an overlay of the page.
+    // The shape is only put in the page when the fade ends, so that it does not show whole under its own fade.
+    prepareRecognized(recognized.get());
+    snapShape = std::move(recognized);
+    viewPool->dispatchAndClear(xoj::view::StrokeToolView::CANCELLATION_REQUEST, Range(stroke->getBoundingBox()));
+    snapPool->dispatch(xoj::view::HoldSnapView::START_FADE_REQUEST, *stroke, *snapShape);
+    snapPending = true;
+    snapStart = g_get_monotonic_time();
+    snapSource = g_timeout_add(
+            16,
+            +[](gpointer self) -> gboolean {
+                static_cast<StrokeHandler*>(self)->snapTick();
+                return static_cast<StrokeHandler*>(self)->snapSource ? G_SOURCE_CONTINUE : G_SOURCE_REMOVE;
+            },
+            this);
+}
+
+void StrokeHandler::snapTick() {
+    if (g_get_monotonic_time() - snapStart >= ambitus::motion::BASE_US) {
+        snapSource = 0;  // this callback ends right after: the source goes with it
+        commitSnap();
+        return;
+    }
+    snapPool->dispatch(xoj::view::HoldSnapView::TICK_REQUEST);
+}
+
+void StrokeHandler::commitSnap() {
+    if (!snapPending) {
+        return;
+    }
+    snapPending = false;
+    if (snapSource) {
+        g_source_remove(snapSource);
+        snapSource = 0;
+    }
+    Layer* layer = page->getSelectedLayer();
     // as on release with the shape recognizer: Ctrl+Z gives the hand-drawn stroke back
     control->getUndoRedoHandler()->addUndoAction(std::make_unique<InsertUndoAction>(page, layer, stroke.get()));
-    strokeRecognizerDetected(std::move(recognized), layer);  // the rest of the gesture finds no stroke
+    finishRecognized(std::move(snapShape), layer);  // the rest of the gesture finds no stroke
 }
 
 void StrokeHandler::paintTo(Point point) {
@@ -183,6 +293,7 @@ void StrokeHandler::drawSegmentTo(const Point& point) {
 
 void StrokeHandler::onSequenceCancelEvent() {
     stopHold();
+    commitSnap();  // the shape was already on the screen: it stays, as it did when it went in at once
     if (this->stroke) {
         this->viewPool->dispatchAndClear(xoj::view::StrokeToolView::CANCELLATION_REQUEST,
                                          Range(this->stroke->getBoundingBox()));
@@ -220,6 +331,10 @@ void StrokeHandler::finalizeStroke(double pressure) {
 
 void StrokeHandler::onButtonReleaseEvent(const PositionInputData& pos, double zoom) {
     stopHold();
+    if (snapPending) {
+        commitSnap();  // released before the fade ended: the shape goes in now
+        return;
+    }
     if (!stroke) {
         return;
     }
@@ -333,6 +448,11 @@ bool StrokeHandler::scratchOut(Layer* layer) {
 }
 
 void StrokeHandler::strokeRecognizerDetected(std::unique_ptr<Stroke> recognized, Layer* layer) {
+    prepareRecognized(recognized.get());
+    finishRecognized(std::move(recognized), layer);
+}
+
+void StrokeHandler::prepareRecognized(Stroke* recognized) {
     recognized->setWidth(stroke->hasPressure() ? stroke->getAvgPressure() : stroke->getWidth());
 
     // snapping
@@ -354,7 +474,9 @@ void StrokeHandler::strokeRecognizerDetected(std::unique_ptr<Stroke> recognized,
                             1;
         recognized->scale(topLeftSnapped.x, topLeftSnapped.y, fx, fy, 0, false);
     }
+}
 
+void StrokeHandler::finishRecognized(std::unique_ptr<Stroke> recognized, Layer* layer) {
     UndoRedoHandler* undo = control->getUndoRedoHandler();
     auto recognizedPtr = recognized.get();
     auto strokePtr = stroke.get();
@@ -372,6 +494,8 @@ void StrokeHandler::strokeRecognizerDetected(std::unique_ptr<Stroke> recognized,
     // Blitt the new stroke to the page's buffer, delete all the views and refresh the area (so the recognized stroke
     // gets displayed instead of the old one).
     this->viewPool->dispatchAndClear(xoj::view::StrokeToolView::FINALIZATION_REQUEST, range);
+    // Ambitus: the overlay of the fade draws the shape whole into the buffer, and goes away
+    snapPool->dispatchAndClear(xoj::view::HoldSnapView::FINISH_REQUEST);
     page->fireElementChanged(recognizedPtr);
 }
 
@@ -415,4 +539,8 @@ auto StrokeHandler::createView(xoj::view::Repaintable* parent) const -> std::uni
 
 auto StrokeHandler::getViewPool() const -> const std::shared_ptr<xoj::util::DispatchPool<xoj::view::StrokeToolView>>& {
     return viewPool;
+}
+
+auto StrokeHandler::getSnapPool() const -> const std::shared_ptr<xoj::util::DispatchPool<xoj::view::HoldSnapView>>& {
+    return snapPool;
 }

@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 #include "control/Control.h"
 #include "control/ToolEnums.h"
 #include "control/ToolHandler.h"
 #include "control/settings/ButtonConfig.h"
 #include "control/settings/Settings.h"
+#include "gui/AmbitusMotion.h"
 #include "gui/PageMenu.h"
 #include "gui/XournalView.h"
 #include "gui/inputdevices/InputContext.h"
@@ -79,7 +81,10 @@ RadialMenu::RadialMenu(Control* control, XournalView* xournal, GtkOverlay* overl
     InputContext::ambitusPreHandler = [this](const InputEvent& e) { return onPagesEvent(e); };
 }
 
-RadialMenu::~RadialMenu() { InputContext::ambitusPreHandler = nullptr; }
+RadialMenu::~RadialMenu() {
+    stopAnimation();
+    InputContext::ambitusPreHandler = nullptr;
+}
 
 bool RadialMenu::onPagesEvent(const InputEvent& e) {
     // overlay coordinates of the event (InputEvent::absolute is in the coordinates of the pages widget)
@@ -156,15 +161,106 @@ void RadialMenu::openAt(double x, double y) {
     hovered = -1;
     gtk_widget_show(layer);
     gtk_widget_grab_focus(layer);
+    // an entrance that comes while the ring is still fading out starts from the opacity it has then
+    animateTo(1, motion::BASE_US, true);
     gtk_widget_queue_draw(layer);
 }
 
 void RadialMenu::close() {
+    bool wasOpen = open;
     open = false;
     held = false;
+    // the focus goes back at once; only the drawing of the ring waits for the fade
+    gtk_widget_grab_focus(xournal->getWidget());
+    if (!gtk_widget_get_visible(layer)) {
+        return;
+    }
+    if (wasOpen && !motion::reducedMotion(layer)) {
+        animateTo(0, motion::FAST_US, false);
+    } else if (wasOpen) {
+        hideLayer();
+    }
+}
+
+void RadialMenu::hideLayer() {
+    stopAnimation();
+    opacity = 0;
     hovered = -1;
     gtk_widget_hide(layer);
-    gtk_widget_grab_focus(xournal->getWidget());
+}
+
+void RadialMenu::stopAnimation() {
+    if (tick) {
+        gtk_widget_remove_tick_callback(layer, tick);
+        tick = 0;
+    }
+}
+
+void RadialMenu::animateTo(double to, gint64 lenUs, bool grow) {
+    stopAnimation();
+    if (motion::reducedMotion(layer)) {
+        opacity = to;
+        zoom = 1;
+        return;
+    }
+    animFrom = opacity;
+    animTo = to;
+    animLen = lenUs;
+    animGrow = grow;
+    animStart = -1;
+    zoom = grow ? motion::ZOOM_IN : 1;
+    tick = gtk_widget_add_tick_callback(
+            layer,
+            +[](GtkWidget* w, GdkFrameClock* clock, gpointer data) -> gboolean {
+                auto* self = static_cast<RadialMenu*>(data);
+                gint64 now = gdk_frame_clock_get_frame_time(clock);
+                if (self->animStart < 0) {
+                    self->animStart = now;
+                }
+                double t = std::clamp(static_cast<double>(now - self->animStart) / static_cast<double>(self->animLen),
+                                      0., 1.);
+                double e = motion::easeOut(t);
+                self->opacity = self->animFrom + (self->animTo - self->animFrom) * e;
+                self->zoom = self->animGrow ? motion::ZOOM_IN + (1 - motion::ZOOM_IN) * e : 1;
+                gtk_widget_queue_draw(w);
+                if (t < 1) {
+                    return G_SOURCE_CONTINUE;
+                }
+                self->tick = 0;
+                if (self->animTo == 0) {
+                    self->hideLayer();
+                }
+                return G_SOURCE_REMOVE;
+            },
+            this, nullptr);
+}
+
+bool RadialMenu::relayToPage(GdkEvent* e) {
+    // The ring that is fading out takes no events. Its window cannot be left out of the pointer's way while it is on
+    // screen (GDK keeps the pointer in it), so what reaches it goes on to the pages, as if the ring were not there.
+    GdkWindow* win = gtk_widget_get_window(xournal->getWidget());
+    if (!win || !gtk_widget_get_visible(layer)) {
+        return false;
+    }
+    gdouble rootX = 0, rootY = 0;
+    int ox = 0, oy = 0;
+    if (!gdk_event_get_root_coords(e, &rootX, &rootY)) {
+        return false;
+    }
+    gdk_window_get_origin(win, &ox, &oy);
+    GdkEvent* copy = gdk_event_copy(e);
+    g_object_unref(copy->any.window);
+    copy->any.window = GDK_WINDOW(g_object_ref(win));
+    if (copy->type == GDK_MOTION_NOTIFY) {
+        copy->motion.x = rootX - ox;
+        copy->motion.y = rootY - oy;
+    } else {
+        copy->button.x = rootX - ox;
+        copy->button.y = rootY - oy;
+    }
+    gtk_widget_event(xournal->getWidget(), copy);
+    gdk_event_free(copy);
+    return true;
 }
 
 void RadialMenu::hover(double x, double y) {
@@ -235,7 +331,7 @@ void RadialMenu::activate(int index) {
 }
 
 gboolean RadialMenu::onDraw(GtkWidget* w, cairo_t* cr, RadialMenu* self) {
-    if (!self->open) {
+    if (!self->open && self->opacity <= 0) {
         return false;
     }
     bool dark = gtk_style_context_has_class(gtk_widget_get_style_context(gtk_widget_get_toplevel(w)), "darkMode");
@@ -250,6 +346,16 @@ gboolean RadialMenu::onDraw(GtkWidget* w, cairo_t* cr, RadialMenu* self) {
 
     double cx = self->cx, cy = self->cy;
     double R = SIZE / 2;
+
+    // the whole ring goes to a group: it is painted with the opacity of the animation, and grown around its centre
+    bool animated = self->opacity < 1 || self->zoom != 1;
+    if (animated) {
+        cairo_push_group(cr);
+        cairo_save(cr);
+        cairo_translate(cr, cx, cy);
+        cairo_scale(cr, self->zoom, self->zoom);
+        cairo_translate(cr, -cx, -cy);
+    }
 
     // soft shadow, then the ring with a hairline
     for (int i = 6; i >= 1; i--) {
@@ -316,12 +422,24 @@ gboolean RadialMenu::onDraw(GtkWidget* w, cairo_t* cr, RadialMenu* self) {
         gdk_cairo_set_source_rgba(cr, &ink);
         drawIcon(cr, w, self->items[i].option->icon, x, y, 18);
     }
+    if (animated) {
+        cairo_restore(cr);
+        cairo_pop_group_to_source(cr);
+        cairo_paint_with_alpha(cr, std::clamp(self->opacity, 0., 1.));
+    }
     return true;
 }
 
 gboolean RadialMenu::onButton(GtkWidget*, GdkEventButton* e, RadialMenu* self) {
     if (!self->open) {
-        return false;
+        // only a press that began during the fade goes on, with its release: the release of the click that closed
+        // the ring is not for the page
+        if (e->type != GDK_BUTTON_RELEASE) {
+            self->relaying = true;
+        } else if (!std::exchange(self->relaying, false)) {
+            return true;
+        }
+        return self->relayToPage(reinterpret_cast<GdkEvent*>(e));
     }
     self->hover(e->x, e->y);
     if (e->type == GDK_BUTTON_PRESS) {
@@ -337,9 +455,10 @@ gboolean RadialMenu::onButton(GtkWidget*, GdkEventButton* e, RadialMenu* self) {
 }
 
 gboolean RadialMenu::onMotion(GtkWidget*, GdkEventMotion* e, RadialMenu* self) {
-    if (self->open) {
-        self->hover(e->x, e->y);
+    if (!self->open) {
+        return self->relayToPage(reinterpret_cast<GdkEvent*>(e));
     }
+    self->hover(e->x, e->y);
     return true;
 }
 

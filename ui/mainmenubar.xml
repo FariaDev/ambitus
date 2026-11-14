@@ -628,6 +628,10 @@
      <attribute name="label" translatable="yes">Scratch Out to Erase</attribute>
      <attribute name="action">win.scratch-out</attribute>
     </item>
+    <item>
+     <attribute name="label" translatable="yes">Hold to straighten</attribute>
+     <attribute name="action">win.hold-to-snap</attribute>
+    </item>
    </section>
    <section>
     <submenu>

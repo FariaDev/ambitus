@@ -32,6 +32,7 @@ class DispatchPool;
 };
 
 namespace xoj::view {
+class HoldSnapView;
 class OverlayView;
 class Repaintable;
 class StrokeToolView;
@@ -75,6 +76,9 @@ public:
 
     const std::shared_ptr<xoj::util::DispatchPool<xoj::view::StrokeToolView>>& getViewPool() const;
 
+    /// Ambitus: the pool of the overlay of hold-to-straighten (the ring, then the fade)
+    const std::shared_ptr<xoj::util::DispatchPool<xoj::view::HoldSnapView>>& getSnapPool() const;
+
 protected:
     /**
      * @brief Unconditionally add a segment to the stroke.
@@ -84,6 +88,10 @@ protected:
     void drawSegmentTo(const Point& point);
 
     void strokeRecognizerDetected(std::unique_ptr<Stroke> recognized, Layer* layer);
+    /// Sets the width of a recognized shape and snaps it to the grid, if that is on
+    void prepareRecognized(Stroke* recognized);
+    /// Puts a prepared shape in the page in place of the hand-drawn stroke, with the undo action
+    void finishRecognized(std::unique_ptr<Stroke> recognized, Layer* layer);
 
     /// Ambitus: if the stroke is a scribble over other strokes, erases them and drops the scribble
     bool scratchOut(Layer* layer);
@@ -94,8 +102,15 @@ protected:
     /// Ambitus: (re)starts the wait of hold-to-shape from this point of the page
     void restartHold(double x, double y, double zoom);
     void stopHold();
-    /// Ambitus: the pen stayed still on the page: if the stroke is a shape, it becomes the shape at once
+    /// Ambitus: the pen stayed still on the page: if the stroke is a shape, it becomes the shape (with a cross-fade)
     void holdToShape();
+    /// Ambitus: half way through the hold, if the stroke is a shape, a ring shows at the pen tip
+    void showHoldRing();
+    /// Ambitus: creates the overlay of hold-to-straighten on the view of the page, if it is not there yet
+    bool ensureSnapView();
+    /// Ambitus: the fade is over (or cut short): the shape goes into the page, and the overlay goes away
+    void commitSnap();
+    void snapTick();
 
 protected:
     Point buttonDownPoint;  // used for tapSelect and filtering - never snapped to grid.
@@ -106,8 +121,16 @@ protected:
     gint64 startedAt = 0;  ///< Ambitus: when the stroke began (monotonic, µs), for scratch out
 
     guint holdSource = 0;  ///< Ambitus: the timeout of hold-to-shape
+    guint ringSource = 0;  ///< Ambitus: the timeout of the ring, half way through the hold
     double holdX = 0;      ///< Ambitus: where the pen is held (page coordinates)
     double holdY = 0;
+
+    // Ambitus: while the shape fades in, it is not in the page yet: the undo, the layer and the repaint wait for the
+    // end of the fade (180 ms, or the release of the pen if it comes first). The gesture goes on without a stroke.
+    bool snapPending = false;
+    guint snapSource = 0;  ///< the frame timer of the fade
+    gint64 snapStart = 0;  ///< monotonic time, µs
+    std::unique_ptr<Stroke> snapShape;
 
 private:
     /**
@@ -116,6 +139,7 @@ private:
     std::unique_ptr<StrokeStabilizer::Base> stabilizer;
 
     std::shared_ptr<xoj::util::DispatchPool<xoj::view::StrokeToolView>> viewPool;
+    std::shared_ptr<xoj::util::DispatchPool<xoj::view::HoldSnapView>> snapPool;
 
     friend class StrokeStabilizer::Active;
 
