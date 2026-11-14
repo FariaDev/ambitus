@@ -55,6 +55,8 @@ std::string serializePaletteColors(const std::vector<uint32_t>& colors);
 
 /// The colour as "#RRGGBB" in capitals: the tip of a colour that has no name
 std::string paletteColorHex(uint32_t rgb);
+/// The name of a colour of the Summa (translated), else its hex: what the tip of a colour shows
+std::string paletteColorName(uint32_t rgb);
 
 /// The most favourites the palette holds
 constexpr size_t PALETTE_MAX_FAVORITES = 4;

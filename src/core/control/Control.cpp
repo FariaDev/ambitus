@@ -2512,6 +2512,10 @@ void Control::clipboardCutCopyEnabled(bool enabled) {
     this->actionDB->enableAction(Action::COPY, enabled);
     // Ambitus: like cut and copy, converting needs a selection (the radial menu shows it faded without one)
     this->actionDB->enableAction(Action::CONVERT_TO_TEXT, enabled);
+    // Ambitus: this is called when a selection appears and when it goes away; the bar over it follows
+    if (win) {
+        win->selectionChanged();
+    }
 }
 
 void Control::clipboardPasteEnabled(bool enabled) { this->actionDB->enableAction(Action::PASTE, enabled); }

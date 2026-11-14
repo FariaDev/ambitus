@@ -46,6 +46,7 @@ class PageGrowHandle;
 class TitleBar;
 class StudioPalette;
 class RadialMenu;
+class SelectionBar;
 class BoardNavigator;
 class Toast;
 class CommandPalette;
@@ -129,6 +130,8 @@ public:
     /// Ambitus: Classic (all the bars), Studio (floating palette) or Focus (only the page)
     void setEditorMode(ambitus::EditorMode mode);
     void applyEditorMode();
+    /// Ambitus: the selection appeared, changed or went away (the bar over it follows)
+    void selectionChanged();
     /// Ambitus: the board was edited (the minimap follows)
     void boardContentChanged();
     /// Ambitus: the open documents changed (opened, closed, saved, edited)
@@ -226,6 +229,8 @@ private:
     std::unique_ptr<ambitus::StudioPalette> studioPalette;
     /// Ambitus: ring of tools on the right button
     std::unique_ptr<ambitus::RadialMenu> radialMenu;
+    /// Ambitus: the bar over the selection
+    std::unique_ptr<ambitus::SelectionBar> selectionBar;
     std::unique_ptr<ambitus::Toast> toast;
     std::unique_ptr<ambitus::CommandPalette> commandPalette;
     /// Ambitus: minimap and zoom of a board

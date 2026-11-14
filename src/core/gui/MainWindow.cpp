@@ -50,6 +50,7 @@
 #include "GladeSearchpath.h"     // for GladeSearchpath
 #include "PageGrowHandle.h"      // for PageGrowHandle
 #include "RadialMenu.h"          // for RadialMenu
+#include "SelectionBar.h"        // for SelectionBar
 #include "StudioPalette.h"       // for StudioPalette
 #include "TitleBar.h"            // for TitleBar
 #include "Toast.h"               // for Toast
@@ -151,6 +152,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     this->growHandle = std::make_unique<ambitus::PageGrowHandle>(control, xournal.get(), overlay);
     this->studioPalette = std::make_unique<ambitus::StudioPalette>(control, overlay);
     this->radialMenu = std::make_unique<ambitus::RadialMenu>(control, xournal.get(), overlay);
+    this->selectionBar = std::make_unique<ambitus::SelectionBar>(control, xournal.get(), overlay);
     this->boardNavigator = std::make_unique<ambitus::BoardNavigator>(control, xournal.get(), overlay);
     this->toast = std::make_unique<ambitus::Toast>(overlay);
     this->commandPalette = std::make_unique<ambitus::CommandPalette>(
@@ -284,6 +286,12 @@ void MainWindow::setEditorMode(ambitus::EditorMode mode) {
     applyEditorMode();
 }
 
+void MainWindow::selectionChanged() {
+    if (selectionBar) {
+        selectionBar->selectionChanged();
+    }
+}
+
 void MainWindow::applyEditorMode() {
     auto* settings = control->getSettings();
     auto mode = static_cast<ambitus::EditorMode>(settings->getEditorMode());
@@ -315,6 +323,7 @@ void MainWindow::applyEditorMode() {
     if (boardNavigator) {
         boardNavigator->setVisible(board);
     }
+    selectionChanged();  // the bar over the selection exists in the Studio and Focus modes only
     // the Studio mode keeps a band above the pages for the palette, in the colour of the canvas
     gtk_widget_set_margin_top(winXournal, mode == ambitus::EditorMode::STUDIO ? 60 : 0);
     {

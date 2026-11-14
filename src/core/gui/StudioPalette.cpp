@@ -1778,6 +1778,8 @@ std::string paletteColorHex(uint32_t rgb) {
     return buf;
 }
 
+std::string paletteColorName(uint32_t rgb) { return colorName(rgb); }
+
 StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay) {
     state = new PaletteState;
     state->control = control;

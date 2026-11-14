@@ -5268,3 +5268,23 @@ msgstr "Enviar ao Summa"
 
 msgid "Copy the page"
 msgstr "Copiar a página"
+
+msgctxt "Selection bar"
+msgid "Delete"
+msgstr "Apagar"
+
+msgctxt "Selection bar"
+msgid "More"
+msgstr "Mais"
+
+msgctxt "Selection bar"
+msgid "Copy as image"
+msgstr "Copiar como imagem"
+
+msgctxt "Selection bar"
+msgid "Bring to front"
+msgstr "Trazer para frente"
+
+msgctxt "Selection bar"
+msgid "Send to back"
+msgstr "Mandar para trás"
