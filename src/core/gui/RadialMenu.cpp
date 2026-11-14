@@ -253,7 +253,7 @@ gboolean RadialMenu::onDraw(GtkWidget* w, cairo_t* cr, RadialMenu* self) {
     cairo_set_line_width(cr, 1);
     cairo_stroke(cr);
 
-    // the hole, empty unless the pointer is over an item: then its name, small and centred
+    // the hole: the name of the item under the pointer, small and centred, or else the icon of the tool in use
     gdk_cairo_set_source_rgba(cr, &layer);
     circle(cr, cx, cy, HOLE / 2);
     cairo_fill_preserve(cr);
@@ -275,6 +275,15 @@ gboolean RadialMenu::onDraw(GtkWidget* w, cairo_t* cr, RadialMenu* self) {
         cairo_move_to(cr, cx - (HOLE - 14) / 2.0, cy - lh / 2.0);
         pango_cairo_show_layout(cr, l);
         g_object_unref(l);
+    } else {
+        // with no item under the pointer, the hole shows the tool in use, as in the prototype
+        for (size_t i = 0; i < self->items.size(); i++) {
+            if (self->isActive(i)) {
+                gdk_cairo_set_source_rgba(cr, &text2);
+                drawIcon(cr, w, self->items[i].option->icon, cx, cy, 20);
+                break;
+            }
+        }
     }
 
     size_t n = self->items.size();
