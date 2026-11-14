@@ -1221,6 +1221,8 @@ private:
     std::string ambitusNotebooksFolder;
     bool ambitusSetupDone{};
     bool ambitusSetupKeyRead{};  ///< the file has the key of the setup
+    int ambitusLook{};           ///< which defaults of the bar and palette the file has taken (see load())
+    bool ambitusLookRead{};
 
     /// Ambitus: screen mode of the editor
     int editorMode{};

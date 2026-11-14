@@ -39,6 +39,9 @@ constexpr auto const* DEFAULT_FONT = "Sans";
 constexpr auto DEFAULT_FONT_SIZE = 12;
 constexpr auto DEFAULT_TOOLBAR = "Ambitus";  // one row; "Portrait" is the Xournal++ one
 
+/// Ambitus: bumped when the defaults of the look change and old settings files must take them once
+constexpr int AMBITUS_LOOK = 1;
+
 #define SAVE_BOOL_PROP(var) xmlNode = saveProperty((const char*)#var, (var) ? "true" : "false", root)
 #define SAVE_STRING_PROP(var) xmlNode = saveProperty((const char*)#var, (var).empty() ? "" : (var).data(), root)
 #define SAVE_FONT_PROP(var) xmlNode = saveProperty((const char*)#var, var.asString().c_str(), root)
@@ -258,6 +261,8 @@ void Settings::loadDefault() {
     this->ambitusNotebooksFolder.clear();
     this->ambitusSetupDone = true;  // load() starts the setup only for a settings file that did not exist
     this->ambitusSetupKeyRead = false;
+    this->ambitusLook = AMBITUS_LOOK;
+    this->ambitusLookRead = false;
     this->editorMode = 0;
     this->ambitusPaletteTools.clear();
     this->ambitusPaletteColors.clear();
@@ -759,6 +764,9 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSetupDone")) == 0) {
         this->ambitusSetupDone = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
         this->ambitusSetupKeyRead = true;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusLook")) == 0) {
+        this->ambitusLook = g_ascii_strtoll(reinterpret_cast<const char*>(value), nullptr, 10);
+        this->ambitusLookRead = true;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNotebooksFolder")) == 0) {
         this->ambitusNotebooksFolder = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteTools")) == 0) {
@@ -952,6 +960,19 @@ auto Settings::load() -> bool {
     // Ambitus: a settings file from before the setup is not a first time; it is saved as done
     if (existed && !this->ambitusSetupKeyRead) {
         this->ambitusSetupDone = true;
+        save();
+    }
+
+    // Ambitus: a file from before the one-row bar still has the defaults of Xournal++ written in it (the file always
+    // saves them, chosen or not): once, the old default bar and palette become the ones of Ambitus
+    if (existed && (!this->ambitusLookRead || this->ambitusLook < AMBITUS_LOOK)) {
+        if (this->selectedToolbar == "Portrait") {
+            this->selectedToolbar = DEFAULT_TOOLBAR;
+        }
+        if (this->colorPaletteSetting.filename() == "xournal.gpl") {
+            this->colorPaletteSetting = Util::getBuiltInPaletteDirectoryPath() / DEFAULT_PALETTE_FILE;
+        }
+        this->ambitusLook = AMBITUS_LOOK;
         save();
     }
 
@@ -1270,6 +1291,7 @@ void Settings::save() {
     SAVE_STRING_PROP(ambitusNewPaper);
     SAVE_STRING_PROP(ambitusNewSize);
     SAVE_BOOL_PROP(ambitusSetupDone);
+    SAVE_INT_PROP(ambitusLook);
     SAVE_STRING_PROP(ambitusNotebooksFolder);
     SAVE_INT_PROP(editorMode);
     SAVE_STRING_PROP(ambitusPaletteTools);
