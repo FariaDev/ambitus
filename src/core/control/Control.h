@@ -67,6 +67,9 @@ class Settings;
 class TextEditor;
 class XournalScheduler;
 class ZoomControl;
+namespace ambitus {
+class SummaPoller;
+}
 class ToolMenuHandler;
 class XojFont;
 class XojPdfRectangle;
@@ -542,6 +545,8 @@ private:
     bool boardGrowPending = false;
     bool boardOpen = false;
     std::vector<ambitus::Tab> tabs;
+    /// Ambitus: answers the "Check" of Summa with the page on screen (ambitus/SummaPoll.h)
+    std::unique_ptr<ambitus::SummaPoller> summaPoller;
     size_t activeTab = ambitus::NO_TAB;
     /// the tab next to which the file being opened by openInTab goes
     size_t newTabAfter = ambitus::NO_TAB;

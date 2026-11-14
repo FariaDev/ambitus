@@ -13,6 +13,7 @@
 
 #include "ambitus/Board.h"                                       // for pageTemplate
 #include "ambitus/BoardShift.h"                                  // for ShiftUndoAction
+#include "ambitus/SummaPoll.h"                                   // for SummaPoller
 #include "control/AudioController.h"                             // for Audi...
 #include "control/ClipboardHandler.h"                            // for Clip...
 #include "control/CompassController.h"                           // for Comp...
@@ -182,6 +183,7 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath): gtkApp
 }
 
 Control::~Control() {
+    this->summaPoller.reset();  // Ambitus: joins its thread before anything it reads goes away
     g_source_remove(this->changeTimout);
     this->enableAutosave(false);
 
@@ -310,6 +312,7 @@ void Control::initWindow(MainWindow* win, bool disableAudio) {
 
     this->actionDB = std::make_unique<ActionDatabase>(this);
     this->navHistory = std::make_unique<NavigationHistory>(this);
+    this->summaPoller = std::make_unique<ambitus::SummaPoller>(this);  // Ambitus
 
     selectTool(toolHandler->getToolType());
     this->sidebar = new Sidebar(win, this);

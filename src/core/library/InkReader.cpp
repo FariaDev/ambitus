@@ -19,8 +19,6 @@ namespace ambitus::library {
 namespace {
 constexpr auto BRIDGE_FILE = "ambitus-bridge.json";
 constexpr int BRIDGE_VERSION = 1;
-/// The resolution Summa's tutor reads the pages at (notebook-tool.mjs)
-constexpr int PAGE_DPI = 120;
 /// Pages in a row that fail before a run gives up (Summa answering, but not reading)
 constexpr int FAILURES_IN_A_ROW = 3;
 
@@ -58,11 +56,11 @@ auto stopFor(const std::string& reason) -> InkStop {
     return InkStop::Failed;  // timeout, bad-request, forbidden, and what a newer Summa may add
 }
 
-auto readAll(GInputStream* in) -> std::optional<std::string> {
+auto readAll(GInputStream* in, GCancellable* cancel = nullptr) -> std::optional<std::string> {
     std::string data;
     char buf[8192];
     for (;;) {
-        gssize n = g_input_stream_read(in, buf, sizeof(buf), nullptr, nullptr);
+        gssize n = g_input_stream_read(in, buf, sizeof(buf), cancel, nullptr);
         if (n < 0) {
             return std::nullopt;
         }
@@ -173,12 +171,13 @@ struct BridgeAnswer {
 };
 
 auto postBridge(const SummaBridge& bridge, const char* route, const char* type, const std::string& body,
-                std::chrono::seconds timeout) -> BridgeAnswer {
+                std::chrono::seconds timeout, const char* method = "POST", GCancellable* cancel = nullptr)
+        -> BridgeAnswer {
     BridgeAnswer answer;
     xoj::util::GObjectSPtr<GSocketClient> client(g_socket_client_new(), xoj::util::adopt);
     g_socket_client_set_timeout(client.get(), static_cast<guint>(timeout.count()));
     xoj::util::GObjectSPtr<GSocketConnection> conn(
-            g_socket_client_connect_to_host(client.get(), "127.0.0.1", static_cast<guint16>(bridge.port), nullptr,
+            g_socket_client_connect_to_host(client.get(), "127.0.0.1", static_cast<guint16>(bridge.port), cancel,
                                             nullptr),
             xoj::util::adopt);
     if (!conn) {
@@ -186,16 +185,17 @@ auto postBridge(const SummaBridge& bridge, const char* route, const char* type, 
     }
     answer.connected = true;
     // HTTP/1.0: the answer comes whole and the connection closes after it
-    const std::string head = std::string("POST ") + route +
-                             " HTTP/1.0\r\nHost: 127.0.0.1:" + std::to_string(bridge.port) +
-                             "\r\nContent-Type: " + type + "\r\nContent-Length: " + std::to_string(body.size()) +
+    const std::string typeHeader = *type ? std::string("\r\nContent-Type: ") + type : std::string();
+    const std::string head = std::string(method) + " " + route +
+                             " HTTP/1.0\r\nHost: 127.0.0.1:" + std::to_string(bridge.port) + typeHeader +
+                             "\r\nContent-Length: " + std::to_string(body.size()) +
                              "\r\nx-summa-token: " + bridge.token + "\r\nConnection: close\r\n\r\n";
     GOutputStream* out = g_io_stream_get_output_stream(G_IO_STREAM(conn.get()));
-    if (!g_output_stream_write_all(out, head.data(), head.size(), nullptr, nullptr, nullptr) ||
-        !g_output_stream_write_all(out, body.data(), body.size(), nullptr, nullptr, nullptr)) {
+    if (!g_output_stream_write_all(out, head.data(), head.size(), nullptr, cancel, nullptr) ||
+        !g_output_stream_write_all(out, body.data(), body.size(), nullptr, cancel, nullptr)) {
         return answer;
     }
-    auto raw = readAll(g_io_stream_get_input_stream(G_IO_STREAM(conn.get())));
+    auto raw = readAll(g_io_stream_get_input_stream(G_IO_STREAM(conn.get())), cancel);
     answer.body = raw ? parseResponse(*raw, answer.status) : std::nullopt;
     return answer;
 }
@@ -207,6 +207,90 @@ auto postInk(const SummaBridge& bridge, const std::string& png, std::chrono::sec
         return {InkStop::NoSumma, {}};
     }
     return answer.body ? parseInkReply(answer.status, *answer.body) : InkReply{};
+}
+
+auto parsePollReply(int status, const std::string& body) -> PollReply {
+    PollReply reply;
+    if (status == 204) {
+        reply.kind = PollKind::Idle;
+        return reply;
+    }
+    xoj::util::GObjectSPtr<JsonParser> parser;
+    JsonObject* obj = status == 200 ? parseObject(body, parser) : nullptr;
+    if (!obj) {
+        return reply;
+    }
+    auto id = stringMember(obj, "pedido");
+    if (id && !id->empty()) {
+        reply.kind = PollKind::Request;
+        reply.id = std::move(*id);
+    }
+    return reply;
+}
+
+auto pollPageRequest(const SummaBridge& bridge, GCancellable* cancel) -> PollReply {
+    // Summa holds the poll for ~25 s: the socket waits longer, so a quiet minute is the 204 and not a timeout
+    auto answer = postBridge(bridge, "/pedido-pagina", "", "", std::chrono::seconds(40), "GET", cancel);
+    if (!answer.connected) {
+        return {PollKind::NoSumma, {}};
+    }
+    return answer.body ? parsePollReply(answer.status, *answer.body) : PollReply{};
+}
+
+namespace {
+auto jsonText(JsonBuilder* builder) -> std::string {
+    xoj::util::GObjectSPtr<JsonGenerator> gen(json_generator_new(), xoj::util::adopt);
+    JsonNode* root = json_builder_get_root(builder);
+    json_generator_set_root(gen.get(), root);
+    gchar* text = json_generator_to_data(gen.get(), nullptr);
+    std::string out = text;
+    g_free(text);
+    json_node_unref(root);
+    return out;
+}
+}  // namespace
+
+auto pageAnswerJson(const std::string& requestId, const std::string& notebook, size_t page, const std::string& name,
+                    const std::string& png) -> std::string {
+    xoj::util::GObjectSPtr<JsonBuilder> builder(json_builder_new(), xoj::util::adopt);
+    json_builder_begin_object(builder.get());
+    json_builder_set_member_name(builder.get(), "pedido");
+    json_builder_add_string_value(builder.get(), requestId.c_str());
+    json_builder_set_member_name(builder.get(), "caminho");
+    json_builder_add_string_value(builder.get(), notebook.c_str());
+    json_builder_set_member_name(builder.get(), "pagina");
+    json_builder_add_int_value(builder.get(), static_cast<gint64>(page + 1));
+    json_builder_set_member_name(builder.get(), "nome");
+    json_builder_add_string_value(builder.get(), name.c_str());
+    json_builder_set_member_name(builder.get(), "png");
+    gchar* b64 = g_base64_encode(reinterpret_cast<const guchar*>(png.data()), png.size());
+    json_builder_add_string_value(builder.get(), b64);
+    g_free(b64);
+    json_builder_end_object(builder.get());
+    return jsonText(builder.get());
+}
+
+auto noPageAnswerJson(const std::string& requestId) -> std::string {
+    xoj::util::GObjectSPtr<JsonBuilder> builder(json_builder_new(), xoj::util::adopt);
+    json_builder_begin_object(builder.get());
+    json_builder_set_member_name(builder.get(), "pedido");
+    json_builder_add_string_value(builder.get(), requestId.c_str());
+    json_builder_set_member_name(builder.get(), "erro");
+    json_builder_add_string_value(builder.get(), "sem-pagina");
+    json_builder_end_object(builder.get());
+    return jsonText(builder.get());
+}
+
+auto postPageAnswer(const SummaBridge& bridge, const std::string& json, GCancellable* cancel) -> bool {
+    auto answer =
+            postBridge(bridge, "/pagina-atual", "application/json", json, std::chrono::seconds(10), "POST", cancel);
+    return answer.connected && answer.status == 200;
+}
+
+auto pollBackoff(int failures) -> std::chrono::seconds {
+    static constexpr int steps[] = {2, 5, 15, 30};
+    const int at = failures < 1 ? 0 : (failures > 4 ? 3 : failures - 1);
+    return std::chrono::seconds(steps[at]);
 }
 
 auto findSummaBridge() -> std::optional<SummaBridge> {
