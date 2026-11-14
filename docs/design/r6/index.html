@@ -99,11 +99,15 @@ table.tx td.no{color:var(--faint)}
 .flash{transition:background-color var(--t-slow) var(--ease-out),color var(--t-slow) var(--ease-out)}
 .flash.lit{background:var(--accent-fill)!important;color:var(--accent-fg)!important;transition-duration:0s}
 
+/* dica (o .tip do Summa, dialogs.css) */
+.tip{position:fixed;z-index:200;pointer-events:none;padding:4px 8px;border-radius:4px;background:var(--fg-strong);color:var(--bg);font-size:12px;line-height:1.45;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tip kbd{background:none;border:0;padding:0;color:inherit;opacity:.7;font-size:11px}
+.tip::after{content:"";position:absolute;left:50%;bottom:-4px;width:8px;height:8px;border-radius:2px;background:var(--fg-strong);transform:translateX(-50%) rotate(45deg)}
 /* radial */
 .radial{position:absolute;width:180px;height:180px;margin:-90px 0 0 -90px;border-radius:50%;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-pop)}
 .radial .it{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--muted)}
 .radial .it:hover{background:var(--hover);color:var(--fg)}
-.radial .hub{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;background:var(--code);display:flex;align-items:center;justify-content:center;color:var(--fg)}
+.radial .hub{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px;border-radius:50%;background:var(--code);display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;color:var(--fg);font-size:10.5px;line-height:1.1;text-align:center}
 
 /* menu (nav-pop do Summa) */
 .menu{position:absolute;min-width:230px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-pop);padding:4px;font-size:13px;z-index:5}
@@ -147,7 +151,8 @@ table.tx td.no{color:var(--faint)}
 /* versões */
 .vers{display:grid;grid-template-columns:1fr 250px;height:380px}
 @media(max-width:760px){.vers{grid-template-columns:1fr 170px}}
-.vers .main{position:relative;background:var(--stage);overflow:hidden}
+.vers .main{position:relative;background:var(--stage);overflow:hidden;display:flex;flex-direction:column}
+.vers .pgwrap{position:relative;flex:1}
 .vers .side{border-left:1px solid var(--border);background:var(--bg);overflow:auto;font-size:13px}
 .vers .side .h{display:flex;align-items:center;padding:8px 8px 8px 14px;border-bottom:1px solid var(--border);font-weight:600}
 .vers .side .g{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);padding:10px 14px 4px}
@@ -156,18 +161,23 @@ table.tx td.no{color:var(--faint)}
 .vers .side .v.on{background:var(--selected)}
 .vers .side .v .th{width:30px;height:38px;border:1px solid var(--border);border-radius:2px;background:#fff;flex:none}
 .vers .side .v small{display:block;color:var(--faint);font-size:11.5px}
-.vbanner{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:13px}
+.vbanner{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 14px;white-space:nowrap;background:var(--bg);border-bottom:1px solid var(--border);font-size:13px}
 .vbanner .sp{flex:1}
 
 /* diálogo dentro da janela */
 .scrim{position:absolute;inset:0;background:rgb(0 0 0/.18);display:flex;align-items:center;justify-content:center}
-.dlg{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-dialog);padding:18px 20px;width:min(400px,92%)}
+.dlg{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-dialog);padding:18px 20px;width:min(520px,94%)}
 .dlg h5{font:400 20px/1.2 "STIX Two Text",serif;margin:0 0 12px}
 .dlg .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .tex{font:400 24px/1.2 "STIX Two Text",serif;display:flex;align-items:center;justify-content:center;gap:6px;height:84px;background:#fff;border:1px solid var(--border);border-radius:4px;margin-bottom:10px;color:#161616}
 .tex i{font-style:italic}
 .frac{display:inline-flex;flex-direction:column;align-items:center;font-size:20px;line-height:1.15}
 .frac span:first-child{border-bottom:1px solid currentColor;padding:0 3px}
+.pdfgrid{display:grid;grid-template-columns:150px 1fr;gap:18px}
+.pdfprev{background:var(--stage);border-radius:4px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;height:230px;overflow:auto}
+.pdfprev .pp{width:96px;height:124px;flex:none;background:#fff;box-shadow:0 1px 3px rgb(0 0 0/.18);position:relative;transition:opacity var(--t-fast) var(--ease-out)}
+.pdfprev .pp.off{opacity:.25}
+.pdfprev small{font-size:11px;color:var(--faint)}
 .mono{font:400 13px "IBM Plex Mono",monospace;background:var(--code);border:1px solid var(--border-strong);border-radius:4px;padding:8px 10px;width:100%;color:var(--fg)}
 </style>
 </head>
@@ -188,7 +198,7 @@ table.tx td.no{color:var(--faint)}
  <tr><th>Token</th><th>Valor</th><th>Para quê</th></tr>
  <tr><td><code>--t-fast</code></td><td>120 ms</td><td>resposta (passar o mouse, apertar), troca de conteúdo e <b>toda saída</b></td></tr>
  <tr><td><code>--t-base</code></td><td>180 ms</td><td>entrada: menu, popover, aviso, barra, diálogo</td></tr>
- <tr><td><code>--t-slow</code></td><td>320 ms</td><td>mudança de quantidade e as microinterações (copiado, mandado)</td></tr>
+ <tr><td><code>--t-slow</code></td><td>320 ms</td><td>mudança de quantidade e as microinterações (copiado, enviado)</td></tr>
  <tr><td><code>--ease-out</code></td><td><code>cubic-bezier(.22,.61,.36,1)</code></td><td>o que aparece ou some</td></tr>
  <tr><td><code>--ease-move</code></td><td><code>cubic-bezier(.4,0,.2,1)</code></td><td>o que já estava na tela e anda, gira ou enche</td></tr>
  <tr><td>de onde parte</td><td>3 px para baixo · 4 px para cima · 98,5%</td><td>o que abre para baixo · o que sobe ou chega de baixo · diálogo</td></tr>
@@ -213,7 +223,7 @@ table.tx td.no{color:var(--faint)}
   <div class="st" id="d-snap"><div class="paper" style="left:12%;right:12%;top:14px;bottom:-10px"></div></div>
   <div class="ft">O traço tremido sai em 120 ms e a forma limpa entra por cima, sem morfar. É a única animação sobre a tinta, e só porque mostra o que aconteceu.</div></div>
 
- <div class="demo"><div class="hd"><b>Mandar ao Summa</b><small>acende · 320 ms + aviso</small><span class="sp"></span><button class="ghost" data-replay="send">Ver de novo</button></div>
+ <div class="demo"><div class="hd"><b>Enviar ao Summa</b><small>acende · 320 ms + aviso</small><span class="sp"></span><button class="ghost" data-replay="send">Ver de novo</button></div>
   <div class="st" id="d-send" style="display:flex;justify-content:center;padding-top:40px"></div>
   <div class="ft">O botão acende na cor do acento e volta, como o Conferir do Summa. Depois sobe o aviso com “Abrir”.</div></div>
 
@@ -222,6 +232,8 @@ table.tx td.no{color:var(--faint)}
   <div class="ft">A janela muda de uma vez: barra que desliza empurraria a página. Só a paleta e as barras surgem com um fade curto.</div></div>
 </div>
 
+<h3>Dicas ao passar o mouse</h3>
+<p>Todo botão que só tem ícone ganha uma dica com o nome e o atalho, no estilo da dica do Summa: tarja escura, aparece depois de meio segundo parado em cima, e as seguintes vêm na hora enquanto você corre o mouse pela barra. Passe o mouse na paleta ou na barra de seleção acima. No radial a dica fica <b>no centro</b>, no lugar do ícone, para não cobrir os outros itens.</p>
 <h3>Onde cada coisa entra</h3>
 <div class="card wrapt" style="padding:8px 14px">
 <table class="tx">
@@ -232,9 +244,10 @@ table.tx td.no{color:var(--faint)}
  <tr><td>Diálogos dentro da janela (caderno novo, LaTeX, exportar)</td><td>cresce de 98,5%, 180 ms; véu em fade</td><td>cartão desenhado sobre a janela, com fade</td></tr>
  <tr><td>Passar o mouse, apertar, interruptor</td><td>cor em 120 ms; a bolinha do interruptor anda em 180 ms</td><td><code>transition</code> no CSS do GTK3, que aceita a mesma curva</td></tr>
  <tr><td>Passos do setup, abas das Configurações</td><td>troca de conteúdo em fade, 120 ms</td><td><code>GtkStack</code> com crossfade de 120 ms</td></tr>
- <tr><td>Endireitar o traço, Mandar ao Summa</td><td>como nos exemplos acima</td><td>Cairo e CSS</td></tr>
+ <tr><td>Endireitar o traço, Enviar ao Summa</td><td>como nos exemplos acima</td><td>Cairo e CSS</td></tr>
  <tr><td>Copiar (barra de seleção)</td><td>o ícone vira ✓ por 1,2 s, traço em 320 ms</td><td>o mesmo “Copiado” do Summa</td></tr>
- <tr><td>Lendo a escrita, mandando</td><td>pulso em laço de 1,2 s</td><td>CSS do GTK3 (<code>@keyframes</code>)</td></tr>
+ <tr><td>Dicas</td><td>sobe 4 px, 180 ms, depois de 500 ms parado; sai em 120 ms</td><td>a dica do próprio GTK (<code>tooltip</code>) com o CSS do Summa; o radial desenha o nome no centro</td></tr>
+ <tr><td>Lendo a escrita, enviando</td><td>pulso em laço de 1,2 s</td><td>CSS do GTK3 (<code>@keyframes</code>)</td></tr>
  <tr><td class="no">Traço, página, zoom, rolagem, virar página, trocar de aba, abrir caderno, seleção, foco</td><td class="no">nenhum</td><td class="no">escrever tem de ser instantâneo, e animar a página piscaria a cada zoom (o Summa decidiu igual para o PDF)</td></tr>
 </table></div>
 <p class="cap">“Reduzir movimento” segue a opção do sistema (GNOME → Acessibilidade → Reduzir animação, que o GTK lê como <code>gtk-enable-animations</code>). As peças desenhadas à mão leem a mesma opção. Não há interruptor próprio no Ambitus: é um lugar a menos para procurar.</p>
@@ -261,7 +274,7 @@ table.tx td.no{color:var(--faint)}
  <div>
   <span class="tag rec">Proposta · clique para ver</span>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-   <button class="btn2" data-toast="s1">Página mandada</button><button class="btn2" data-toast="s2">Caderno movido</button><button class="btn2" data-toast="n1">Versão restaurada</button><button class="btn2" data-toast="n2">Página apagada</button><button class="btn2" data-toast="e1">Erro</button></div>
+   <button class="btn2" data-toast="s1">Página enviada</button><button class="btn2" data-toast="s2">Caderno movido</button><button class="btn2" data-toast="n1">Versão restaurada</button><button class="btn2" data-toast="n2">Página apagada</button><button class="btn2" data-toast="e1">Erro</button></div>
   <div class="demo"><div class="st" id="d-toast" style="height:170px"><div class="paper" style="left:20%;right:20%;top:14px;bottom:-10px"></div></div></div>
  </div>
 </div>
@@ -311,8 +324,8 @@ table.tx td.no{color:var(--faint)}
 <div class="grid2">
  <div class="demo"><div class="hd"><b>LaTeX</b><span class="sp"></span><button class="ghost" data-dlg="tex">Abrir</button></div><div class="st" id="d-tex" style="height:320px"><div class="paper" style="left:10%;right:10%;top:14px;bottom:-10px"></div></div>
   <div class="ft">A prévia atualiza enquanto você digita. Erro de LaTeX aparece embaixo do campo, em uma linha, sem a saída inteira do compilador.</div></div>
- <div class="demo"><div class="hd"><b>Exportar como PDF</b><span class="sp"></span><button class="ghost" data-dlg="pdf">Abrir</button></div><div class="st" id="d-pdf" style="height:320px"><div class="paper" style="left:10%;right:10%;top:14px;bottom:-10px"></div></div>
-  <div class="ft">Três escolhas e o nome. O resto (camadas, papel, qualidade) fica no Avançado, com o diálogo do Xournal++.</div></div>
+ <div class="demo"><div class="hd"><b>Exportar como PDF</b><span class="sp"></span><button class="ghost" data-dlg="pdf">Abrir</button></div><div class="st" id="d-pdf" style="height:400px"><div class="paper" style="left:10%;right:10%;top:14px;bottom:-10px"></div></div>
+  <div class="ft">Prévia ao lado: as páginas fora da escolha apagam, e desligar o papel tira a pauta na hora. Três escolhas e o nome. O resto (camadas, papel, qualidade) fica no Avançado, com o diálogo do Xournal++.</div></div>
 </div>
 
 <h2>Com isso, a interface está toda desenhada</h2>
@@ -371,6 +384,15 @@ const P={
 const ic=(n,s)=>`<svg class="i" viewBox="0 0 24 24"${s?` style="width:${s}px;height:${s}px"`:''}>${P[n]}</svg>`;
 const INKS=['#161616','#8044ca','#2548c7','#c2410c','#0f7b55'];
 const TOOLS=['pencil','highlighter','eraser','lasso','type','sigma'];
+const NAMES={pencil:'Caneta',highlighter:'Marca-texto',eraser:'Borracha',lasso:'Seleção',type:'Texto',sigma:'LaTeX',undo:'Desfazer',convert:'Converter em texto',send:'Enviar ao Summa',hand:'Mão'};
+const KEYS={pencil:'P',highlighter:'M',eraser:'E',lasso:'S',type:'T',sigma:'X',undo:'Ctrl+Z'};
+const INKN=['Preto','Violeta','Azul','Laranja','Verde'];
+/* dica: aparece depois de 500 ms parado em cima, some em 120 ms; uma vez aberta, a próxima vem na hora */
+(()=>{let tip=null,timer=null,warm=0;
+ document.addEventListener('mouseover',e=>{const el=e.target.closest('[data-tip]');if(!el||el.contains(e.relatedTarget))return;clearTimeout(timer);
+  timer=setTimeout(()=>{if(tip)tip.remove();tip=document.createElement('div');tip.className='tip anim rise';const [t,k]=el.dataset.tip.split('|');tip.innerHTML=t+(k?`<kbd>${k}</kbd>`:'');document.body.append(tip);
+   const b=el.getBoundingClientRect();tip.style.left=Math.max(4,b.left+b.width/2-tip.offsetWidth/2)+'px';tip.style.top=(b.top-tip.offsetHeight-8)+'px';show(tip);},Date.now()-warm<600?0:500);});
+ document.addEventListener('mouseout',e=>{const el=e.target.closest('[data-tip]');if(!el||el.contains(e.relatedTarget))return;clearTimeout(timer);if(tip){warm=Date.now();hide(tip,true);tip=null;}});})();
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const k=()=>document.body.classList.contains('slowmo')?4:1;
 /* entra: põe a classe .in no quadro seguinte (o mesmo papel do @starting-style) */
@@ -379,13 +401,14 @@ function hide(el,remove){el.classList.remove('in');if(remove)setTimeout(()=>el.r
 document.getElementById('slow').onchange=e=>document.body.classList.toggle('slowmo',e.target.checked);
 document.getElementById('reduce').onchange=e=>document.body.classList.toggle('reduce',e.target.checked);
 const lines=(w,h,step=22,c='#e8e8e8')=>{let s='';for(let y=step;y<h;y+=step)s+=`<line x1="0" x2="${w}" y1="${y}" y2="${y}" stroke="${c}"/>`;return s;};
-const palbar=(sel=0)=>`<div class="palbar">${TOOLS.map((t,i)=>`<button class="ib ${i===sel?'on':''}" data-tool="${t}">${ic(t)}</button>`).join('')}<span class="sep"></span>${INKS.map((c,i)=>`<button class="ib"><span class="dot" style="background:${c};box-shadow:0 0 0 1px var(--border);outline:2px solid ${i?'transparent':'var(--fg)'};outline-offset:2px"></span></button>`).join('')}</div>`;
+const palbar=(sel=0)=>`<div class="palbar">${TOOLS.map((t,i)=>`<button class="ib ${i===sel?'on':''}" data-tool="${t}" data-tip="${NAMES[t]}|${KEYS[t]}">${ic(t)}</button>`).join('')}<span class="sep"></span>${INKS.map((c,i)=>`<button class="ib" data-tip="${INKN[i]}|${i+1}"><span class="dot" style="background:${c};box-shadow:0 0 0 1px var(--border);outline:2px solid ${i?'transparent':'var(--fg)'};outline-offset:2px"></span></button>`).join('')}</div>`;
 
 /* --- radial --- */
 (()=>{const st=document.getElementById('d-radial');let r=null;
  const items=['pencil','highlighter','eraser','lasso','undo','convert','send','hand'];
  function open(x,y){if(r)hide(r,true);r=document.createElement('div');r.className='radial anim zoom';r.style.left=x+'px';r.style.top=y+'px';
-  r.innerHTML=items.map((t,i)=>{const a=-Math.PI/2+i*Math.PI/4;return `<button class="it ib" style="left:${90+62*Math.cos(a)}px;top:${90+62*Math.sin(a)}px">${ic(t)}</button>`}).join('')+`<div class="hub">${ic('pencil')}</div>`;
+  r.innerHTML=items.map((t,i)=>{const a=-Math.PI/2+i*Math.PI/4;return `<button class="it ib" data-name="${NAMES[t]}" style="left:${90+62*Math.cos(a)}px;top:${90+62*Math.sin(a)}px">${ic(t)}</button>`}).join('')+`<div class="hub">${ic('pencil')}</div>`;
+  const hub=r.querySelector('.hub');r.querySelectorAll('.it').forEach(b=>{b.onmouseenter=()=>hub.innerHTML=`<span>${b.dataset.name}</span>`;b.onmouseleave=()=>hub.innerHTML=ic('pencil');});
   st.append(r);show(r);}
  st.addEventListener('click',e=>{if(r&&r.classList.contains('in')){const was=r;r=null;hide(was,true);return;}const b=st.getBoundingClientRect();open(Math.min(Math.max(e.clientX-b.left,95),b.width-95),Math.min(Math.max(e.clientY-b.top,95),b.height-95));});
  document.querySelector('[data-replay=radial]').onclick=()=>{const b=st.getBoundingClientRect();if(r){hide(r,true);r=null;}setTimeout(()=>open(b.width/2,b.height/2),200*k());};
@@ -402,7 +425,7 @@ const palbar=(sel=0)=>`<div class="palbar">${TOOLS.map((t,i)=>`<button class="ib
 /* --- barra de seleção --- */
 (()=>{const st=document.getElementById('d-sel');
  st.innerHTML=`<div class="paper" style="left:8%;right:8%;top:14px;bottom:-10px"><svg width="100%" height="100%" viewBox="0 0 400 260" preserveAspectRatio="xMidYMin slice">${lines(400,260)}<g id="selink" fill="none" stroke="#161616" stroke-width="2" stroke-linecap="round"><path d="M110 140c8-26 18-30 22-8s12 20 18-6"/><path d="M166 116v30M154 131h24"/><path d="M192 146c4-22 16-28 20-8 2 10 8 12 14 2"/><path d="M250 125h22M250 136h22"/></g><rect id="selrect" x="98" y="104" width="190" height="56" fill="rgb(48 48 48/.05)" stroke="#303030" stroke-dasharray="4 3" opacity="0"/></svg></div>
- <div class="selbar anim rise" id="selbar" style="left:50%;top:40px;translate:-50% 0"><button class="ib">${ic('convert')} Converter em texto</button><span class="sep"></span><button class="ib" id="copyb">${ic('copy')}</button><button class="ib">${ic('trash')}</button><span class="sep"></span>${INKS.slice(0,4).map(c=>`<button class="ib" style="width:26px;padding:0"><span class="dot" style="background:${c};width:12px;height:12px"></span></button>`).join('')}<span class="sep"></span><button class="ib" style="padding:0 6px">${ic('more')}</button></div>
+ <div class="selbar anim rise" id="selbar" style="left:50%;top:40px;translate:-50% 0"><button class="ib">${ic('convert')} Converter em texto</button><span class="sep"></span><button class="ib" id="copyb" data-tip="Copiar|Ctrl+C">${ic('copy')}</button><button class="ib" data-tip="Apagar|Del">${ic('trash')}</button><span class="sep"></span>${INKS.slice(0,4).map(c=>`<button class="ib" style="width:26px;padding:0"><span class="dot" style="background:${c};width:12px;height:12px"></span></button>`).join('')}<span class="sep"></span><button class="ib" style="padding:0 6px">${ic('more')}</button></div>
  <div style="position:absolute;right:10px;bottom:10px;display:flex;gap:6px"><button class="btn2" id="dragb">Arrastar a seleção</button></div>`;
  const bar=st.querySelector('#selbar'),rect=st.querySelector('#selrect'),g=st.querySelector('#selink');
  async function run(){hide(bar);rect.setAttribute('opacity',0);await sleep(250*k());rect.setAttribute('opacity',1);show(bar);}
@@ -422,11 +445,11 @@ function toast(st,html,kind='t',ms=4000){st.querySelectorAll('.toast,.notice').f
  if(ms){let left=ms/1000;const c=t.querySelector('[data-count]');const iv=setInterval(()=>{left--;if(c)c.textContent=left+' s';if(left<=0){clearInterval(iv);hide(t,true);}},1000);}
  t.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>hide(t,true));return t;}
 
-/* --- mandar ao Summa --- */
+/* --- enviar ao Summa --- */
 (()=>{const st=document.getElementById('d-send');
- st.innerHTML=`<div class="palbar" style="height:max-content">${TOOLS.slice(0,4).map((t,i)=>`<button class="ib ${i?'':'on'}">${ic(t)}</button>`).join('')}<span class="sep"></span><button class="ib flash" id="sendb" title="Mandar ao Summa">${ic('send')}</button></div>`;
+ st.innerHTML=`<div class="palbar" style="height:max-content">${TOOLS.slice(0,4).map((t,i)=>`<button class="ib ${i?'':'on'}">${ic(t)}</button>`).join('')}<span class="sep"></span><button class="ib flash" id="sendb" data-tip="Enviar ao Summa">${ic('send')}</button></div>`;
  const b=st.querySelector('#sendb');
- function run(){b.classList.add('lit');requestAnimationFrame(()=>requestAnimationFrame(()=>b.classList.remove('lit')));setTimeout(()=>toast(st,`Página 2 mandada ao Summa <a>Abrir</a>`),200*k());}
+ function run(){b.classList.add('lit');requestAnimationFrame(()=>requestAnimationFrame(()=>b.classList.remove('lit')));setTimeout(()=>toast(st,`Página 2 enviada ao Summa <a>Abrir</a>`),200*k());}
  b.onclick=run;document.querySelector('[data-replay=send]').onclick=run;})();
 
 /* --- trocar de modo --- */
@@ -449,7 +472,7 @@ function toast(st,html,kind='t',ms=4000){st.querySelectorAll('.toast,.notice').f
    <div style="position:absolute;left:50%;top:10px;translate:-50% 0">${palbar(0)}</div>
    <div class="paper" style="left:14%;right:14%;top:62px;bottom:-10px"><svg width="100%" height="100%" viewBox="0 0 400 300" preserveAspectRatio="xMidYMin slice">${lines(400,300,22,'#c6c6c6')}<line x1="40" x2="40" y1="0" y2="300" stroke="#b89cea"/><g fill="none" stroke="#161616" stroke-width="2" stroke-linecap="round" transform="translate(0 110)"><path d="M70 82c6-20 14-22 17-6s9 15 14-4"/><path d="M114 66v22M105 77h18"/><path d="M134 88c3-16 12-20 15-6 1 7 6 9 10 2"/></g><g fill="none" stroke="#8044ca" stroke-width="2" stroke-linecap="round"><path d="M70 126c6-20 14-22 17-6"/><path d="M98 118h20M98 126h20"/><path d="M130 130l8-18 8 18"/></g><rect x="62" y="104" width="94" height="36" fill="rgb(48 48 48/.05)" stroke="#303030" stroke-dasharray="4 3"/></svg></div>
    <div class="selbar" style="left:50%;top:160px;translate:-60% 0"><button class="ib">${ic('convert')} Converter em texto</button><span class="sep"></span><button class="ib">${ic('copy')}</button><button class="ib">${ic('trash')}</button><span class="sep"></span><button class="ib" style="padding:0 6px">${ic('more')}</button></div>
-   <div class="toast" style="bottom:14px">Página 2 mandada ao Summa <a>Abrir</a></div>
+   <div class="toast" style="bottom:14px">Página 2 enviada ao Summa <a>Abrir</a></div>
   </div>
   <div style="border-left:1px solid var(--border);background:var(--bg);padding:12px;font-size:13px">
    <div class="lbl">Biblioteca</div>
@@ -463,7 +486,7 @@ function toast(st,html,kind='t',ms=4000){st.querySelectorAll('.toast,.notice').f
 
 /* --- avisos (botões) --- */
 (()=>{const st=document.getElementById('d-toast');
- const T={s1:['t','Página 2 mandada ao Summa <a>Abrir</a>'],s2:['t','“Lista 2” foi para Física II'],
+ const T={s1:['t','Página 2 enviada ao Summa <a>Abrir</a>'],s2:['t','“Lista 2” foi para Física II'],
   n1:['n',`<span>Versão das 20:35 restaurada. A de antes ficou guardada.</span><div class="acts"><button class="btn2" style="height:26px;font-size:12px">Desfazer</button><small data-count>8 s</small><button class="ghost" data-close style="margin-left:auto;padding:2px 6px">${ic('x',14)}</button></div>`,8000],
   n2:['n',`<span>Página 3 apagada.</span><div class="acts"><button class="btn2" style="height:26px;font-size:12px">Desfazer</button><small data-count>8 s</small><button class="ghost" data-close style="margin-left:auto;padding:2px 6px">${ic('x',14)}</button></div>`,8000],
   e1:['n',`<span><b style="font-weight:600">Não deu para salvar “Lista 2”.</b><br><span style="color:var(--muted);font-size:12.5px">A pasta está sem permissão de escrita. O caderno continua aberto.</span></span><div class="acts"><button class="btn2" style="height:26px;font-size:12px">Salvar em outro lugar…</button><button class="ghost" style="font-size:12px">Copiar o detalhe</button><button class="ghost" data-close style="margin-left:auto;padding:2px 6px">${ic('x',14)}</button></div>`,0]};
@@ -474,7 +497,7 @@ function toast(st,html,kind='t',ms=4000){st.querySelectorAll('.toast,.notice').f
  const C=[
   ['Recentes','book','Limites — aula 3','Cálculo I',''],['Recentes','book','Lista 2','Física II',''],
   ['Comandos','pencil','Caneta','','P'],['Comandos','highlighter','Marca-texto','','M'],['Comandos','lasso','Seleção à mão livre','','S'],['Comandos','ruler','Segurar parado endireita o traço','','',true],
-  ['Comandos','send','Mandar a página ao Summa','',''],['Comandos','convert','Converter a seleção em texto','',''],['Comandos','fileplus','Página nova abaixo','','Ctrl+Enter'],
+  ['Comandos','send','Enviar a página ao Summa','',''],['Comandos','convert','Converter a seleção em texto','',''],['Comandos','fileplus','Página nova abaixo','','Ctrl+Enter'],
   ['Comandos','history','Versões deste caderno','',''],['Comandos','filedown','Exportar como PDF…','','Ctrl+E'],['Comandos','settings','Configurações','','Ctrl+,'],['Comandos','eye','Grade de alinhamento','','',false],
   ['Cadernos','book','Cálculo I · Resumo para a P1','Cálculo I',''],['Cadernos','book','Cálculo I · Rascunho à mão','Cálculo I',''],['Cadernos','book','Álgebra Linear · Espaços vetoriais','Álgebra Linear',''],['Cadernos','book','Física II · Lista 2','Física II','']];
  st.insertAdjacentHTML('beforeend',`<button class="btn2" id="cmdopen" style="position:absolute;right:10px;bottom:10px">Abrir (Ctrl+K)</button><div class="pal-back anim fade" id="cmdback"><div class="palette anim" id="cmdbox"><input id="cmdq" placeholder="Comando ou caderno…" autocomplete="off"><div class="list" id="cmdlist"></div></div></div>`);
@@ -500,9 +523,8 @@ function toast(st,html,kind='t',ms=4000){st.querySelectorAll('.toast,.notice').f
  function render(){const sel=V.flatMap(g=>g[1]).find(v=>v[0]===cur);const now=cur==='agora';
   box.innerHTML=`<div class="tb"><span class="tab cur">Limites — aula 3</span><span class="sp"></span><span class="ib on">${ic('history')}</span><span class="ib">${ic('more')}</span></div>
   <div class="vers"><div class="main">
-   ${now?'':`<div class="vbanner anim fade fast" data-fx>${ic('eye')}<span>Versão de ${sel[0]} · só para ler</span><span class="sp"></span><button class="ghost" data-back>Voltar à atual</button><button class="btn" data-restore style="height:28px">Restaurar esta</button></div>`}
-   <div class="paper" style="left:14%;right:14%;top:${now?14:56}px;bottom:-10px;${now?'':'opacity:.92'}"><svg width="100%" height="100%" viewBox="0 0 300 330" preserveAspectRatio="xMidYMin slice">${lines(300,330,22,'#d4d4d4')}<g fill="none" stroke="#161616" stroke-width="2" stroke-linecap="round">${Array.from({length:sel[2]},(_,i)=>`<path d="M30 ${50+i*44}c5-16 11-18 14-5s8 12 12-3"/><path d="M70 ${44+i*44}h${50+((i*37)%90)}"/>`).join('')}</g></svg></div>
-   <div data-toastslot></div>
+   ${now?'':`<div class="vbanner anim fade fast" data-fx>${ic('eye')}<span>${sel[0]} · só leitura</span><span class="sp"></span><button class="ghost" data-back>Voltar à atual</button><button class="btn" data-restore style="height:28px">Restaurar esta</button></div>`}
+   <div class="pgwrap"><div class="paper" style="left:14%;right:14%;top:14px;bottom:-10px"><svg width="100%" height="100%" viewBox="0 0 300 330" preserveAspectRatio="xMidYMin slice">${lines(300,330,22,'#d4d4d4')}<g fill="none" stroke="#161616" stroke-width="2" stroke-linecap="round">${Array.from({length:sel[2]},(_,i)=>`<path d="M30 ${50+i*44}c5-16 11-18 14-5s8 12 12-3"/><path d="M70 ${44+i*44}h${50+((i*37)%90)}"/>`).join('')}</g></svg></div></div>
   </div>
   <div class="side"><div class="h">Versões<span style="flex:1"></span><button class="ib" style="width:26px;height:26px">${ic('x',14)}</button></div>
    ${V.map(([g,vs])=>`<div class="g">${g}</div>`+vs.map(v=>`<div class="v ${v[0]===cur?'on':''}" data-v="${v[0]}"><div class="th">${th(v[2])}</div><div>${v[0]==='agora'?'Agora':v[0]}<small>${v[1]}</small></div></div>`).join('')).join('')}
@@ -523,8 +545,8 @@ function toast(st,html,kind='t',ms=4000){st.querySelectorAll('.toast,.notice').f
 /* --- botão direito --- */
 (()=>{const st=document.getElementById('d-ctx');let m=null;
  const mi=(i,l,kb,cls='')=>`<div class="mi ${cls}">${ic(i)}<span>${l}</span>${kb==='>'?`<span class="chev">${ic('chev',14)}</span>`:kb?`<kbd>${kb}</kbd>`:''}</div>`;
- const SEL=()=>mi('convert','Converter em texto')+mi('send','Mandar ao Summa')+'<div class="sep"></div>'+mi('scissors','Recortar','Ctrl+X')+mi('copy','Copiar','Ctrl+C')+mi('dup','Duplicar','Ctrl+D')+mi('layers','Organizar','>')+'<div class="sep"></div>'+mi('trash','Apagar','Del','danger');
- const EMPTY=()=>mi('paste','Colar','Ctrl+V')+mi('image','Inserir imagem…')+'<div class="sep"></div>'+mi('fileplus','Página nova abaixo','Ctrl+Enter')+mi('square','Papel desta página','>')+mi('updown','Espaço vertical')+'<div class="sep"></div>'+mi('send','Mandar a página ao Summa')+mi('trash','Apagar a página','','danger');
+ const SEL=()=>mi('convert','Converter em texto')+mi('send','Enviar ao Summa')+'<div class="sep"></div>'+mi('scissors','Recortar','Ctrl+X')+mi('copy','Copiar','Ctrl+C')+mi('dup','Duplicar','Ctrl+D')+mi('layers','Organizar','>')+'<div class="sep"></div>'+mi('trash','Apagar','Del','danger');
+ const EMPTY=()=>mi('paste','Colar','Ctrl+V')+mi('image','Inserir imagem…')+'<div class="sep"></div>'+mi('fileplus','Página nova abaixo','Ctrl+Enter')+mi('square','Papel desta página','>')+mi('updown','Espaço vertical')+'<div class="sep"></div>'+mi('send','Enviar a página ao Summa')+mi('trash','Apagar a página','','danger');
  function open(x,y){if(m)hide(m,true);m=document.createElement('div');m.className='menu anim';m.innerHTML=document.getElementById('ctxSel').checked?SEL():EMPTY();st.append(m);const b=st.getBoundingClientRect();m.style.left=Math.min(x,b.width-m.offsetWidth-6)+'px';m.style.top=Math.min(y,b.height-m.offsetHeight-6)+'px';show(m);}
  st.addEventListener('contextmenu',e=>{e.preventDefault();const b=st.getBoundingClientRect();open(e.clientX-b.left,e.clientY-b.top);});
  st.addEventListener('click',()=>{if(m){hide(m,true);m=null;}});
@@ -543,12 +565,21 @@ function toast(st,html,kind='t',ms=4000){st.querySelectorAll('.toast,.notice').f
   s.onclick=e=>{if(e.target===s||e.target.closest('[data-x]')){hide(s.firstChild);hide(s,true);}};}
  const TEX=()=>`<h5>Fórmula</h5><div class="tex"><span>lim</span><span style="font-size:13px;align-self:flex-end;margin:0 0 12px -4px"><i>x</i>→0</span><span class="frac"><span>sen <i>x</i></span><span><i>x</i></span></span><span>= 1</span></div>
   <input class="mono" value="\\lim_{x\\to 0} \\frac{\\sin x}{x} = 1"><div class="acts"><button class="ghost" data-x>Cancelar</button><button class="btn" data-x>Inserir</button></div>`;
- const PDF=()=>`<h5>Exportar como PDF</h5><div class="lbl">Páginas</div><span class="seg" style="margin-bottom:12px"><button class="on">Todas</button><button>Esta</button><button>De… até…</button></span>
-  <div class="row" style="font-size:13px"><span>Com o papel (pauta, margem)</span><input type="checkbox" class="sw" checked></div>
+ const pp=(i,paper)=>`<div class="pp" data-pg="${i}"><svg viewBox="0 0 96 124" width="96" height="124">${paper?Array.from({length:10},(_,j)=>`<line x1="0" x2="96" y1="${14+j*11}" y2="${14+j*11}" stroke="#d4d4d4" stroke-width=".6"/>`).join('')+'<line x1="14" x2="14" y1="0" y2="124" stroke="#b89cea" stroke-width=".6"/>':''}<g fill="none" stroke="#161616" stroke-width="1.2" stroke-linecap="round">${Array.from({length:2+i%3},(_,j)=>`<path d="M20 ${22+j*22}c3-8 6-9 7-2s4 6 6-1"/><path d="M38 ${20+j*22}h${20+(i*13+j*7)%30}"/>`).join('')}</g></svg></div>`;
+ const PDF=()=>`<h5>Exportar como PDF</h5><div class="pdfgrid"><div><div class="pdfprev" id="pdfprev"></div><small style="display:block;text-align:center;font-size:11px;color:var(--faint);margin-top:4px" id="pdfcount">6 páginas</small></div><div>
+  <div class="lbl">Páginas</div><span class="seg" style="margin-bottom:12px" id="pdfpages"><button class="on" data-r="all">Todas</button><button data-r="this">Esta</button><button data-r="range">2 a 4</button></span>
+  <div class="row" style="font-size:13px"><span>Com o papel (pauta, margem)</span><input type="checkbox" class="sw" id="pdfpaper" checked></div>
   <div class="row" style="font-size:13px;border:0"><span>Abrir o PDF depois</span><input type="checkbox" class="sw"></div>
-  <div class="field" style="margin-top:6px">${ic('folder')} Limites — aula 3.pdf</div><div class="acts"><button class="ghost" data-x>Cancelar</button><button class="btn" data-x>Exportar</button></div>`;
- document.querySelector('[data-dlg=tex]').onclick=()=>dlg('d-tex',TEX());document.querySelector('[data-dlg=pdf]').onclick=()=>dlg('d-pdf',PDF());
- setTimeout(()=>{dlg('d-tex',TEX());dlg('d-pdf',PDF());},600);})();
+  <div class="field" style="margin-top:6px">${ic('folder')} Limites — aula 3.pdf</div></div></div><div class="acts"><button class="ghost" data-x>Cancelar</button><button class="btn" data-x>Exportar</button></div>`;
+ let range='all';
+ function prev(){const box=document.getElementById('pdfprev');if(!box)return;const paper=document.getElementById('pdfpaper').checked;
+  const inR=i=>range==='all'||(range==='this'&&i===2)||(range==='range'&&i>=2&&i<=4);
+  box.innerHTML=[1,2,3,4,5,6].map(i=>pp(i,paper).replace('class="pp"',`class="pp ${inR(i)?'':'off'}"`)+`<small>${i}</small>`).join('');
+  document.getElementById('pdfcount').textContent={all:'6 páginas',this:'1 página (a 2)',range:'3 páginas'}[range];}
+ function pdf(){dlg('d-pdf',PDF());prev();document.getElementById('pdfpaper').onchange=prev;
+  document.getElementById('pdfpages').onclick=e=>{const b=e.target.closest('[data-r]');if(!b)return;range=b.dataset.r;document.querySelectorAll('#pdfpages button').forEach(x=>x.classList.toggle('on',x===b));prev();};}
+ document.querySelector('[data-dlg=tex]').onclick=()=>dlg('d-tex',TEX());document.querySelector('[data-dlg=pdf]').onclick=pdf;
+ setTimeout(()=>{dlg('d-tex',TEX());pdf();},600);})();
 </script>
 </body>
 </html>
