@@ -5149,6 +5149,7 @@ msgstr "Marca-texto"
 msgid "LaTeX"
 msgstr "LaTeX"
 
+msgctxt "Color"
 msgid "Violet"
 msgstr "Violeta"
 

@@ -514,11 +514,11 @@ StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay) {
         guint32 rgb;
         const char* name;
     };
-    const Ink colors[] = {{0x161616, _("Black")},
-                          {0x8044ca, _("Violet")},
-                          {0x2548c7, _("Blue")},
-                          {0xc2410c, _("Orange")},
-                          {0x0f7b55, _("Green")}};
+    const Ink colors[] = {{0x161616, C_("Color", "Black")},
+                          {0x8044ca, C_("Color", "Violet")},
+                          {0x2548c7, C_("Color", "Blue")},
+                          {0xc2410c, C_("Color", "Orange")},
+                          {0x0f7b55, C_("Color", "Green")}};
     for (auto const& ink: colors) {
         guint32 c = ink.rgb;
         Dot dot{((c >> 16) & 0xff) / 255.0, ((c >> 8) & 0xff) / 255.0, (c & 0xff) / 255.0, 14, true};

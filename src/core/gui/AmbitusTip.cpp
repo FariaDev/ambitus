@@ -162,8 +162,8 @@ void ensureWindow(GtkWidget* ref) {
                      nullptr);
 }
 
-/// Where the tip goes: centred above the button, GAP px from it; below it if there is no room above; always inside the
-/// window of the button
+/// Where the tip goes: centred above the button, GAP px from it; below it if the button is in the upper half of the
+/// window or there is no room above; always inside the window of the button
 void place(GtkWidget* button, GtkWidget* top) {
     Shared& s = shared();
     GtkRequisition size;
@@ -180,7 +180,9 @@ void place(GtkWidget* button, GtkWidget* top) {
 
     int x = ox + bx + (bw - size.width) / 2;
     int y = oy + by - GAP - size.height;
-    if (y < oy) {
+    // in the upper half of the window (the palette, at the top of the pages) the tip goes below: above, it would
+    // cover the tabs
+    if (y < oy || by + bh / 2 < th / 2) {
         y = oy + by + bh + GAP;
     }
     x = std::clamp(x, ox, std::max(ox, ox + tw - size.width));
