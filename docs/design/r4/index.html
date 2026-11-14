@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ambitus — protótipo r4: anexo da página e paleta sob medida</title>
+<style>
+@font-face{font-family:"IBM Plex Sans";src:url("../r1/fonts/IBMPlexSans-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"IBM Plex Sans";src:url("../r1/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");font-weight:600}
+@font-face{font-family:"IBM Plex Mono";src:url("../r1/fonts/IBMPlexMono-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"STIX Two Text";src:url("../r1/fonts/STIXTwoText.woff2") format("woff2");font-weight:400}
+/* tokens do desk/style.css do Summa (claro) */
+:root{--bg:#fff;--stage:#f4f4f4;--fg:#161616;--muted:#525252;--faint:#6f6f6f;--border:#e0e0e0;--border-strong:#8d8d8d;--raised:#fff;
+ --hover:#e8e8e8;--active:#d4d4d4;--selected:#dedede;--accent-fill:#303030;--accent-fg:#fff;--code:#f4f4f4;--ring:#303030;
+ --shadow-pop:0 8px 24px -10px rgb(0 0 0/.18)}
+*{box-sizing:border-box}
+body{margin:0;overflow-x:hidden;background:#f4f4f4;color:var(--fg);font:400 15px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:40px 28px 80px}
+h1{font:400 34px/1.2 "STIX Two Text",Georgia,serif;margin:0 0 6px}
+h2{font:400 24px/1.3 "STIX Two Text",Georgia,serif;margin:44px 0 12px;padding-top:12px;border-top:1px solid var(--border)}
+h3{font-size:15px;font-weight:600;margin:18px 0 6px}
+p,ul{max-width:780px}
+.sub{color:var(--muted)}
+.card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:20px 22px;margin:16px 0}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.rec{color:#8044ca}
+.cap{font-size:12.5px;color:var(--faint);margin:8px 0 0}
+code,kbd{font:400 12.5px "IBM Plex Mono",monospace;background:var(--code);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button{font:inherit;color:inherit}
+
+/* ---------- compositor ---------- */
+.comp{border:1px solid var(--border);border-radius:4px;background:var(--bg)}
+.comp .ctxl{display:flex;gap:12px;align-items:center;font-size:11.5px;color:var(--muted);padding:8px 12px 0}
+.comp .ctxl .sp{flex:1}
+.tray{display:flex;gap:8px;padding:10px 12px 0}
+.att{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:4px;padding:4px 6px 4px 4px;background:var(--bg);max-width:240px}
+.att .th{width:34px;height:44px;border:1px solid var(--border);border-radius:2px;background:#fff;flex:none;overflow:hidden}
+.att .tx{min-width:0;font-size:12px;line-height:1.3}
+.att .tx b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.att .tx span{color:var(--faint)}
+.att .rm{width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:var(--faint);border-radius:4px;flex:none}
+.field{padding:8px 12px;min-height:64px;font-size:14px;color:var(--faint)}
+.field .caret{display:inline-block;width:1px;height:16px;background:var(--fg);vertical-align:-3px;margin-right:2px}
+.acts{display:flex;align-items:center;gap:4px;padding:0 8px 8px}
+.acts .sp{flex:1}
+.ib{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--muted);border:0;background:transparent;cursor:pointer}
+.ib:hover,.ib.on{background:var(--hover);color:var(--fg)}
+.send{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:4px;background:var(--accent-fill);color:var(--accent-fg);font-weight:600;font-size:12.5px;border:0}
+.menu{background:var(--raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-pop);padding:4px;width:260px;font-size:13px}
+.menu .it{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;color:var(--fg)}
+.menu .it.hi{background:var(--hover)}
+.menu .it small{margin-left:auto;color:var(--faint);font-size:11.5px}
+.menu .it .new{font-size:10.5px;font-weight:600;color:#8044ca;margin-left:auto}
+
+/* ---------- paleta ---------- */
+.stage{background:var(--stage);border-radius:8px;padding:22px 18px 18px;position:relative;min-height:640px}
+.pal{display:inline-flex;align-items:center;gap:2px;padding:4px;background:var(--raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-pop);position:relative}
+.pal .b{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--muted);border:0;background:transparent;cursor:pointer;position:relative}
+.pal .b:hover{background:var(--hover);color:var(--fg)}
+.pal .b.on{background:var(--selected);color:var(--fg)}
+.pal .b svg{width:18px;height:18px}
+.pal .sep{width:1px;height:20px;background:var(--border);margin:0 6px}
+.pal .dot{width:14px;height:14px;border-radius:50%;outline:2px solid transparent;outline-offset:2px}
+.pal .b.c.on{background:transparent}.pal .b.c.on .dot{outline-color:var(--fg)}
+.pal .size{border-radius:50%;background:currentColor}
+.editing .pal .b.t,.editing .pal .b.c{cursor:grab}
+.editing .pal .b.t::after,.editing .pal .b.c::after{content:"×";position:absolute;top:-6px;right:-6px;width:14px;height:14px;border-radius:50%;background:var(--fg);color:#fff;font-size:11px;line-height:14px;text-align:center}
+.pop{position:absolute;top:66px;left:18px;width:700px;max-width:calc(100% - 36px);background:var(--raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-pop);padding:12px;font-size:13px;z-index:3}
+.pop[hidden]{display:none}
+.pop h4{margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.pop .groups{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 18px}
+.pop .tool{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:4px;cursor:pointer}
+.pop .tool:hover{background:var(--hover)}
+.pop .tool .k{margin-left:auto;font:11px "IBM Plex Mono";color:var(--faint)}
+.pop .tool .pinb{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--faint)}
+.pop .tool .pinb.on{color:var(--fg)}
+.pop .tool .pinb.on svg{fill:currentColor}
+.pop .foot{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.pop .foot .sp{flex:1}
+.lnk{border:0;background:transparent;padding:4px 8px;border-radius:4px;cursor:pointer;color:var(--fg);font-size:12.5px}
+.lnk:hover{background:var(--hover)}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.swatches span{width:18px;height:18px;border-radius:50%;cursor:pointer;outline:2px solid transparent;outline-offset:2px}
+.swatches span.in{outline-color:var(--fg)}
+
+/* ---------- radial ---------- */
+.radwrap{display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+.rad{position:relative;width:260px;height:260px;border-radius:50%;background:var(--raised);border:1px solid var(--border);box-shadow:var(--shadow-pop);flex:none}
+.rad .hub{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--faint);text-align:center;line-height:1.2}
+.rad .slot{position:absolute;width:48px;height:48px;margin:-24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;border:0;background:transparent}
+.rad .slot svg{width:20px;height:20px}
+.rad .slot:hover,.rad .slot.sel{background:var(--selected);color:var(--fg)}
+.radlist{flex:1;min-width:280px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:12.5px;cursor:pointer;background:var(--bg)}
+.chip:hover{background:var(--hover)}
+.chip.in{background:var(--selected);border-color:var(--selected)}
+</style>
+</head>
+<body><main>
+<h1>Página no anexo, paleta sob medida</h1>
+<p class="sub">Protótipo r4, a partir das suas perguntas sobre o r3. Os tokens e ícones são os do Summa. Tudo aqui é clicável.</p>
+
+<!-- ================================================== -->
+<h2>1. A página do Ambitus vai como anexo</h2>
+<p>Respondendo: <b>sim, o clipe continua no Summa</b>. Ele fica no compositor do tutor e abre <i>Anexar arquivo</i>, <i>Conferir</i> (a captura da janela do programa de escrita, <kbd>Ctrl+Shift+C</kbd>) e <i>Foto do celular</i>. O chat lateral não tem clipe, e por isso eu tinha posto o caderno como chip de contexto. A sua dúvida mostra que o lugar certo é o mesmo dos outros anexos.</p>
+<ul>
+ <li><b>A página chega como cartão na bandeja de anexos</b>, com a miniatura da página, o nome do caderno e o número da página, e com × para tirar. O campo de texto fica vazio, pronto para a pergunta. O caminho do arquivo vai junto do anexo, escondido, para o tutor poder reler o caderno.</li>
+ <li><b>O chat lateral ganha o mesmo clipe e a mesma bandeja do tutor</b>, como você pediu para o solto: igual ao do app.</li>
+ <li><b>O Conferir fica melhor quando o programa de escrita é o Ambitus</b>: em vez de fotografar a janela, ele pede a página atual pela ponte. A imagem sai nítida, sem a barra de ferramentas e sem o que estiver na frente, e o caminho vai junto. Com o Xournal++ comum, continua a captura da janela de hoje.</li>
+</ul>
+
+<div class="grid2">
+ <div class="card">
+  <span class="tag rec">Proposta · depois de “Mandar ao Summa”</span>
+  <div class="comp">
+   <div class="ctxl"><span>Limites.pdf p. 1</span><span class="sp"></span><span>Só aqui</span><span>Atualizar contexto</span></div>
+   <div class="tray" id="tray"></div>
+   <div class="field"><span class="caret"></span>Pergunte sobre a página…</div>
+   <div class="acts"><button class="ib" id="clip" title="Anexar">PAPERCLIP</button><span class="sp"></span><span class="send">ARROWUP Enviar</span></div>
+  </div>
+  <p class="cap">Igual nos dois chats, preso ou solto. Clique no × do cartão e no clipe.</p>
+ </div>
+ <div class="card">
+  <span class="tag">O menu do clipe</span>
+  <div class="menu">
+   <div class="it">PAPERCLIP Anexar arquivo</div>
+   <div class="it hi">BOOKOPEN Conferir <small>Ctrl+Shift+C</small></div>
+   <div class="it">SMARTPHONE Foto do celular</div>
+  </div>
+  <p class="cap">Nenhum item novo. Com o Ambitus aberto, “Conferir” traz a página atual pela ponte, como o cartão ao lado.</p>
+ </div>
+</div>
+
+<!-- ================================================== -->
+<h2>2. Paleta e menu radial personalizáveis</h2>
+<p>Seu medo tem razão de ser: a paleta tem seis ferramentas e o Xournal++ tem mais de quinze. A proposta tem duas partes. <b>Nada fica sem caminho:</b> o último botão da paleta, ⋯, abre <i>todas</i> as ferramentas. <b>Você escolhe o que fica à mão:</b> o alfinete prende ou solta cada ferramenta na paleta. O resto continua alcançável:</p>
+<ul>
+ <li>o modo <b>Clássico</b> mantém a barra completa do Xournal++;</li>
+ <li><kbd>Ctrl+/</kbd> (paleta de comandos) acha qualquer comando pelo nome;</li>
+ <li>as teclas de uma letra (P, M, E, S, T, X) funcionam com ou sem botão na paleta;</li>
+ <li>“Restaurar o padrão” desfaz qualquer personalização.</li>
+</ul>
+
+<div class="card">
+ <span class="tag rec">Proposta · clique no ⋯ e nos alfinetes</span>
+ <div class="stage" id="stage">
+  <div class="pal" id="pal"></div>
+  <div class="pop" id="pop"></div>
+ </div>
+ <p class="cap">Botão direito na paleta abre o mesmo painel. Cores: o + no fim das cores escolhe uma nova e o botão direito numa cor tira ela. A escolha fica salva nas configurações do Ambitus, fora do <code>.xopp</code>, que continua compatível.</p>
+</div>
+
+<h3>Menu radial (botão direito da caneta, ou tecla)</h3>
+<p>São oito posições. Cada uma aceita uma ferramenta <i>ou</i> uma ação. Assim entram as que você aprovou (Converter em texto, Mandar ao Summa) sem tirar o Desfazer. O radial é configurado no mesmo painel, na aba “Menu radial”.</p>
+<div class="card">
+ <span class="tag rec">Proposta · clique numa posição e depois numa opção</span>
+ <div class="radwrap">
+  <div class="rad" id="rad"><div class="hub">clique numa<br>posição</div></div>
+  <div class="radlist">
+   <h4 style="margin:0 0 6px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)" id="radh">Posição 1</h4>
+   <div class="chips" id="chips"></div>
+   <p class="cap">Converter em texto aparece só com algo selecionado e, sem seleção, fica apagado no radial. Mandar ao Summa só aparece quando o Summa está aberto.</p>
+  </div>
+ </div>
+</div>
+
+<h3>Padrão de fábrica</h3>
+<p>Paleta: caneta, marca-texto, borracha, laço, texto, LaTeX, ⋯ (como hoje, mais o ⋯). Radial: caneta, marca-texto, borracha, laço, desfazer, converter em texto, mandar ao Summa, mão. A forma, que já sai segurando a caneta, sai do radial.</p>
+</main>
+<script>
+const P={
+ pencil:'<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+ highlighter:'<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>',
+ eraser:'<path d="M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21"/><path d="m5.082 11.09 8.828 8.828"/>',
+ lasso:'<path d="M3.704 14.467a10 8 0 1 1 3.115 2.375"/><path d="M7 22a5 5 0 0 1-2-3.994"/><circle cx="5" cy="16" r="2"/>',
+ type:'<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
+ sigma:'<path d="M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2"/>',
+ square:'<rect width="18" height="18" x="3" y="3" rx="2"/>',
+ circle:'<circle cx="12" cy="12" r="10"/>',
+ arrow:'<path d="M13 5H19V11"/><path d="M19 5L5 19"/>',
+ line:'<path d="M5 12h14"/>',
+ ruler:'<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/>',
+ shapes:'<path d="M8.3 10a.7.7 0 0 1-.626-1.079L11.4 3a.7.7 0 0 1 1.198-.043L16.3 8.9a.7.7 0 0 1-.572 1.1Z"/><rect x="3" y="14" width="7" height="7" rx="1"/><circle cx="17.5" cy="17.5" r="3.5"/>',
+ rectsel:'<path d="M12.034 12.681a.498.498 0 0 1 .647-.647l9 3.5a.5.5 0 0 1-.033.943l-3.444 1.068a1 1 0 0 0-.66.66l-1.067 3.443a.5.5 0 0 1-.943.033z"/><path d="M5 3a2 2 0 0 0-2 2"/><path d="M19 3a2 2 0 0 1 2 2"/><path d="M5 21a2 2 0 0 1-2-2"/><path d="M9 3h1"/><path d="M9 21h2"/><path d="M14 3h1"/><path d="M3 9v1"/><path d="M21 9v2"/><path d="M3 14v1"/>',
+ objsel:'<path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/>',
+ image:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+ vspace:'<path d="M12 22v-6"/><path d="M12 8V2"/><path d="M4 12H2"/><path d="M10 12H8"/><path d="M16 12h-2"/><path d="M22 12h-2"/><path d="m15 19-3 3-3-3"/><path d="m15 5-3-3-3 3"/>',
+ hand:'<path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+ laser:'<path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+ mic:'<path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/>',
+ more:'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+ pin:'<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+ plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+ x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+ undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+ redo:'<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/>',
+ convert:'<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
+ send:'<path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/>',
+ copy:'<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+ paperclip:'<path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/>',
+ arrowUp:'<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+ bookopen:'<path d="M12 5v16"/><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/>',
+ smartphone:'<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+};
+const ic=n=>`<svg class="i" viewBox="0 0 24 24">${P[n]}</svg>`;
+document.body.innerHTML=document.body.innerHTML.replace(/PAPERCLIP/g,ic('paperclip')).replace(/ARROWUP/g,ic('arrowUp')).replace(/BOOKOPEN/g,ic('bookopen')).replace(/SMARTPHONE/g,ic('smartphone'));
+
+/* ---- bandeja ---- */
+const thumb=`<svg viewBox="0 0 34 44" width="34" height="44"><g fill="none" stroke="#161616" stroke-width="1" stroke-linecap="round"><path d="M5 12c2-5 4-6 5-1s3 4 4-1"/><path d="M17 9v8M14 13h6"/><path d="M5 22h14"/><path d="M5 27c2-4 4-4 5 0s3 3 4-1"/><path d="M5 34h20"/></g><path d="M5 38h16" stroke="#8044ca" stroke-opacity=".3" stroke-width="3"/></svg>`;
+function tray(on){document.getElementById('tray').innerHTML=on?`<div class="att"><div class="th">${thumb}</div><div class="tx"><b>Limites — aula 3</b><span>página 2 · do Ambitus</span></div><button class="ib rm" style="width:20px;height:20px" onclick="tray(false)">${ic('x')}</button></div>`:'';document.getElementById('tray').style.display=on?'flex':'none';}
+tray(true);
+document.getElementById('clip').onclick=()=>tray(true);
+
+/* ---- paleta ---- */
+const ALL=[
+ ['Escrever',[['pencil','Caneta','P'],['highlighter','Marca-texto','M'],['eraser','Borracha','E'],['laser','Laser','']]],
+ ['Selecionar',[['lasso','Laço','S'],['rectsel','Retângulo',''],['objsel','Objeto','']]],
+ ['Formas',[['shapes','Reconhecer formas',''],['ruler','Régua',''],['line','Linha',''],['arrow','Seta',''],['square','Retângulo',''],['circle','Elipse','']]],
+ ['Inserir',[['type','Texto','T'],['sigma','LaTeX','X'],['image','Imagem',''],['vspace','Espaço vertical',''],['mic','Áudio','']]],
+ ['Mover',[['hand','Mão','']]],
+];
+const DEF=['pencil','highlighter','eraser','lasso','type','sigma'];
+const st={pins:[...DEF],tool:'pencil',inks:['#161616','#8044ca','#2548c7','#c2410c','#0f7b55'],ink:0,size:1,tab:'pal'};
+const EXTRA=['#a21caf','#a16207','#0f766e','#525252'];
+const name=k=>ALL.flatMap(g=>g[1]).find(t=>t[0]===k);
+function drawPal(){
+ const pal=document.getElementById('pal');
+ pal.innerHTML=st.pins.map(k=>`<button class="b t ${k===st.tool?'on':''}" data-tool="${k}" title="${name(k)[1]}">${ic(k)}</button>`).join('')
+  +`<button class="b ${document.getElementById('pop').hidden?'':'on'}" data-more="1" title="Todas as ferramentas">${ic('more')}</button>`
+  +'<span class="sep"></span>'+st.inks.map((c,i)=>`<button class="b c ${i===st.ink?'on':''}" data-ink="${i}"><span class="dot" style="background:${c}"></span></button>`).join('')
+  +`<button class="b" data-addink="1" title="Outra cor">${ic('plus')}</button>`
+  +'<span class="sep"></span>'+[3,6,9].map((d,i)=>`<button class="b ${i===st.size?'on':''}" data-size="${i}"><span class="size" style="width:${d}px;height:${d}px"></span></button>`).join('');
+}
+function drawPop(){
+ const pop=document.getElementById('pop');
+ if(st.tab==='pal'){
+  pop.innerHTML=`<div style="display:flex;gap:4px;margin-bottom:10px"><button class="lnk" style="background:var(--selected)">Ferramentas</button><button class="lnk" onclick="document.getElementById('rad').scrollIntoView({behavior:'smooth',block:'center'})">Menu radial</button></div>
+   <div class="groups">${ALL.map(([g,ts])=>`<div><h4>${g}</h4>${ts.map(([k,n,key])=>`<div class="tool" data-pick="${k}">${ic(k)}<span>${n}</span><span class="k">${key}</span><span class="pinb ${st.pins.includes(k)?'on':''}" data-pin="${k}" title="${st.pins.includes(k)?'Tirar da paleta':'Prender na paleta'}">${ic('pin')}</span></div>`).join('')}</div>`).join('')}</div>
+   <div class="foot"><span>${st.pins.length} na paleta · arraste na paleta para reordenar</span><span class="sp"></span><button class="lnk" data-reset="1">${ic('undo')} Restaurar o padrão</button></div>`;
+ }
+}
+document.getElementById('stage').addEventListener('click',e=>{
+ const b=e.target.closest('[data-tool],[data-more],[data-ink],[data-size],[data-addink],[data-pin],[data-pick],[data-reset]');if(!b)return;
+ const pop=document.getElementById('pop');
+ if(b.dataset.pin){const k=b.dataset.pin;st.pins=st.pins.includes(k)?st.pins.filter(x=>x!==k):[...st.pins,k];drawPop();drawPal();return;}
+ if(b.dataset.pick){st.tool=b.dataset.pick;pop.hidden=true;drawPal();return;}
+ if(b.dataset.reset){st.pins=[...DEF];drawPop();drawPal();return;}
+ if(b.dataset.more){pop.hidden=!pop.hidden;drawPop();drawPal();return;}
+ if(b.dataset.tool)st.tool=b.dataset.tool;
+ if(b.dataset.ink)st.ink=+b.dataset.ink;
+ if(b.dataset.size)st.size=+b.dataset.size;
+ if(b.dataset.addink){const c=EXTRA.find(x=>!st.inks.includes(x));if(c){st.inks.push(c);st.ink=st.inks.length-1;}}
+ drawPal();
+});
+document.getElementById('pal').addEventListener('contextmenu',e=>{e.preventDefault();const d=e.target.closest('[data-ink]');
+ if(d&&st.inks.length>1){st.inks.splice(+d.dataset.ink,1);st.ink=0;drawPal();return;}
+ const pop=document.getElementById('pop');pop.hidden=false;drawPop();drawPal();});
+drawPop();drawPal();
+
+/* ---- radial ---- */
+const OPTS=[['pencil','Caneta'],['highlighter','Marca-texto'],['eraser','Borracha'],['lasso','Laço'],['type','Texto'],['sigma','LaTeX'],['hand','Mão'],['laser','Laser'],['shapes','Formas'],['ruler','Régua'],['image','Imagem'],['vspace','Espaço vertical'],
+ ['undo','Desfazer'],['redo','Refazer'],['convert','Converter em texto'],['send','Mandar ao Summa'],['copy','Copiar a página']];
+const R={slots:['pencil','highlighter','eraser','lasso','undo','convert','send','hand'],sel:0};
+function drawRad(){
+ const rad=document.getElementById('rad');
+ rad.querySelectorAll('.slot').forEach(s=>s.remove());
+ R.slots.forEach((k,i)=>{const a=-Math.PI/2+i*Math.PI/4,x=130+92*Math.cos(a),y=130+92*Math.sin(a);
+  const b=document.createElement('button');b.className='slot'+(i===R.sel?' sel':'');b.style.left=x+'px';b.style.top=y+'px';
+  b.title=OPTS.find(o=>o[0]===k)[1];b.innerHTML=ic(k);b.onclick=()=>{R.sel=i;drawRad();};rad.append(b);});
+ rad.querySelector('.hub').innerHTML=OPTS.find(o=>o[0]===R.slots[R.sel])[1];
+ document.getElementById('radh').textContent=`Posição ${R.sel+1}: escolha o que vai nela`;
+ document.getElementById('chips').innerHTML=OPTS.map(([k,n])=>`<span class="chip ${R.slots[R.sel]===k?'in':''}" data-k="${k}">${ic(k)}${n}</span>`).join('');
+}
+document.getElementById('chips').addEventListener('click',e=>{const c=e.target.closest('[data-k]');if(!c)return;R.slots[R.sel]=c.dataset.k;drawRad();});
+drawRad();
+</script>
+</body>
+</html>
