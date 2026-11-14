@@ -4,6 +4,7 @@
 #include <thread>
 
 #include "control/Control.h"
+#include "control/settings/Settings.h"
 #include "gui/MainWindow.h"
 #include "library/InkReader.h"
 #include "model/Document.h"
@@ -59,6 +60,12 @@ void send(Control* ctrl) {
 }  // namespace
 
 void sendPageToSumma(Control* ctrl) {
+    if (!ctrl->getSettings()->getAmbitusSummaBridge()) {
+        if (auto* win = ctrl->getWindow()) {
+            win->showToast(_("The bridge with Summa is off. Switch it on in the settings."));
+        }
+        return;
+    }
     Document* doc = ctrl->getDocument();
     doc->lock();
     const bool untitled = doc->getFilepath().empty();

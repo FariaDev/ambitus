@@ -905,6 +905,131 @@ textview.amb-tex-field text selection { background-color: @amb_selected; color: 
 #mainWindow.darkMode textview.amb-tex-field text { color: @amb_dk_text; }
 #mainWindow.darkMode textview.amb-tex-field text selection { background-color: @amb_dk_selected; color: @amb_dk_text; }
 
+/* ---------- configurações (protótipo r5, seção 4; SettingsCard.cpp) ----------
+   Um cartão grande no molde de .amb-cmd e .amb-dlg (superfície, fio, raio 8, sombra, véu). À esquerda a navegação
+   (.prefs .nav: camada, título de 20 px, busca, itens de 40 px; o escolhido leva a camada de seleção e o traço de 2 px
+   do acento à esquerda); à direita as linhas (.row: título, descrição apagada de 12 px, controle à direita, fio embaixo
+   e a última sem). Segmentado, interruptor e campo de pasta são os de .amb-dlg. */
+
+.amb-dlg.amb-set { padding: 0; }
+.amb-set .amb-set-nav {
+    background: @amb_layer;
+    padding: 22px 14px 16px 14px;
+    border-right: 1px solid @amb_border;
+    border-radius: 8px 0 0 8px;
+}
+.amb-set .amb-set-pane { background: @amb_bg; border-radius: 0 8px 8px 0; }
+.amb-set label.amb-set-title { margin: 2px 10px 14px 10px; font-size: 20px; font-weight: 600; color: @amb_fg_strong; }
+#mainWindow .amb-set entry.amb-set-search { background-color: @amb_bg; padding: 7px 10px; }
+.amb-set label.amb-cmd-hint { margin-left: 34px; font-size: 14px; color: @amb_text3; }
+
+.amb-set button.amb-set-tab {
+    min-height: 40px;
+    margin: 0;
+    padding: 0 12px 0 0;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background-image: none;
+    background-color: transparent;
+    color: @amb_text2;
+    font-size: 13.5px;
+}
+.amb-set button.amb-set-tab:hover { background-color: @amb_hover; color: @amb_text; }
+.amb-set button.amb-set-tab.on { background-color: @amb_selected; color: @amb_text; font-weight: 500; }
+.amb-set button.amb-set-tab:focus { box-shadow: 0 0 0 2px @amb_layer, 0 0 0 4px @amb_text; }
+.amb-set .amb-set-bar { background-color: transparent; border-radius: 999px; }
+.amb-set button.amb-set-tab.on .amb-set-bar { background-color: @amb_accent; }
+
+.amb-set button.amb-set-close {
+    min-width: 32px;
+    min-height: 32px;
+    margin: 14px 14px 0 0;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background-image: none;
+    background-color: transparent;
+    color: @amb_text2;
+}
+.amb-set button.amb-set-close:hover { background-color: @amb_hover; color: @amb_text; }
+.amb-set button.amb-set-close:focus { box-shadow: 0 0 0 2px @amb_bg, 0 0 0 4px @amb_text; }
+
+.amb-set scrolledwindow.amb-set-scroll { background: transparent; }
+.amb-set .amb-set-content { padding: 0 0 40px 0; }
+.amb-set label.amb-set-head { margin: 4px 0 8px 0; font-size: 18px; font-weight: 600; color: @amb_fg_strong; }
+.amb-set .searching label.amb-set-head { margin: 22px 0 2px 0; font-size: 12px; color: @amb_text2; }
+.amb-set .searching .amb-set-section:first-child label.amb-set-head { margin-top: 4px; }
+
+.amb-set .amb-set-row { padding: 12px 0; border-bottom: 1px solid @amb_border; }
+.amb-set .amb-set-row.last { border-bottom: none; }
+.amb-set .amb-set-row.off { opacity: 0.5; }
+.amb-set label.amb-set-row-title { font-size: 14px; color: @amb_text; }
+.amb-set label.amb-set-row-desc { font-size: 12px; color: @amb_text3; }
+.amb-set label.amb-set-para { font-size: 13.5px; color: @amb_text2; }
+.amb-set label.amb-set-empty { padding: 18px 0; font-size: 14px; color: @amb_text3; }
+.amb-set button.amb-set-field { min-width: 0; }
+
+/* o interruptor desligado: trilho do traço forte e botão do fundo, como no protótipo (o ligado é o de .amb-dlg) */
+.amb-set switch { background: @amb_border_strong; border-color: @amb_border_strong; }
+.amb-set switch slider { background: #ffffff; border-color: #ffffff; }
+
+.amb-set button.amb-set-btn {
+    min-height: 20px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background-image: none;
+    background-color: @amb_layer;
+    color: @amb_text;
+    font-size: 13px;
+}
+.amb-set button.amb-set-btn:hover { background-color: @amb_hover; }
+.amb-set button.amb-set-btn:focus { box-shadow: 0 0 0 2px @amb_bg, 0 0 0 4px @amb_text; }
+popover.amb-dlg-pop button.amb-set-more {
+    min-height: 20px;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background-image: none;
+    background-color: transparent;
+    color: @amb_text;
+    font-size: 13px;
+}
+popover.amb-dlg-pop button.amb-set-more:hover { background-color: @amb_hover; }
+
+#mainWindow.darkMode .amb-set .amb-set-nav { background: @amb_dk_layer; border-right-color: @amb_dk_border; }
+#mainWindow.darkMode .amb-set .amb-set-pane { background: @amb_dk_bg; }
+#mainWindow.darkMode .amb-set label.amb-set-title,
+#mainWindow.darkMode .amb-set label.amb-set-head { color: @amb_dk_fg_strong; }
+#mainWindow.darkMode .amb-set .searching label.amb-set-head { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-set entry.amb-set-search { background-color: @amb_dk_bg; }
+#mainWindow.darkMode .amb-set label.amb-cmd-hint { color: @amb_dk_text3; }
+#mainWindow.darkMode .amb-set button.amb-set-tab { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-set button.amb-set-tab:hover { background-color: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-set button.amb-set-tab.on { background-color: @amb_dk_selected; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-set button.amb-set-tab:focus { box-shadow: 0 0 0 2px @amb_dk_layer, 0 0 0 4px @amb_dk_text; }
+#mainWindow.darkMode .amb-set button.amb-set-tab.on .amb-set-bar { background-color: @amb_dk_accent; }
+#mainWindow.darkMode .amb-set button.amb-set-close { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-set button.amb-set-close:hover { background-color: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-set button.amb-set-close:focus { box-shadow: 0 0 0 2px @amb_dk_bg, 0 0 0 4px @amb_dk_text; }
+#mainWindow.darkMode .amb-set switch { background: @amb_dk_border_strong; border-color: @amb_dk_border_strong; }
+#mainWindow.darkMode .amb-set switch slider { background: @amb_dk_bg; border-color: @amb_dk_bg; }
+#mainWindow.darkMode .amb-set .amb-set-row { border-bottom-color: @amb_dk_border; }
+#mainWindow.darkMode .amb-set .amb-set-row.last { border-bottom: none; }
+#mainWindow.darkMode .amb-set label.amb-set-row-title { color: @amb_dk_text; }
+#mainWindow.darkMode .amb-set label.amb-set-row-desc,
+#mainWindow.darkMode .amb-set label.amb-set-empty { color: @amb_dk_text3; }
+#mainWindow.darkMode .amb-set label.amb-set-para { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-set button.amb-set-btn { background-color: @amb_dk_layer; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-set button.amb-set-btn:hover { background-color: @amb_dk_hover; }
+#mainWindow.darkMode .amb-set button.amb-set-btn:focus { box-shadow: 0 0 0 2px @amb_dk_bg, 0 0 0 4px @amb_dk_text; }
+#mainWindow.darkMode popover.amb-dlg-pop button.amb-set-more { color: @amb_dk_text; }
+#mainWindow.darkMode popover.amb-dlg-pop button.amb-set-more:hover { background-color: @amb_dk_hover; }
+
 /* ---------- exportar como PDF (protótipo r6, seção 8; ExportPdfCard.cpp) ----------
    Também é o cartão de .amb-dlg. À esquerda a prévia (.pdfprev: fundo de palco, canto de 4 px; as páginas ficam
    brancas também no escuro, com a sombra de 0 1px 3px; as de fora da escolha a 25%, em 120 ms); as linhas com

@@ -555,6 +555,34 @@ public:
     void setAmbitusHoldToSnap(bool enabled);
     bool getAmbitusHoldToSnap() const;
 
+    /// Ambitus: one key per tool (P, M, E, S, T, X) on the page
+    void setAmbitusToolKeys(bool enabled);
+    bool getAmbitusToolKeys() const;
+
+    /// Ambitus: a copy of the notebook (one per ten minutes, the newest thirty) before a save writes over it
+    void setAmbitusKeepVersions(bool enabled);
+    bool getAmbitusKeepVersions() const;
+
+    /// Ambitus: the bridge with Summa ("Send to Summa", handwriting to text)
+    void setAmbitusSummaBridge(bool enabled);
+    bool getAmbitusSummaBridge() const;
+
+    /// Ambitus: the search of the library reads the handwriting too (through Summa); off by default, it leaves the PC
+    void setAmbitusSearchInk(bool enabled);
+    bool getAmbitusSearchInk() const;
+
+    /// Ambitus: the paper a new notebook starts with: "summa", "ruled", "grid", "dotted" or "plain"
+    void setAmbitusNewPaper(const std::string& paper);
+    const std::string& getAmbitusNewPaper() const;
+
+    /// Ambitus: the folder of the notebooks chosen in the settings (empty: the one of Summa)
+    void setAmbitusNotebooksFolder(const std::string& folder);
+    const std::string& getAmbitusNotebooksFolder() const;
+
+    /// Ambitus: whether the second button of the pen opens the radial menu (it has no tool of its own) or is the eraser
+    bool getAmbitusStylusRadial() const;
+    void setAmbitusStylusRadial(bool radial);
+
     /// Ambitus: screen mode of the editor (0 classic, 1 studio, 2 focus)
     void setEditorMode(int mode);
     int getEditorMode() const;
@@ -1173,6 +1201,14 @@ private:
 
     /// Ambitus: hold the pen still to straighten
     bool ambitusHoldToSnap{};
+
+    /// Ambitus: the choices of the settings card
+    bool ambitusToolKeys{};
+    bool ambitusKeepVersions{};
+    bool ambitusSummaBridge{};
+    bool ambitusSearchInk{};
+    std::string ambitusNewPaper;
+    std::string ambitusNotebooksFolder;
 
     /// Ambitus: screen mode of the editor
     int editorMode{};

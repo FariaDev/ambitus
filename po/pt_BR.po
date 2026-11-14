@@ -5489,3 +5489,147 @@ msgstr "PDF exportado."
 
 msgid "Open folder"
 msgstr "Abrir pasta"
+
+msgid "Pen and touch"
+msgstr "Caneta e toque"
+
+msgid "Appearance"
+msgstr "Aparência"
+
+msgid "Summa"
+msgstr "Summa"
+
+msgid "Advanced"
+msgstr "Avançado"
+
+msgid "Settings"
+msgstr "Configurações"
+
+msgctxt "settings search"
+msgid "Search"
+msgstr "Buscar"
+
+msgid "No setting matches this search."
+msgstr "Nenhuma configuração corresponde a esta busca."
+
+msgid "Notebooks folder"
+msgstr "Pasta dos cadernos"
+
+msgid "the same as Summa"
+msgstr "a mesma do Summa"
+
+msgid "every minute and when you switch tab"
+msgstr "a cada minuto e ao trocar de aba"
+
+msgid "every %d minutes and when you switch tab"
+msgstr "a cada %d minutos e ao trocar de aba"
+
+msgid "Save automatically"
+msgstr "Salvar sozinho"
+
+msgid "Keep earlier versions"
+msgstr "Guardar versões anteriores"
+
+msgid "one per ten minutes of work; the 30 newest"
+msgstr "uma por dez minutos de trabalho; as 30 mais novas"
+
+msgid "Paper of new notebooks"
+msgstr "Papel dos cadernos novos"
+
+msgctxt "handedness"
+msgid "Right"
+msgstr "Direita"
+
+msgctxt "handedness"
+msgid "Left"
+msgstr "Esquerda"
+
+msgid "Hand you write with"
+msgstr "Mão com que você escreve"
+
+msgid "the palette and the radial open on the other side; not available yet"
+msgstr "a paleta e o radial abrem do lado oposto; ainda não disponível"
+
+msgid "Pen pressure changes the thickness"
+msgstr "Pressão da caneta muda a espessura"
+
+msgid "Finger on the screen moves the page"
+msgstr "O dedo na tela move a página"
+
+msgid "Pen button opens the radial menu"
+msgstr "Botão da caneta abre o menu radial"
+
+msgid "Ignore the palm of the hand"
+msgstr "Ignorar a palma da mão"
+
+msgid "Hold still to straighten the stroke"
+msgstr "Segurar parado endireita o traço"
+
+msgid "line, circle, rectangle, arrow"
+msgstr "reta, círculo, retângulo, seta"
+
+msgid "One key per tool"
+msgstr "Uma tecla por ferramenta"
+
+msgid "P, M, E, S, T, X"
+msgstr "P, M, E, S, T, X"
+
+msgid "Customize…"
+msgstr "Personalizar…"
+
+msgid "Palette and radial menu"
+msgstr "Paleta e menu radial"
+
+msgid "what is at hand, the colors and the favorites"
+msgstr "o que fica à mão, as cores e as favoritas"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "System"
+msgstr "Do sistema"
+
+msgid "Light"
+msgstr "Claro"
+
+msgid "Dark"
+msgstr "Escuro"
+
+msgid "Accent color"
+msgstr "Cor de acento"
+
+msgid "the same as Summa, if it is open; not available yet"
+msgstr "a mesma do Summa, se ele estiver aberto; ainda não disponível"
+
+msgid "applies the next time Ambitus opens"
+msgstr "vale na próxima vez que o Ambitus abrir"
+
+msgid "Bridge with Summa"
+msgstr "Ponte com o Summa"
+
+msgid "“Send to Summa”, Check from the page"
+msgstr "“Mandar ao Summa”, Conferir pela página"
+
+msgid "Search handwriting too"
+msgstr "Buscar também na escrita à mão"
+
+msgid "pages with ink go to your model and become text for the search"
+msgstr "as páginas com tinta vão ao seu modelo e viram texto na busca"
+
+msgid "Open the full Xournal++ Preferences"
+msgstr "Abrir as Preferências completas do Xournal++"
+
+msgid "LaTeX, audio, input devices, default file names, plugins and everything else that Xournal++ offers."
+msgstr "LaTeX, áudio, dispositivos de entrada, nomes padrão dos arquivos, plugins e tudo o mais que o Xournal++ oferece."
+
+msgid "Choose a folder"
+msgstr "Escolha uma pasta"
+
+msgid "added to the library; Summa keeps its own"
+msgstr "entra na biblioteca; o Summa guarda a dele"
+
+msgid "Folder of the notebooks"
+msgstr "Pasta dos cadernos"
+
+msgid "The bridge with Summa is off. Switch it on in the settings."
+msgstr "A ponte com o Summa está desligada. Ligue em Configurações."

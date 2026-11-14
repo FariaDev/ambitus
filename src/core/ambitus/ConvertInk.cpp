@@ -143,6 +143,10 @@ void convertSelectionToText(Control* ctrl) {
         win->showToast(_("Select the handwriting with the lasso first."));
         return;
     }
+    if (!ctrl->getSettings()->getAmbitusSummaBridge()) {
+        win->showToast(_("The bridge with Summa is off. Switch it on in the settings."));
+        return;
+    }
     auto bridge = library::findSummaBridge();
     if (!bridge) {
         win->showToast(messageFor(library::InkStop::NoSumma));

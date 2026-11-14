@@ -386,7 +386,7 @@ void NewNotebookDialog::open(std::vector<library::Subject> list, const fs::path&
                              std::function<void(const Request&)> create) {
     subjects = std::move(list);
     onCreate = std::move(create);
-    paper = DEFAULT_PAPER;
+    paper = startPaper;
     size = DEFAULT_SIZE;
     nameEdited = false;
 

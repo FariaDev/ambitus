@@ -59,6 +59,8 @@ public:
         std::function<void(const fs::path& folder)> newNotebook;
         /// new board (one page that grows), same folder rule as newNotebook
         std::function<void(const fs::path& folder)> newBoard;
+        /// whether the search may read the handwriting through Summa (the settings); unset: it may
+        std::function<bool()> searchInk;
     };
 
     /// storeFile: covers and folders (config); indexFile: the search index (cache)
@@ -87,6 +89,9 @@ public:
     std::string colorOf(const fs::path& file) const;
     /// Brings the search index up to date in a worker thread.
     void reindex();
+    /// Puts a folder in the library, as "Add folder" does (the library then shows it); false if it was already there.
+    /// `replacing`, when it is one of the folders added by hand, goes out of the library.
+    bool setFolder(const fs::path& folder, const fs::path& replacing = {});
 
 private:
     enum class SourceKind { Recent, All, Course, Folder };
@@ -139,6 +144,7 @@ private:
     std::vector<Entry> recentEntries() const;
     std::string sourceTitle(Source s) const;
     fs::path sourceFolder(Source s) const;
+    bool inkSearchOn() const;  ///< the settings let the search read the handwriting
 
     CoverInput coverInput(const Entry& e);
     GdkPixbuf* previewOf(const fs::path& p);

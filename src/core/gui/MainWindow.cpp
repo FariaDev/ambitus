@@ -7,6 +7,7 @@
 #include <gio/gio.h>                // for g_cancellable_is_...
 #include <gtk/gtkcssprovider.h>     // for gtk_css_provider_...
 
+#include "ambitus/SettingsRows.h"
 #include "control/AudioController.h"                    // for AudioController
 #include "control/Control.h"                            // for Control
 #include "control/DeviceListHelper.h"                   // for getSourceMapping
@@ -55,6 +56,7 @@
 #include "PageMenu.h"            // for PageMenu
 #include "RadialMenu.h"          // for RadialMenu
 #include "SelectionBar.h"        // for SelectionBar
+#include "SettingsCard.h"
 #include "StudioPalette.h"       // for StudioPalette
 #include "TitleBar.h"            // for TitleBar
 #include "Toast.h"               // for Toast
@@ -107,6 +109,10 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
         ambitus::library::LibraryView::Actions actions;
         actions.open = [control](const fs::path& p) { control->openInTab(p); };
         actions.openAt = [control](const fs::path& p, size_t page) { control->openInTab(p, static_cast<int>(page)); };
+        actions.searchInk = [control] {
+            auto* s = control->getSettings();
+            return s->getAmbitusSummaBridge() && s->getAmbitusSearchInk();
+        };
         actions.newNotebook = [this](const fs::path& folder) { showNewNotebook(folder); };
         actions.newBoard = [this, control](const fs::path& folder) {
             fs::path file;
@@ -435,6 +441,8 @@ void MainWindow::showNewNotebook(const fs::path& folder) {
         near = doc->getFilepath();
         doc->unlock_shared();
     }
+    newNotebookDialog->setStartPaper(ambitus::settingsrows::paperFromId(control->getSettings()->getAmbitusNewPaper())
+                                             .value_or(ambitus::newnotebook::DEFAULT_PAPER));
     newNotebookDialog->open(library->subjects(), near, [this](const ambitus::NewNotebookDialog::Request& r) {
         using namespace ambitus::newnotebook;
         if (!r.file.empty()) {
@@ -458,6 +466,41 @@ void MainWindow::showNewNotebook(const fs::path& folder) {
             control->save([](bool) {});  // in the folder of the subject: the first version is kept from the start
         }
     });
+}
+
+void MainWindow::showSettingsCard() {
+    ambitus::SettingsCard::open(control, GTK_OVERLAY(windowOverlay), GTK_WINDOW(window));
+}
+
+void MainWindow::openPalettePanel() {
+    bool moved = false;
+    if (isLibraryShown()) {
+        showEditor();
+        moved = true;
+    }
+    if (static_cast<ambitus::EditorMode>(control->getSettings()->getEditorMode()) != ambitus::EditorMode::STUDIO &&
+        !control->isBoardOpen()) {
+        setEditorMode(ambitus::EditorMode::STUDIO);  // the palette is only there in the Studio mode
+        moved = true;
+    }
+    if (!studioPalette) {
+        return;
+    }
+    if (!moved) {
+        studioPalette->openPanel();
+        return;
+    }
+    // the panel is a popover of the palette: it needs the palette on screen, one turn of the main loop later
+    g_idle_add(
+            +[](gpointer d) -> gboolean {
+                static_cast<MainWindow*>(d)->studioPalette->openPanel();
+                return G_SOURCE_REMOVE;
+            },
+            this);
+}
+
+bool MainWindow::setLibraryFolder(const fs::path& folder, const fs::path& replacing) {
+    return library->setFolder(folder, replacing);
 }
 
 void MainWindow::showLibrary() {

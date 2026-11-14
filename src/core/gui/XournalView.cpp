@@ -328,8 +328,8 @@ auto XournalView::onKeyPressEvent(const KeyEvent& event) -> bool {
         return true;
     }
 
-    // Ambitus: one key per tool (P, M, E, S, T, X)
-    if (!state) {
+    // Ambitus: one key per tool (P, M, E, S, T, X), unless the settings turned them off
+    if (!state && control->getSettings()->getAmbitusToolKeys()) {
         if (auto tool = ambitus::toolForKey(keyval); tool) {
             if (auto* db = control->getActionDatabase(); db->isActionEnabled(Action::SELECT_TOOL)) {
                 db->fireChangeActionState(Action::SELECT_TOOL, *tool);

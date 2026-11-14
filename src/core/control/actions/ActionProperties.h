@@ -321,7 +321,20 @@ struct ActionProperties<Action::GRID_SNAPPING> {
 template <>
 struct ActionProperties<Action::PREFERENCES> {
     using app_namespace = std::true_type;
-    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->showSettings(); }
+#ifdef __APPLE__
+    static constexpr const char* accelerators[] = {"<Meta>comma", nullptr};
+#else
+    static constexpr const char* accelerators[] = {"<Ctrl>comma", nullptr};
+#endif
+    // Ambitus: the settings card; the dialog of Xournal++ is "Advanced" in it, and what opens with no window to put
+    // the card in
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
+        if (auto* win = ctrl->getWindow(); win && win->getWindowOverlay()) {
+            win->showSettingsCard();
+        } else {
+            ctrl->showSettings();
+        }
+    }
 };
 
 

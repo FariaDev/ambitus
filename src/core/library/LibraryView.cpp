@@ -341,8 +341,9 @@ void LibraryView::reindex() {
 
     // a reason not to read (Summa closed, reading off, no model…) is retried after a while, not at every change
     constexpr auto INK_RETRY = std::chrono::minutes(2);
-    const bool tryInk = inkStop == InkStop::None || inkStop == InkStop::Failed ||
-                        std::chrono::steady_clock::now() - inkStoppedAt > INK_RETRY;
+    const bool inkAllowed = inkSearchOn();
+    const bool tryInk = inkAllowed && (inkStop == InkStop::None || inkStop == InkStop::Failed ||
+                                       std::chrono::steady_clock::now() - inkStoppedAt > INK_RETRY);
 
     struct Job {
         LibraryView* self;
@@ -407,8 +408,10 @@ void LibraryView::reindex() {
     }).detach();
 }
 
+auto LibraryView::inkSearchOn() const -> bool { return !actions.searchInk || actions.searchInk(); }
+
 auto LibraryView::inkStatus() const -> std::string {
-    if (!index) {
+    if (!index || !inkSearchOn()) {
         return {};
     }
     auto [pages, read] = index->inkProgress();
@@ -752,7 +755,11 @@ void LibraryView::addTextHits(const std::vector<Entry>& everywhere) {
     for (auto& e: everywhere) {
         order.push_back(e.nb.path);
     }
-    const auto hits = index->search(filter, order);
+    auto hits = index->search(filter, order);
+    if (!inkSearchOn()) {
+        // what was read before stays in the index, but the search does not use it while the settings say no
+        hits.erase(std::remove_if(hits.begin(), hits.end(), [](const SearchHit& h) { return h.ink; }), hits.end());
+    }
     const std::string ink = inkStatus();
     if (hits.empty()) {
         gtk_container_add(GTK_CONTAINER(body), label(_("Nothing found in the text or the formulas."), "amb-empty"));
@@ -1455,15 +1462,24 @@ void LibraryView::addFolderDialog() {
         gchar* file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg));
         fs::path p = Util::fromGFilename(file);
         g_free(file);
-        std::error_code ec;
-        p = fs::weakly_canonical(p, ec);
-        if (store.addFolder(p)) {
-            store.save();
-            current = {SourceKind::Folder, store.folders().size() - 1};
-            refresh();
-        }
+        setFolder(p);
     }
     g_object_unref(dlg);
+}
+
+bool LibraryView::setFolder(const fs::path& folder, const fs::path& replacing) {
+    std::error_code ec;
+    const fs::path p = fs::weakly_canonical(folder, ec);
+    const bool removed = !replacing.empty() && replacing != p && store.removeFolder(replacing);
+    const bool added = store.addFolder(p);
+    if (added || removed) {
+        store.save();
+        if (added) {
+            current = {SourceKind::Folder, store.folders().size() - 1};
+        }
+        refresh();
+    }
+    return added;
 }
 
 }  // namespace ambitus::library

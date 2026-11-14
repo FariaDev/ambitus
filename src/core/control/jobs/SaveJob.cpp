@@ -10,6 +10,7 @@
 #include "ambitus/Versions.h"
 #include "control/Control.h"              // for Control
 #include "control/jobs/BlockingJob.h"     // for BlockingJob
+#include "control/settings/Settings.h"    // for Settings
 #include "control/xojfile/SaveHandler.h"  // for SaveHandler
 #include "model/Document.h"               // for Document
 #include "model/PageRef.h"                // for PageRef
@@ -130,7 +131,9 @@ auto SaveJob::save() -> bool {
     doc->unlock_shared();
 
     // Ambitus: the file as it was goes to the earlier versions before it is written over
-    ambitus::versions::keepBeforeSave(target);
+    if (control->getSettings()->getAmbitusKeepVersions()) {
+        ambitus::versions::keepBeforeSave(target);
+    }
 
     auto const createBackup = doc->shouldCreateBackupOnSave();
 

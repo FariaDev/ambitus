@@ -137,6 +137,13 @@ public:
     /// Ambitus: the "New notebook" card (see ambitus::NewNotebookDialog). `folder` is where it starts, when the caller
     /// knows (the folder the library shows); else the folder the library shows, else the one of the open notebook.
     void showNewNotebook(const fs::path& folder = {});
+    /// Ambitus: the settings card (see ambitus::SettingsCard), in place of the Preferences of Xournal++
+    void showSettingsCard();
+    /// Ambitus: opens the panel "All tools" of the Studio palette (the "Customize…" of the settings card); the Studio
+    /// mode comes on if it was not, and the library goes away if it was shown
+    void openPalettePanel();
+    /// Ambitus: puts a folder in the library, as "Add folder" does; `replacing` (a folder added before) goes out
+    bool setLibraryFolder(const fs::path& folder, const fs::path& replacing = {});
     /// Ambitus: the overlay over the whole window, for the cards that go over the library and the page alike
     GtkWidget* getWindowOverlay() const { return windowOverlay; }
     /// Ambitus: File → Earlier versions opens the panel of versions at the right of the page, or closes it

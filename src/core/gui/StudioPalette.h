@@ -133,6 +133,8 @@ public:
     void setVisible(bool visible);
     /// Focus mode: hidden until the pointer reaches the top of the page (see FocusReveal.h)
     void setRevealOnHover();
+    /// Opens the panel with every tool (the "..." button), when the palette is on screen
+    void openPanel();
 
 private:
     GtkWidget* root = nullptr;

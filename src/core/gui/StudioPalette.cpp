@@ -2018,6 +2018,12 @@ void StudioPalette::setVisible(bool visible) {
     }
 }
 
+void StudioPalette::openPanel() {
+    if (gtk_widget_get_visible(root) && !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(state->more))) {
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(state->more), true);
+    }
+}
+
 void StudioPalette::setRevealOnHover() {
     if (state->reveal) {
         return;  // already so: the mode is applied more than once, and it must not hide the palette again

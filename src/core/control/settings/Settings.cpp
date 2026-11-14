@@ -249,6 +249,12 @@ void Settings::loadDefault() {
     this->snapRecognizedShapesEnabled = false;
     this->scratchOutEnabled = true;
     this->ambitusHoldToSnap = true;
+    this->ambitusToolKeys = true;
+    this->ambitusKeepVersions = true;
+    this->ambitusSummaBridge = true;
+    this->ambitusSearchInk = false;
+    this->ambitusNewPaper = "summa";
+    this->ambitusNotebooksFolder.clear();
     this->editorMode = 0;
     this->ambitusPaletteTools.clear();
     this->ambitusPaletteColors.clear();
@@ -735,6 +741,18 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->editorMode = std::clamp<int>(g_ascii_strtoll(reinterpret_cast<const char*>(value), nullptr, 10), 0, 2);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusHoldToSnap")) == 0) {
         this->ambitusHoldToSnap = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusToolKeys")) == 0) {
+        this->ambitusToolKeys = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusKeepVersions")) == 0) {
+        this->ambitusKeepVersions = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSummaBridge")) == 0) {
+        this->ambitusSummaBridge = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSearchInk")) == 0) {
+        this->ambitusSearchInk = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewPaper")) == 0) {
+        this->ambitusNewPaper = reinterpret_cast<const char*>(value);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNotebooksFolder")) == 0) {
+        this->ambitusNotebooksFolder = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteTools")) == 0) {
         this->ambitusPaletteTools = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteColors")) == 0) {
@@ -1229,6 +1247,12 @@ void Settings::save() {
     SAVE_BOOL_PROP(snapRecognizedShapesEnabled);
     SAVE_BOOL_PROP(scratchOutEnabled);
     SAVE_BOOL_PROP(ambitusHoldToSnap);
+    SAVE_BOOL_PROP(ambitusToolKeys);
+    SAVE_BOOL_PROP(ambitusKeepVersions);
+    SAVE_BOOL_PROP(ambitusSummaBridge);
+    SAVE_BOOL_PROP(ambitusSearchInk);
+    SAVE_STRING_PROP(ambitusNewPaper);
+    SAVE_STRING_PROP(ambitusNotebooksFolder);
     SAVE_INT_PROP(editorMode);
     SAVE_STRING_PROP(ambitusPaletteTools);
     SAVE_STRING_PROP(ambitusPaletteColors);
@@ -2423,6 +2447,57 @@ void Settings::setAmbitusHoldToSnap(bool enabled) {
 }
 
 auto Settings::getAmbitusHoldToSnap() const -> bool { return this->ambitusHoldToSnap; }
+
+#define AMBITUS_BOOL_SETTING(Name, member)          \
+    void Settings::setAmbitus##Name(bool enabled) { \
+        if (this->member == enabled) {              \
+            return;                                 \
+        }                                           \
+        this->member = enabled;                     \
+        save();                                     \
+    }                                               \
+    auto Settings::getAmbitus##Name() const->bool { return this->member; }
+
+AMBITUS_BOOL_SETTING(ToolKeys, ambitusToolKeys)
+AMBITUS_BOOL_SETTING(KeepVersions, ambitusKeepVersions)
+AMBITUS_BOOL_SETTING(SummaBridge, ambitusSummaBridge)
+AMBITUS_BOOL_SETTING(SearchInk, ambitusSearchInk)
+#undef AMBITUS_BOOL_SETTING
+
+void Settings::setAmbitusNewPaper(const std::string& paper) {
+    if (this->ambitusNewPaper == paper) {
+        return;
+    }
+    this->ambitusNewPaper = paper;
+    save();
+}
+
+auto Settings::getAmbitusNewPaper() const -> const std::string& { return this->ambitusNewPaper; }
+
+void Settings::setAmbitusNotebooksFolder(const std::string& folder) {
+    if (this->ambitusNotebooksFolder == folder) {
+        return;
+    }
+    this->ambitusNotebooksFolder = folder;
+    save();
+}
+
+auto Settings::getAmbitusNotebooksFolder() const -> const std::string& { return this->ambitusNotebooksFolder; }
+
+// the pen button that the radial menu takes is the second one; "off" gives it back the eraser, as it was in Xournal++
+auto Settings::getAmbitusStylusRadial() const -> bool {
+    return this->buttonConfig[BUTTON_STYLUS_TWO]->action == TOOL_NONE;
+}
+
+void Settings::setAmbitusStylusRadial(bool radial) {
+    auto& cfg = *this->buttonConfig[BUTTON_STYLUS_TWO];
+    const ToolType wanted = radial ? TOOL_NONE : TOOL_ERASER;
+    if (cfg.action == wanted) {
+        return;
+    }
+    cfg.action = wanted;
+    save();
+}
 
 void Settings::setEditorMode(int mode) {
     if (this->editorMode == mode) {

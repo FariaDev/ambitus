@@ -51,6 +51,8 @@ public:
     /// onCreate runs once, after the card is gone.
     void open(std::vector<library::Subject> subjects, const fs::path& near,
               std::function<void(const Request&)> onCreate);
+    /// The paper chosen the next time it opens (the settings keep it)
+    void setStartPaper(newnotebook::Paper paper) { startPaper = paper; }
     void close();
     bool isOpen() const;
 
@@ -85,6 +87,7 @@ private:
 
     std::vector<library::Subject> subjects;
     size_t subject = 0;
+    newnotebook::Paper startPaper = newnotebook::DEFAULT_PAPER;
     newnotebook::Paper paper = newnotebook::DEFAULT_PAPER;
     newnotebook::PageSize size = newnotebook::DEFAULT_SIZE;
     bool nameEdited = false;  ///< the user typed in the field: the suggestion is not put there again
