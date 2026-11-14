@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ambitus — protótipo r7: Summa em modo mini</title>
+<style>
+@font-face{font-family:"IBM Plex Sans";src:url("../r1/fonts/IBMPlexSans-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"IBM Plex Sans";src:url("../r1/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");font-weight:600}
+@font-face{font-family:"IBM Plex Mono";src:url("../r1/fonts/IBMPlexMono-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"STIX Two Text";src:url("../r1/fonts/STIXTwoText.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"STIX Two Text";src:url("../r1/fonts/STIXTwoText-Italic.woff2") format("woff2");font-weight:400;font-style:italic}
+/* Tokens do Summa (desk/style.css). Movimento: docs/design/movimento.md do Summa, copiado sem mudança. */
+:root{--bg:#fff;--stage:#f4f4f4;--fg:#161616;--fg-strong:#0e0e0e;--muted:#525252;--faint:#6f6f6f;--border:#e0e0e0;--border-strong:#8d8d8d;--raised:#fff;--surface:#fff;
+ --hover:#e8e8e8;--active:#d4d4d4;--selected:#dedede;--accent-fill:#303030;--accent-fg:#fff;--code:#f4f4f4;--violet:#8044ca;--danger:#da1e28;
+ --mark:color-mix(in oklab,var(--fg) 16%,transparent);
+ --shadow-pop:0 8px 24px -10px rgb(0 0 0/.18);--shadow-dialog:0 16px 48px -16px rgb(0 0 0/.22);
+ --t-fast:120ms;--t-base:180ms;--t-slow:320ms;--t-loop:1.2s;
+ --ease-out:cubic-bezier(.22,.61,.36,1);--ease-move:cubic-bezier(.4,0,.2,1);
+ --from-drop:translateY(-3px) scale(.995);--from-rise:translateY(4px);--from-zoom:scale(.985)}
+body.slowmo{--t-fast:480ms;--t-base:720ms;--t-slow:1280ms;--t-loop:4.8s}
+body.reduce{--from-drop:none;--from-rise:none;--from-zoom:none;--t-base:var(--t-fast);--t-slow:0s}
+.dark{--bg:#161616;--stage:#262626;--fg:#f4f4f4;--fg-strong:#fff;--muted:#c6c6c6;--faint:#a8a8a8;--border:#393939;--border-strong:#6f6f6f;--raised:#393939;--surface:#161616;
+ --hover:#333;--active:#454545;--selected:#393939;--accent-fill:#e6e6e6;--accent-fg:#161616;--code:#262626;--violet:#8957d0;
+ --shadow-pop:0 8px 24px -10px rgb(0 0 0/.8);--shadow-dialog:0 16px 48px -16px rgb(0 0 0/.85);color:var(--fg)}
+*{box-sizing:border-box}
+body{margin:0;overflow-x:hidden;background:#f4f4f4;color:var(--fg);font:400 15px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:40px 28px 80px}
+h1{font:400 34px/1.2 "STIX Two Text",Georgia,serif;margin:0 0 6px}
+h2{font:400 24px/1.3 "STIX Two Text",Georgia,serif;margin:52px 0 12px;padding-top:12px;border-top:1px solid var(--border)}
+h3{font-size:15px;font-weight:600;margin:22px 0 6px}
+p,ul,ol{max-width:800px}
+li{margin:3px 0}
+.sub{color:var(--muted)}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:20px 22px;margin:16px 0}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.rec{color:var(--violet)}
+.cap{font-size:12.5px;color:var(--faint);margin:8px 0 0;max-width:800px}
+code,kbd{font:400 12.5px "IBM Plex Mono",monospace;background:var(--code);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+img.shot{display:block;max-width:100%;border:1px solid var(--border);border-radius:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:4px;border:0;background:var(--accent-fill);color:var(--accent-fg);font-weight:600;font-size:13px}
+.btn2{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:4px;border:0;background:var(--code);color:var(--fg);font-size:13px;transition:background-color var(--t-fast) var(--ease-out)}
+.btn2:hover{background:var(--hover)}
+.ghost{border:0;background:transparent;color:var(--muted);font-size:13px;padding:4px 8px;border-radius:4px}
+.ghost:hover{background:var(--hover);color:var(--fg)}
+.ib{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--muted);border:0;background:transparent;transition:background-color var(--t-fast) var(--ease-out),color var(--t-fast) var(--ease-out)}
+.ib:hover{background:var(--hover);color:var(--fg)}
+.ib.on{background:var(--selected);color:var(--fg)}
+.sw{appearance:none;position:relative;margin:0;flex:none;cursor:pointer;width:40px;height:20px;border:1px solid var(--border-strong);background:var(--border-strong);border-radius:999px;transition:background-color var(--t-fast) var(--ease-out)}
+.sw::before{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--bg);border-radius:999px;transition:transform var(--t-base) var(--ease-move)}
+.sw:checked{background:var(--accent-fill);border-color:var(--accent-fill)}
+.sw:checked::before{transform:translateX(20px)}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%}
+.seg{display:inline-flex;background:var(--code);border-radius:4px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;padding:4px 10px;border-radius:4px;font-size:12.5px;color:var(--muted)}
+.seg button.on{background:var(--bg);color:var(--fg);font-weight:600;box-shadow:0 0 0 1px var(--border)}
+.pop{background:var(--raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-pop);padding:12px}
+.desk{position:relative;height:560px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#f4f4f4}
+.amb{position:absolute;inset:0;display:flex;flex-direction:column}
+.amb .bar{height:36px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 12px;font-size:12.5px;color:var(--muted)}
+.amb .bar b{color:var(--fg);font-weight:600}
+.amb .pg{margin:22px auto;width:430px;flex:1;background:#fff;box-shadow:0 1px 3px rgb(0 0 0/.12);background-image:repeating-linear-gradient(#fff 0 23px,#b9d3ef 23px 24px);position:relative}
+.amb .pg::before{content:"";position:absolute;left:44px;top:0;bottom:0;width:1px;background:#e7a3a3}
+.amb .pg span{position:absolute;left:60px;font:400 19px "STIX Two Text",serif;font-style:italic;color:#1d3f9a}
+.mini{position:absolute;right:18px;bottom:18px;width:340px;height:440px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-dialog);display:flex;flex-direction:column;overflow:hidden;transition:transform var(--t-base) var(--ease-move),opacity var(--t-base) var(--ease-out)}
+.mini.hide{opacity:0;transform:var(--from-zoom);pointer-events:none}
+.mh{display:flex;align-items:center;gap:2px;height:40px;padding:0 4px 0 12px;border-bottom:1px solid var(--border);-webkit-app-region:drag}
+.mh .t{flex:1;min-width:0;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh .t small{font-weight:400;color:var(--faint);margin-left:6px}
+.mh .ib{width:28px;height:28px}
+.msgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13.5px}
+.u{align-self:flex-end;background:var(--stage);border-radius:8px;padding:6px 10px;max-width:85%}
+.a{max-width:95%}
+.comp{border-top:1px solid var(--border);padding:8px 10px}
+.att{display:flex;gap:8px;margin-bottom:6px}
+.card2{display:flex;align-items:center;gap:8px;height:46px;padding:0 10px 0 6px;border:1px solid var(--border);border-radius:4px;background:var(--hover);font-size:12.5px;line-height:1.25}
+.card2 i{width:28px;height:36px;background:#fff repeating-linear-gradient(#fff 0 5px,#b9d3ef 5px 6px);border:1px solid var(--border);border-radius:2px}
+.card2 small{display:block;color:var(--faint);font-size:11px}
+.field{color:var(--faint);font-size:13.5px;padding:4px 2px 8px}
+.acts{display:flex;align-items:center;gap:4px}
+.send{margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:4px;background:var(--accent-fill);color:var(--accent-fg);font-size:12.5px;font-weight:600}
+.tip{position:absolute;white-space:nowrap;background:var(--fg);color:var(--bg);font-size:11.5px;padding:3px 7px;border-radius:4px;pointer-events:none}
+.head{display:flex;align-items:center;gap:2px;height:44px;padding:0 8px 0 14px;border-bottom:1px solid var(--border);background:var(--bg);border-radius:8px 8px 0 0}
+.head .t{flex:1;font-weight:600;font-size:13.5px}
+</style>
+</head>
+<body><main>
+<h1>Summa em modo mini</h1>
+<p class="sub">Protótipo r7. É o passo 9: o tutor principal flutua por cima do Ambitus enquanto você escreve. Tokens e ícones (Lucide) são os do Summa. Clique nos botões.</p>
+
+<h2>1. Onde liga</h2>
+<p>No cabeçalho do tutor, ao lado de “tela cheia”, entra o botão <b>Modo mini</b> (ícone <code>picture-in-picture-2</code>). Ele também fica no ⋯ e na caixa de comandos (Ctrl+K), e o atalho é <kbd>Ctrl+Shift+M</kbd>.</p>
+<div class="card" style="padding:0">
+ <div class="head"><span class="t">conversa atual</span>
+  <button class="ib" title="Conversas">SVG_chat</button>
+  <button class="ib" title="Tela cheia">SVG_full</button>
+  <span style="position:relative"><button class="ib on" id="pipBtn">SVG_pip</button><span class="tip" style="top:38px;right:-40px">Modo mini · sempre por cima</span></span>
+  <button class="ib">SVG_plus</button><button class="ib">SVG_more</button></div>
+ <div style="height:58px"></div>
+</div>
+
+<h2>2. Como fica</h2>
+<p>É a <b>mesma janela</b> do Summa, que encolhe para só o chat do tutor: 360 × 480, no canto de baixo à direita da tela, <b>sempre por cima</b>. Tudo continua funcionando: a conversa, a fila, o clipe, o Conferir (que pede a página ao Ambitus) e a foto do celular. A posição e o tamanho ficam guardados para a próxima vez.</p>
+<div class="desk" id="desk">
+ <div class="amb"><div class="bar"><b>Ambitus</b><span>Limites — aula 3</span></div>
+  <div class="pg"><span style="top:30px">lim (x²−1)/(x−1) = ?</span><span style="top:78px">= lim (x+1) = 2</span></div></div>
+ <div class="mini" id="mini">
+  <div class="mh"><span class="t">conversa atual<small>Limites</small></span>
+   <span style="position:relative"><button class="ib" id="pinBtn" title="Sempre por cima">SVG_pin</button></span>
+   <span style="position:relative"><button class="ib" id="backBtn">SVG_max</button><span class="tip" style="top:32px;right:-6px">Voltar à Mesa</span></span></div>
+  <div class="msgs">
+   <div class="u">por que posso cancelar o x−1 aqui?</div>
+   <div class="a">Porque o limite olha para x <i>perto</i> de 1, nunca igual a 1. Para x ≠ 1, (x²−1)/(x−1) e x+1 são a mesma função…</div>
+  </div>
+  <div class="comp">
+   <div class="att"><span class="card2"><i></i><span>Limites — aula 3<small>pág. 2</small></span></span></div>
+   <div class="field">Pergunte…</div>
+   <div class="acts"><button class="ib" style="width:28px;height:28px" title="Anexar">SVG_clip</button><button class="ib" style="width:28px;height:28px" title="Conferir Ambitus (Ctrl+Shift+C)">SVG_book</button><span class="send">SVG_up Enviar</span></div>
+  </div>
+ </div>
+ <button class="btn" id="again" style="position:absolute;right:18px;bottom:18px;display:none">SVG_pip Modo mini</button>
+</div>
+<p class="cap">O cabeçalho mini fica só com o título, “Sempre por cima” (o alfinete, ligado por padrão) e <b>Voltar à Mesa</b> (<code>maximize-2</code>), que devolve a janela ao tamanho e ao lugar de antes. A barra do cabeçalho serve para arrastar. Sem abas, sem leitores, sem cabeçalho da Mesa.</p>
+
+<h2>3. Detalhes</h2>
+<ul>
+ <li>Fechar a janela no modo mini <b>volta à Mesa</b> antes, para o Summa abrir normal da próxima vez.</li>
+ <li>A página que o Ambitus manda (“Mandar ao Summa”) continua indo ao chat lateral. Com o modo mini ligado, vai ao <b>tutor principal</b>, como cartão na bandeja dele.</li>
+ <li>Se o chat lateral estiver solto, ele continua solto; o modo mini só mexe na janela principal.</li>
+ <li>Entrar e sair usam o movimento do Summa (<code>--t-base</code>, <code>--ease-move</code>); com “reduzir movimento”, é imediato.</li>
+</ul>
+</main>
+<script>
+const P={chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',full:'<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+pip:'<path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h4"/><rect width="10" height="7" x="12" y="13" rx="2"/>',
+plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',more:'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+pin:'<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+max:'<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/>',
+clip:'<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+book:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',up:'<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>'};
+document.body.innerHTML=document.body.innerHTML.replace(/SVG_(\w+)/g,(_,k)=>`<svg class="i" viewBox="0 0 24 24">${P[k]}</svg>`);
+const mini=document.getElementById('mini'),again=document.getElementById('again');
+document.getElementById('backBtn').onclick=()=>{mini.classList.add('hide');again.style.display='inline-flex';};
+again.onclick=()=>{mini.classList.remove('hide');again.style.display='none';};
+const pin=document.getElementById('pinBtn');pin.classList.add('on');pin.onclick=()=>pin.classList.toggle('on');
+</script>
+</body></html>
