@@ -8,10 +8,13 @@
 
 #include <glib/gstdio.h>  // for g_stat
 
-#include "util/PathUtil.h"             // for fromGFilename, toGFilename
+#include "control/settings/MetadataManager.h"  // for MetadataManager
+#include "util/PathUtil.h"                     // for fromGFilename, toGFilename
 #include "util/StringUtils.h"          // for char_cast, StringUtils
 #include "util/XojPreviewExtractor.h"  // for XojPreviewExtractor
 #include "util/i18n.h"                 // for _
+
+#include "LibraryText.h"
 
 namespace ambitus::library {
 
@@ -23,6 +26,9 @@ constexpr int BOARD_W = 2 * COVER_W + GRID_COLUMN_SPACING;  ///< a board takes t
 constexpr int MINI_W = 52;
 constexpr int MINI_H = 68;
 constexpr size_t MAX_RECENT = 24;
+constexpr int RESUME_W = 78;  ///< the thumbnail of the "Continue" card
+constexpr int RESUME_H = 100;
+constexpr int RESUME_DPI = 60;  ///< enough for the thumbnail, also on a sharp screen
 constexpr const char* SWATCHES[] = {"#5b4a86", "#2f5d6b", "#8a5a3a", "#4d6b45",
                                     "#8a7232", "#9b3a5a", "#3d3d3d", "#d9d2c3"};
 
@@ -117,9 +123,12 @@ void onClicked(GtkWidget* button, F&& f) {
 
 LibraryView::LibraryView(fs::path storeFile, fs::path indexFile, Actions a):
         store(std::move(storeFile)), actions(std::move(a)), indexFile(std::move(indexFile)) {
-    root = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_set_name(root, "library");
     g_object_ref_sink(root);
+    columns = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_vexpand(columns, true);
+    gtk_container_add(GTK_CONTAINER(root), columns);
     buildSide();
 
     GtkWidget* main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -158,7 +167,12 @@ LibraryView::LibraryView(fs::path storeFile, fs::path indexFile, Actions a):
     gtk_container_add(GTK_CONTAINER(scroller), body);
     gtk_container_add(GTK_CONTAINER(main), scroller);
 
-    gtk_container_add(GTK_CONTAINER(root), main);
+    gtk_container_add(GTK_CONTAINER(columns), main);
+
+    // the foot: the path of the cover under the pointer, and nothing otherwise
+    pathLabel = label("", "amb-lib-status");
+    gtk_label_set_ellipsize(GTK_LABEL(pathLabel), PANGO_ELLIPSIZE_MIDDLE);
+    gtk_container_add(GTK_CONTAINER(root), pathLabel);
     gtk_widget_show_all(root);
 
     refresh();
@@ -172,6 +186,11 @@ LibraryView::~LibraryView() {
             if (pb) {
                 g_object_unref(pb);
             }
+        }
+    }
+    for (auto& [_, r]: resumes) {
+        if (r.thumb) {
+            g_object_unref(r.thumb);
         }
     }
     gtk_widget_destroy(root);
@@ -222,7 +241,7 @@ void LibraryView::buildSide() {
     onClicked(add, [this] { addFolderDialog(); });
     gtk_container_add(GTK_CONTAINER(sideBox), add);
 
-    gtk_container_add(GTK_CONTAINER(root), sideBox);
+    gtk_container_add(GTK_CONTAINER(columns), sideBox);
 }
 
 void LibraryView::refresh() {
@@ -467,12 +486,14 @@ void LibraryView::fillSide() {
         gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW(row), false);
         gtk_list_box_row_set_activatable(GTK_LIST_BOX_ROW(row), false);
         gtk_widget_set_can_focus(row, false);
-        GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+        GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
         GtkWidget* l = label(text);
-        gtk_widget_set_hexpand(l, true);
+        gtk_widget_set_hexpand(l, !from);
         gtk_container_add(GTK_CONTAINER(box), l);
         if (from) {
-            gtk_container_add(GTK_CONTAINER(box), label(from, "amb-from"));
+            GtkWidget* f = label(from, "amb-from");
+            gtk_widget_set_hexpand(f, true);
+            gtk_container_add(GTK_CONTAINER(box), f);
         }
         gtk_container_add(GTK_CONTAINER(row), box);
         addClass(row, "amb-group");
@@ -483,7 +504,7 @@ void LibraryView::fillSide() {
     addRow({SourceKind::All}, _("All"), "view-grid-symbolic", "", entriesFor({SourceKind::All}).size());
 
     if (!courses.empty()) {
-        addGroup(_("Courses"), "∫ Summa");
+        addGroup(_("Courses"), (std::string("· ") + _("from Summa")).c_str());
         for (size_t i = 0; i < courses.size(); i++) {
             auto color = courses[i].color.empty() ? std::string(DEFAULT_COVER_COLOR) : courses[i].color;
             addRow({SourceKind::Course, i}, courses[i].name, nullptr, color, courseBooks[i].size());
@@ -599,8 +620,10 @@ auto LibraryView::recentEntries() const -> std::vector<Entry> {
             if (struct stat st{}; g_stat(Util::toGFilename(p).c_str(), &st) == 0) {
                 nb.modified = st.st_mtime;
             }
-            out.push_back({nb, "", utf8(p.parent_path().filename())});
+            // outside what the scan lists (too deep, say) it is still in the folder of its course
+            out.push_back({nb, colorOf(p), utf8(p.parent_path().filename())});
         }
+        out.back().seen = t;
     }
     return out;
 }
@@ -645,6 +668,7 @@ auto LibraryView::entriesFor(Source s) const -> std::vector<Entry> {
 
 void LibraryView::fillGrid() {
     shownBoards.clear();
+    gtk_label_set_text(GTK_LABEL(pathLabel), "");  // the cover that showed its path may be gone
     gtk_container_foreach(GTK_CONTAINER(body), [](GtkWidget* w, gpointer) { gtk_widget_destroy(w); }, nullptr);
     gtk_label_set_text(GTK_LABEL(title), filter.empty() ? sourceTitle(current).c_str() : ("“" + filter + "”").c_str());
     gtk_label_set_text(GTK_LABEL(subtitle), "");
@@ -705,6 +729,9 @@ void LibraryView::fillGrid() {
         std::sort(order.begin() + (order.front().empty() ? 1 : 0), order.end());
     }
 
+    if (current.kind == SourceKind::Recent) {
+        gtk_container_add(GTK_CONTAINER(body), makeResumeCard(entries.front()));
+    }
     for (auto& key: order) {
         if (sections && !key.empty()) {
             gtk_container_add(GTK_CONTAINER(body), label(key, "amb-section"));
@@ -761,6 +788,7 @@ auto LibraryView::makeHit(const SearchHit& h, const Entry& e) -> GtkWidget* {
     GtkWidget* button = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
     addClass(button, "amb-hit");
+    showPathOnHover(button, e.nb.path);
     GtkWidget* row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 16);
 
     const Entry entry = e;
@@ -891,7 +919,7 @@ auto LibraryView::makeTile(const Entry& e) -> GtkWidget* {
     GtkWidget* button = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
     addClass(button, "amb-nb");
-    gtk_widget_set_tooltip_text(button, utf8(e.nb.path).c_str());
+    showPathOnHover(button, e.nb.path);
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
     const fs::path path = e.nb.path;
@@ -971,6 +999,216 @@ auto LibraryView::makeTile(const Entry& e) -> GtkWidget* {
                      }),
                      nullptr);
     return button;
+}
+
+void LibraryView::showPathOnHover(GtkWidget* w, const fs::path& path) {
+    g_object_set_data_full(G_OBJECT(w), "amb-path-text", g_strdup(displayPath(utf8(path), g_get_home_dir()).c_str()),
+                           g_free);
+    g_object_set_data(G_OBJECT(w), "amb-self", this);
+    gtk_widget_add_events(w, GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK);
+    auto show = +[](GtkWidget* w, GdkEvent*, gpointer) -> gboolean {
+        auto* self = static_cast<LibraryView*>(g_object_get_data(G_OBJECT(w), "amb-self"));
+        gtk_label_set_text(GTK_LABEL(self->pathLabel),
+                           static_cast<const char*>(g_object_get_data(G_OBJECT(w), "amb-path-text")));
+        return false;
+    };
+    // only its own path goes: the pointer may have reached another cover already
+    auto hide = +[](GtkWidget* w, GdkEvent*, gpointer) -> gboolean {
+        auto* self = static_cast<LibraryView*>(g_object_get_data(G_OBJECT(w), "amb-self"));
+        if (std::string(gtk_label_get_text(GTK_LABEL(self->pathLabel))) ==
+            static_cast<const char*>(g_object_get_data(G_OBJECT(w), "amb-path-text"))) {
+            gtk_label_set_text(GTK_LABEL(self->pathLabel), "");
+        }
+        return false;
+    };
+    g_signal_connect(w, "enter-notify-event", G_CALLBACK(show), nullptr);
+    g_signal_connect(w, "focus-in-event", G_CALLBACK(show), nullptr);
+    g_signal_connect(w, "leave-notify-event", G_CALLBACK(hide), nullptr);
+    g_signal_connect(w, "focus-out-event", G_CALLBACK(hide), nullptr);
+}
+
+auto LibraryView::makeResumeCard(const Entry& e) -> GtkWidget* {
+    ResumeKey key{e.nb.path, 0, e.nb.modified};
+    std::time_t when = e.seen;
+    // the editor keeps the page where each notebook was left (and when) in its metadata, outside of the .xopp
+    if (auto md = MetadataManager::getForFile(e.nb.path)) {
+        key.page = static_cast<size_t>(std::max(md->page, 0));
+        if (md->time > 0) {
+            when = static_cast<std::time_t>(md->time / 1000000);  // microseconds
+        }
+    }
+
+    GtkWidget* button = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
+    addClass(button, "amb-continue");
+    showPathOnHover(button, e.nb.path);
+    GtkWidget* row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 16);
+
+    GtkWidget* frame = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    addClass(frame, "amb-continue-page");
+    gtk_widget_set_valign(frame, GTK_ALIGN_CENTER);
+    GtkWidget* thumb = gtk_drawing_area_new();
+    gtk_widget_set_size_request(thumb, RESUME_W, RESUME_H);
+    g_object_set_data_full(G_OBJECT(thumb), "amb-key", new ResumeKey(key),
+                           [](gpointer p) { delete static_cast<ResumeKey*>(p); });
+    g_object_set_data(G_OBJECT(thumb), "amb-self", this);
+    g_signal_connect(thumb, "draw", G_CALLBACK(+[](GtkWidget* a, cairo_t* cr, gpointer) -> gboolean {
+                         auto* self = static_cast<LibraryView*>(g_object_get_data(G_OBJECT(a), "amb-self"));
+                         auto* k = static_cast<ResumeKey*>(g_object_get_data(G_OBJECT(a), "amb-key"));
+                         const double w = gtk_widget_get_allocated_width(a);
+                         const double h = gtk_widget_get_allocated_height(a);
+                         cairo_set_source_rgb(cr, 1, 1, 1);
+                         cairo_paint(cr);
+                         auto it = self->resumes.find(*k);
+                         if (it != self->resumes.end() && it->second.thumb) {
+                             // the page fills the width and loses its bottom, or fills the height of a wide one
+                             GdkPixbuf* pb = it->second.thumb;
+                             const double pw = gdk_pixbuf_get_width(pb);
+                             const double ph = gdk_pixbuf_get_height(pb);
+                             const double s = std::max(w / pw, h / ph);
+                             cairo_save(cr);
+                             cairo_translate(cr, (w - pw * s) / 2, 0);
+                             cairo_scale(cr, s, s);
+                             gdk_cairo_set_source_pixbuf(cr, pb, 0, 0);
+                             cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
+                             cairo_paint(cr);
+                             cairo_restore(cr);
+                         } else {
+                             // until the page is drawn: the ruling of an empty page
+                             cairo_set_source_rgb(cr, .89, .91, .93);
+                             cairo_set_line_width(cr, .8);
+                             for (double y = 24.5; y < h - 6; y += 10) {
+                                 cairo_move_to(cr, 8, y);
+                                 cairo_line_to(cr, w - 8, y);
+                             }
+                             cairo_stroke(cr);
+                         }
+                         return false;
+                     }),
+                     nullptr);
+    gtk_container_add(GTK_CONTAINER(frame), thumb);
+    gtk_container_add(GTK_CONTAINER(row), frame);
+
+    GtkWidget* text = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    gtk_widget_set_valign(text, GTK_ALIGN_CENTER);
+    gtk_widget_set_hexpand(text, true);
+    gtk_container_add(GTK_CONTAINER(text), label(_("Continue where you left off"), "amb-continue-kicker"));
+    gtk_container_add(GTK_CONTAINER(text), label(e.nb.name, "amb-continue-name"));
+    GtkWidget* meta = label("", "amb-continue-meta");
+    gtk_container_add(GTK_CONTAINER(text), meta);
+    gtk_container_add(GTK_CONTAINER(row), text);
+
+    GtkWidget* go = gtk_label_new(_("Continue"));
+    addClass(go, "amb-continue-go");
+    gtk_widget_set_valign(go, GTK_ALIGN_CENTER);
+    gtk_container_add(GTK_CONTAINER(row), go);
+    gtk_container_add(GTK_CONTAINER(button), row);
+
+    resumeText = [place = e.place, when](const ResumePage& r) {
+        return resumeLine(place, r.page + 1, r.total, when, std::time(nullptr));
+    };
+    auto known = resumes.find(key);
+    ResumePage shown;
+    shown.page = key.page;
+    if (known != resumes.end()) {
+        shown = known->second;
+    }
+    gtk_label_set_text(GTK_LABEL(meta), resumeText(shown).c_str());
+
+    resumeCard = button;
+    resumeShown = key;
+    resumeThumb = thumb;
+    resumeMeta = meta;
+    g_signal_connect(button, "destroy", G_CALLBACK(+[](GtkWidget* b, LibraryView* self) {
+                         if (self->resumeCard == b) {
+                             self->resumeCard = self->resumeThumb = self->resumeMeta = nullptr;
+                         }
+                     }),
+                     this);
+    onClicked(button, [this, key] {
+        auto r = resumes.find(key);
+        const size_t page = r != resumes.end() ? r->second.page : key.page;
+        if (actions.openAt) {
+            actions.openAt(key.path, page);
+        } else if (actions.open) {
+            actions.open(key.path);
+        }
+    });
+    startResume(key);
+    return button;
+}
+
+void LibraryView::startResume(const ResumeKey& key) {
+    if (resumes.count(key) || !resumePending.insert(key).second) {
+        return;
+    }
+    struct Job {
+        LibraryView* self;
+        std::shared_ptr<bool> alive;
+        ResumeKey key;
+        size_t total;
+        std::string png;
+    };
+    // the notebook is read and the page drawn in a worker: both can take a while on a big notebook
+    std::thread([self = this, alive = alive, key] {
+        size_t total = 0;
+        std::string png;
+        if (auto pages = extractNotebookText(key.path)) {
+            total = pages->size();
+        }
+        if (total > 0) {
+            if (auto img = renderPagePng(key.path, std::min(key.page, total - 1), RESUME_DPI, true)) {
+                png = std::move(*img);
+            }
+        }
+        g_idle_add(
+                +[](gpointer d) -> gboolean {
+                    std::unique_ptr<Job> job(static_cast<Job*>(d));
+                    if (*job->alive) {
+                        job->self->resumeReady(job->key, job->total, job->png);
+                    }
+                    return G_SOURCE_REMOVE;
+                },
+                new Job{self, alive, key, total, std::move(png)});
+    }).detach();
+}
+
+void LibraryView::resumeReady(const ResumeKey& key, size_t total, const std::string& png) {
+    resumePending.erase(key);
+    GdkPixbuf* pb = nullptr;
+    if (!png.empty()) {
+        GdkPixbufLoader* loader = gdk_pixbuf_loader_new();
+        if (gdk_pixbuf_loader_write(loader, reinterpret_cast<const guchar*>(png.data()), png.size(), nullptr) &&
+            gdk_pixbuf_loader_close(loader, nullptr)) {
+            pb = gdk_pixbuf_loader_get_pixbuf(loader);
+            if (pb) {
+                g_object_ref(pb);
+            }
+        } else {
+            gdk_pixbuf_loader_close(loader, nullptr);
+        }
+        g_object_unref(loader);
+    }
+    // one page per notebook is kept (the one on screen too): the older ones are not the ones to show again
+    for (auto it = resumes.begin(); it != resumes.end();) {
+        if (it->first.path == key.path && !(resumeCard && !(it->first < resumeShown) && !(resumeShown < it->first))) {
+            if (it->second.thumb) {
+                g_object_unref(it->second.thumb);
+            }
+            it = resumes.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    ResumePage r;
+    r.page = total > 0 ? std::min(key.page, total - 1) : key.page;
+    r.total = total;
+    r.thumb = pb;
+    resumes[key] = r;
+    if (resumeCard && !(resumeShown < key) && !(key < resumeShown)) {
+        gtk_label_set_text(GTK_LABEL(resumeMeta), resumeText(r).c_str());
+        gtk_widget_queue_draw(resumeThumb);
+    }
 }
 
 void LibraryView::openCoverPopover(GtkWidget* tile, const Entry& e) {

@@ -12,11 +12,13 @@
 
 #include <atomic>
 #include <chrono>
+#include <ctime>
 #include <functional>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <gtk/gtk.h>
@@ -97,6 +99,21 @@ private:
         Notebook nb;
         std::string courseColor;
         std::string place;  ///< course or folder name, shown in Recent/All
+        std::time_t seen = 0;  ///< when it was opened last (Recent only)
+    };
+    /// The page where the first recent notebook was left: the page counted, and its thumbnail, once read
+    struct ResumeKey {
+        fs::path path;
+        size_t page = 0;  ///< 0-based, as the metadata of the editor keeps it
+        std::time_t modified = 0;
+        bool operator<(const ResumeKey& o) const {
+            return std::tie(path, page, modified) < std::tie(o.path, o.page, o.modified);
+        }
+    };
+    struct ResumePage {
+        size_t page = 0;             ///< 0-based; the one asked for, kept inside the notebook
+        size_t total = 0;            ///< 0 until counted
+        GdkPixbuf* thumb = nullptr;  ///< owned
     };
 
     void buildSide();
@@ -110,6 +127,12 @@ private:
     void addTextHits(const std::vector<Entry>& everywhere);
     GtkWidget* makeHit(const SearchHit& hit, const Entry& e);
     void openCoverPopover(GtkWidget* tile, const Entry& e);
+    /// The "Continue where you left off" card for the first recent notebook
+    GtkWidget* makeResumeCard(const Entry& e);
+    void startResume(const ResumeKey& key);
+    void resumeReady(const ResumeKey& key, size_t total, const std::string& png);
+    /// The path of the cover under the pointer (or focus) shows in the foot of the library
+    void showPathOnHover(GtkWidget* w, const fs::path& path);
     void addFolderDialog();
 
     std::vector<Entry> entriesFor(Source s) const;
@@ -139,6 +162,15 @@ private:
     GtkWidget* body = nullptr;
     GtkWidget* scroller = nullptr;
     GtkWidget* subtitle = nullptr;
+    GtkWidget* columns = nullptr;  ///< side and main, above the foot
+    GtkWidget* pathLabel = nullptr;
+    GtkWidget* resumeCard = nullptr;  ///< null when the card is not on screen
+    ResumeKey resumeShown;            ///< what the card on screen asks for
+    GtkWidget* resumeThumb = nullptr;
+    GtkWidget* resumeMeta = nullptr;
+    std::map<ResumeKey, ResumePage> resumes;  ///< what was counted and drawn; the pixbufs are owned
+    std::set<ResumeKey> resumePending;
+    std::function<std::string(const ResumePage&)> resumeText;  ///< the line of the card on screen
 
     fs::path indexFile;
     std::set<fs::path> shownBoards;                              ///< boards drawn as such by the last fillGrid

@@ -14,6 +14,7 @@
 #include "control/actions/ActionDatabase.h"             // for ActionDatabase
 #include "control/jobs/XournalScheduler.h"              // for XournalScheduler
 #include "control/layer/LayerController.h"              // for LayerController
+#include "control/settings/MetadataManager.h"           // for MetadataManager
 #include "control/settings/PageTemplateSettings.h"      // for PageTemplateSettings
 #include "control/settings/Settings.h"                  // for Settings
 #include "control/settings/SettingsEnums.h"             // for SCROLLBAR_HIDE_HO...
@@ -460,6 +461,8 @@ void MainWindow::showNewNotebook(const fs::path& folder) {
 }
 
 void MainWindow::showLibrary() {
+    // the page the editor is on stays in memory until the notebook closes; the "Continue" card reads it from disk
+    control->getMetadataManager()->documentChanged();
     library->refresh();
     gtk_stack_set_visible_child_name(GTK_STACK(viewStack), "library");
     library->focusSearch();

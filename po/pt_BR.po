@@ -5409,3 +5409,15 @@ msgstr "Carta"
 msgctxt "page size"
 msgid "Infinite"
 msgstr "Infinito"
+
+msgid "from Summa"
+msgstr "do Summa"
+
+msgid "Continue where you left off"
+msgstr "Continuar de onde parou"
+
+msgid "Continue"
+msgstr "Continuar"
+
+msgid "page %zu of %zu"
+msgstr "página %zu de %zu"

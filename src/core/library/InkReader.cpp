@@ -268,6 +268,10 @@ auto sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t
 }
 
 auto renderPagePng(const fs::path& notebook, size_t page) -> std::optional<std::string> {
+    return renderPagePng(notebook, page, PAGE_DPI, false);
+}
+
+auto renderPagePng(const fs::path& notebook, size_t page, int dpi, bool ruling) -> std::optional<std::string> {
     gchar* dir = g_dir_make_tmp("ambitus-ink-XXXXXX", nullptr);
     if (!dir) {
         return std::nullopt;
@@ -283,15 +287,19 @@ auto renderPagePng(const fs::path& notebook, size_t page) -> std::optional<std::
     const auto file = Util::toGFilename(notebook);
     const std::string range = "--export-range=" + std::to_string(page + 1);
     const auto img = Util::toGFilename(out);
-    const std::string dpi = std::to_string(PAGE_DPI);
-    const gchar* argv[] = {exe.c_str(),        file.c_str(), range.c_str(),        "--create-img", img.c_str(),
-                           "--export-png-dpi", dpi.c_str(),  "--export-no-ruling", nullptr};
+    const std::string dpiArg = std::to_string(dpi);
+    std::vector<const gchar*> argv = {exe.c_str(), file.c_str(),       range.c_str(), "--create-img",
+                                      img.c_str(), "--export-png-dpi", dpiArg.c_str()};
+    if (!ruling) {
+        argv.push_back("--export-no-ruling");
+    }
+    argv.push_back(nullptr);
     // without a display, as Summa runs it: the export needs no window
     gchar** env = g_get_environ();
     env = g_environ_unsetenv(env, "DISPLAY");
     env = g_environ_unsetenv(env, "WAYLAND_DISPLAY");
     gint wait = 0;
-    const bool ran = g_spawn_sync(nullptr, const_cast<gchar**>(argv), env,
+    const bool ran = g_spawn_sync(nullptr, const_cast<gchar**>(argv.data()), env,
                                   static_cast<GSpawnFlags>(G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL),
                                   nullptr, nullptr, nullptr, nullptr, &wait, nullptr);
     g_strfreev(env);

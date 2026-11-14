@@ -64,6 +64,8 @@ InkReply postInk(const SummaBridge& bridge, const std::string& png, std::chrono:
 /// The PNG of a page as Summa's tutor sees it, without the ruling: this program run with --create-img (on a board,
 /// only the written part). Empty when the export failed.
 std::optional<std::string> renderPagePng(const fs::path& notebook, size_t page);
+/// The same with the resolution and the ruling of the page chosen (the thumbnail of the library keeps the ruling)
+std::optional<std::string> renderPagePng(const fs::path& notebook, size_t page, int dpi, bool ruling);
 
 /// What happened to a page sent to Summa's side chat
 enum class PageSend {

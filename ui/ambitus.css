@@ -390,9 +390,7 @@ window.amb-tip-dark label {
     font-weight: 400;
 }
 #library .amb-from {
-    font-family: "STIX Two Text", serif;
-    font-style: italic;
-    font-size: 10pt;
+    font-size: 9pt;
     font-weight: 400;
     color: @amb_text3;
 }
@@ -467,6 +465,54 @@ window.amb-tip-dark label {
     color: @amb_text3;
 }
 #mainWindow.darkMode #library .amb-nb-meta { color: @amb_dk_text3; }
+
+/* continuar de onde parou */
+#library button.amb-continue {
+    margin: 14px 0 6px;
+    padding: 12px;
+    border: 1px solid @amb_border;
+    border-radius: 8px;
+    background: transparent;
+    box-shadow: none;
+    outline-offset: 3px;
+}
+#library button.amb-continue:hover { background: @amb_layer; }
+#library .amb-continue-page {
+    border: 1px solid @amb_border;
+    border-radius: 2px;
+    background: #ffffff;
+}
+#library .amb-continue-kicker,
+#library .amb-continue-meta { font-size: 9pt; color: @amb_text3; }
+#library .amb-continue-name { font-weight: 600; color: @amb_text; }
+#library .amb-continue-go {
+    min-height: 32px;
+    padding: 0 14px;
+    border-radius: 4px;
+    background: @amb_accent;
+    color: @amb_on_accent;
+    font-weight: 600;
+}
+#library button.amb-continue:hover .amb-continue-go { background: shade(@amb_accent, 1.25); }
+#mainWindow.darkMode #library button.amb-continue { border-color: @amb_dk_border; }
+#mainWindow.darkMode #library button.amb-continue:hover { background: @amb_dk_layer; }
+#mainWindow.darkMode #library .amb-continue-page { border-color: @amb_dk_border; }
+#mainWindow.darkMode #library .amb-continue-kicker,
+#mainWindow.darkMode #library .amb-continue-meta { color: @amb_dk_text3; }
+#mainWindow.darkMode #library .amb-continue-name { color: @amb_dk_text; }
+#mainWindow.darkMode #library .amb-continue-go { background: @amb_dk_accent; color: @amb_dk_on_accent; }
+#mainWindow.darkMode #library button.amb-continue:hover .amb-continue-go { background: shade(@amb_dk_accent, 0.9); }
+
+/* o pé da biblioteca: o caminho da capa sob o ponteiro */
+#library .amb-lib-status {
+    min-height: 18px;
+    padding: 6px 22px;
+    border-top: 1px solid @amb_border;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 9pt;
+    color: @amb_text3;
+}
+#mainWindow.darkMode #library .amb-lib-status { border-top-color: @amb_dk_border; color: @amb_dk_text3; }
 
 #library .amb-empty { margin-top: 24px; color: @amb_text3; }
 #mainWindow.darkMode #library .amb-empty { color: @amb_dk_text3; }
