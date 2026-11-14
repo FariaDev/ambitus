@@ -5430,3 +5430,73 @@ msgstr "OK"
 
 msgid "LaTeX could not compile this formula."
 msgstr "O LaTeX não conseguiu compilar esta fórmula."
+
+msgid "Pages"
+msgstr "Páginas"
+
+msgctxt "export pages"
+msgid "All"
+msgstr "Todas"
+
+msgid "This page"
+msgstr "Esta página"
+
+msgid "Use pages like 1-3, 5. The notebook has {1}."
+msgstr "Use páginas como 1-3, 5. O caderno tem {1}."
+
+msgid "With the paper (ruling, margin)"
+msgstr "Com o papel (pauta, margem)"
+
+msgid "Open the PDF afterwards"
+msgstr "Abrir o PDF depois"
+
+msgid "File name"
+msgstr "Nome do arquivo"
+
+msgid "Save in"
+msgstr "Salvar em"
+
+msgid "No pages"
+msgstr "Nenhuma página"
+
+msgid "1 page"
+msgstr "1 página"
+
+msgid "1 page (page {1})"
+msgstr "1 página (a {1})"
+
+msgid "{1} pages"
+msgstr "{1} páginas"
+
+msgid "Give the file a name."
+msgstr "Dê um nome ao arquivo."
+
+msgid "This folder does not exist."
+msgstr "Esta pasta não existe."
+
+msgid "Do not overwrite the PDF under the notebook."
+msgstr "Não sobrescreva o PDF que está sob o caderno."
+
+msgid "There is already a file with this name here."
+msgstr "Já existe um arquivo com este nome aqui."
+
+msgid "Advanced…"
+msgstr "Avançado…"
+
+msgid "Save the PDF in"
+msgstr "Salvar o PDF em"
+
+msgid "Choose"
+msgstr "Escolher"
+
+msgid "Exporting the PDF…"
+msgstr "Exportando o PDF…"
+
+msgid "Could not export the PDF."
+msgstr "Não foi possível exportar o PDF."
+
+msgid "PDF exported."
+msgstr "PDF exportado."
+
+msgid "Open folder"
+msgstr "Abrir pasta"

@@ -10,6 +10,7 @@
 #include "model/Document.h"                    // for Document
 #include "pdf/base/XojPdfExport.h"             // for XojPdfExport
 #include "pdf/base/XojPdfExportFactory.h"      // for XojPdfExportFactory
+#include "util/Util.h"                         // for execInUiThread
 #include "util/XojMsgBox.h"                    // for XojMsgBox
 #include "util/i18n.h"                         // for _, FS, _F
 
@@ -63,10 +64,13 @@ void CustomExportJob::run() {
 
         pdfe->setExportBackground(parameters->backgroundType);
 
-        if (!pdfe->createPdf(this->filepath, parameters->pageRanges, parameters->progressiveMode)) {
+        const bool ok = pdfe->createPdf(this->filepath, parameters->pageRanges, parameters->progressiveMode);
+        if (!ok) {
             this->errorMsg = pdfe->getLastError();
         }
-
+        if (onPdfDone) {
+            Util::execInUiThread([done = std::move(onPdfDone), ok, error = errorMsg]() { done(ok, error); });
+        }
     } else {
         exportGraphics();
     }

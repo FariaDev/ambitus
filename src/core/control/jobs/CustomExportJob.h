@@ -11,8 +11,9 @@
 
 #pragma once
 
-#include <memory>  // for unique_ptr
-#include <string>  // for string
+#include <functional>  // for function
+#include <memory>      // for unique_ptr
+#include <string>      // for string
 
 #include "BaseExportJob.h"  // for BaseExportJob
 #include "filesystem.h"     // for path
@@ -30,6 +31,11 @@ protected:
 public:
     void run() override;
 
+    /// Ambitus: runs in the UI thread when a PDF export ends; `error` says what went wrong when `ok` is false
+    void setOnPdfDone(std::function<void(bool ok, const std::string& error)> callback) {
+        onPdfDone = std::move(callback);
+    }
+
 protected:
     void afterRun() override;
 
@@ -43,4 +49,6 @@ private:
     std::unique_ptr<ExportParameters> parameters;
 
     std::string lastError;
+
+    std::function<void(bool, const std::string&)> onPdfDone;
 };

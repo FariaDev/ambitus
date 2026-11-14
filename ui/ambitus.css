@@ -905,6 +905,39 @@ textview.amb-tex-field text selection { background-color: @amb_selected; color: 
 #mainWindow.darkMode textview.amb-tex-field text { color: @amb_dk_text; }
 #mainWindow.darkMode textview.amb-tex-field text selection { background-color: @amb_dk_selected; color: @amb_dk_text; }
 
+/* ---------- exportar como PDF (protótipo r6, seção 8; ExportPdfCard.cpp) ----------
+   Também é o cartão de .amb-dlg. À esquerda a prévia (.pdfprev: fundo de palco, canto de 4 px; as páginas ficam
+   brancas também no escuro, com a sombra de 0 1px 3px; as de fora da escolha a 25%, em 120 ms); as linhas com
+   interruptor são as .row (fio embaixo, a última sem); a nota sob o arquivo (.amb-dlg-note) é o que o botão vai
+   fazer, não um erro. */
+
+.amb-pdf-prev { background: @amb_layer; border-radius: 4px; }
+.amb-pdf-prev .amb-pdf-pages { padding: 10px; }
+.amb-pdf-pp {
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    transition: opacity 120ms cubic-bezier(.22, .61, .36, 1);
+}
+.amb-pdf-pp.off { opacity: 0.25; }
+label.amb-pdf-num { font-size: 11px; color: @amb_text3; }
+label.amb-pdf-count { font-size: 11px; color: @amb_text3; margin-top: 2px; }
+label.amb-pdf-ext { font-size: 14px; color: @amb_text3; }
+.amb-dlg .amb-pdf-range { margin-top: 8px; }
+
+.amb-dlg .amb-dlg-row { padding: 9px 0; border-bottom: 1px solid @amb_border; }
+.amb-dlg .amb-dlg-row.last { border-bottom: none; }
+.amb-dlg label.amb-dlg-row-label { font-size: 13px; color: @amb_text; }
+.amb-dlg label.amb-dlg-problem.amb-dlg-note { color: @amb_text3; }
+
+#mainWindow.darkMode .amb-pdf-prev { background: @amb_dk_layer; }
+#mainWindow.darkMode label.amb-pdf-num,
+#mainWindow.darkMode label.amb-pdf-count,
+#mainWindow.darkMode label.amb-pdf-ext { color: @amb_dk_text3; }
+#mainWindow.darkMode .amb-dlg .amb-dlg-row { border-bottom-color: @amb_dk_border; }
+#mainWindow.darkMode .amb-dlg .amb-dlg-row.last { border-bottom: none; }
+#mainWindow.darkMode .amb-dlg label.amb-dlg-row-label { color: @amb_dk_text; }
+#mainWindow.darkMode .amb-dlg label.amb-dlg-problem.amb-dlg-note { color: @amb_dk_text3; }
+
 /* ---------- painel de versões (protótipo r6, seção 5) ----------
    O painel à direita da página (250 px, borda à esquerda): título com o ✕, os dias em caixa alta pequena, a linha com
    a miniatura 30×38 e a hora, a marcada em @amb_selected. A prévia de uma cópia fica sobre a página, no fundo
@@ -1177,10 +1210,13 @@ popover.amb-optpop scale marks indicator { background: @amb_border_strong; min-w
 
 /* sem os glifos I/O do Adwaita no interruptor: são ícones de um GtkImage, que ignora opacity e -gtk-icon-source;
    só a escala do ícone a zero os faz sumir */
-popover.amb-optpop switch image { -gtk-icon-transform: scale(0); color: transparent; }
+popover.amb-optpop switch image,
+.amb-dlg switch image { -gtk-icon-transform: scale(0); color: transparent; }
 /* interruptores no grafite do acento, não no azul do tema */
-popover.amb-optpop switch:checked { background: @amb_accent; border-color: @amb_accent; }
-popover.amb-optpop switch:checked slider { background: @amb_on_accent; border-color: @amb_on_accent; }
+popover.amb-optpop switch:checked,
+.amb-dlg switch:checked { background: @amb_accent; border-color: @amb_accent; }
+popover.amb-optpop switch:checked slider,
+.amb-dlg switch:checked slider { background: @amb_on_accent; border-color: @amb_on_accent; }
 
 #mainWindow.darkMode popover.amb-optpop {
     background: @amb_dk_layer;
@@ -1201,8 +1237,10 @@ popover.amb-optpop switch:checked slider { background: @amb_on_accent; border-co
     color: @amb_dk_text;
     box-shadow: none;
 }
-#mainWindow.darkMode popover.amb-optpop switch:checked { background: @amb_dk_accent; border-color: @amb_dk_accent; }
-#mainWindow.darkMode popover.amb-optpop switch:checked slider { background: @amb_dk_on_accent; border-color: @amb_dk_on_accent; }
+#mainWindow.darkMode popover.amb-optpop switch:checked,
+#mainWindow.darkMode .amb-dlg switch:checked { background: @amb_dk_accent; border-color: @amb_dk_accent; }
+#mainWindow.darkMode popover.amb-optpop switch:checked slider,
+#mainWindow.darkMode .amb-dlg switch:checked slider { background: @amb_dk_on_accent; border-color: @amb_dk_on_accent; }
 #mainWindow.darkMode popover.amb-optpop scale marks indicator { background: @amb_dk_border_strong; }
 
 /* ---------- painel ⋯ da paleta: todas as ferramentas ----------

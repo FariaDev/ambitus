@@ -42,6 +42,7 @@
 #include "control/tools/TextEditor.h"                            // for Text...
 #include "control/xojfile/LoadHandler.h"                         // for Load...
 #include "control/zoom/ZoomControl.h"                            // for Zoom...
+#include "gui/ExportPdfCard.h"                                   // for ExportPdfCard
 #include "gui/FloatingToolbox.h"                                 // for Floa...
 #include "gui/MainWindow.h"                                      // for Main...
 #include "gui/PageView.h"                                        // for XojP...
@@ -2235,6 +2236,21 @@ void Control::exportAsPdf() {
     this->clearSelectionEndText();
 
     auto suggestedPath = createExportFilePath(this->doc, this->settings);
+
+    // Ambitus: a card inside the window, with a preview of the pages; the file chooser below is for when there is no
+    // overlay to put it in
+    if (this->win && this->win->getWindowOverlay() && this->doc->getPageCount() > 0) {
+        // the name of the notebook, as it is, not the "_annotated" of the Xournal++ default
+        this->doc->lock_shared();
+        const fs::path notebook = this->doc->getFilepath();
+        this->doc->unlock_shared();
+        if (!notebook.empty()) {
+            suggestedPath = suggestedPath.parent_path() / notebook.filename().replace_extension(".pdf");
+        }
+        ambitus::ExportPdfCard::open(this, GTK_OVERLAY(this->win->getWindowOverlay()), this->getGtkWindow(),
+                                     suggestedPath);
+        return;
+    }
 
     auto callback = [ctrl = this](std::optional<fs::path> out) {
         if (out) {
