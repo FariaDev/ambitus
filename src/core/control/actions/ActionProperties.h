@@ -83,7 +83,7 @@ template <>
 struct ActionProperties<Action::NEW_FILE> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
         ctrl->clearSelectionEndText();
-        ctrl->newFile();
+        ctrl->getWindow()->showNewNotebook();  // Ambitus: the "New notebook" card, as the library's button
     }
 };
 

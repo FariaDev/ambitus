@@ -1607,10 +1607,12 @@ static std::unique_ptr<Document> createNewDocument(Control* ctrl, fs::path filep
     return newDoc;
 }
 
-void Control::newFile(fs::path filepath) {
+void Control::newFile(fs::path filepath) { newFile(std::move(filepath), std::nullopt); }
+
+void Control::newFile(fs::path filepath, const std::optional<PageTemplateSettings>& pageTemplate) {
     // Ambitus: a new notebook gets a tab of its own; the open one waits aside
     startNewTab();
-    replaceDocument(createNewDocument(this, std::move(filepath), std::nullopt), -1);
+    replaceDocument(createNewDocument(this, std::move(filepath), pageTemplate), -1);
 }
 
 void Control::newBoard(fs::path filepath) {

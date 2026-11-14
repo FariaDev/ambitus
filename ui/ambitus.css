@@ -750,6 +750,90 @@ headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_
 #mainWindow.darkMode .amb-cmd .amb-cmd-key,
 #mainWindow.darkMode .amb-cmd .amb-cmd-empty { color: @amb_dk_text3; }
 
+/* ---------- caderno novo (protótipo r5, seção 3; diálogo do r6, seção 8) ----------
+   Um cartão sobre a janela, no molde da caixa de comandos (.amb-cmd: superfície, fio, raio 8, sombra de diálogo) e o
+   mesmo véu. Rótulos e segmentado são os de .amb-opt-label e .amb-seg das opções da ferramenta; a lista de matérias
+   é o popover .amb-selpop do ⋯. Aqui só ficam o título, o campo da matéria, os cartões de papel e os botões. */
+
+.amb-dlg { padding: 18px 20px 16px 20px; }
+.amb-dlg label.amb-dlg-title { font-family: "STIX Two Text", serif; font-size: 20px; margin-bottom: 4px; }
+.amb-dlg .amb-opt-label { margin: 12px 0 6px 0; }
+/* o campo de nome é o de #mainWindow entry (camada, fio só no foco); aqui só a altura do .field do protótipo */
+#mainWindow .amb-dlg entry.amb-cmd-entry { margin: 0; min-height: 20px; padding: 5px 10px; font-size: 14px; }
+#mainWindow .amb-dlg entry.amb-cmd-entry.amb-dlg-bad { border-color: @amb_danger; }
+.amb-dlg label.amb-dlg-problem { min-height: 16px; margin-top: 4px; font-size: 12px; color: @amb_danger; }
+
+/* o campo da matéria: o mesmo do nome (camada, fio só no foco), com o quadradinho da cor, o nome e a seta */
+.amb-dlg button.amb-dlg-field {
+    min-height: 20px;
+    padding: 5px 10px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    box-shadow: none;
+    background-image: none;
+    background-color: @amb_layer;
+    color: @amb_text;
+    font-size: 14px;
+}
+.amb-dlg button.amb-dlg-field:hover { background-color: @amb_hover; }
+.amb-dlg button.amb-dlg-field:focus { border-color: @amb_accent; }
+.amb-dlg button.amb-dlg-field:disabled { opacity: 0.55; }
+.amb-dlg button.amb-dlg-field image { color: @amb_text3; }
+popover.amb-dlg-pop { padding: 4px; }
+
+/* os cartões de papel: a miniatura é desenhada no código; o anel do escolhido também (cor = color) */
+.amb-dlg button.amb-paper {
+    padding: 0;
+    margin-right: 7px;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    background-image: none;
+    color: @amb_text2;
+}
+.amb-dlg button.amb-paper:last-child { margin-right: 0; }
+.amb-dlg button.amb-paper:hover { background: transparent; }
+.amb-dlg button.amb-paper:focus label.amb-paper-name { text-decoration: underline; }
+.amb-dlg button.amb-paper.on { color: @amb_text; }
+.amb-dlg button.amb-paper.on label.amb-paper-name { font-weight: 600; }
+.amb-dlg .amb-paper-pg { color: @amb_text; }
+.amb-dlg label.amb-paper-name { font-size: 12px; }
+.amb-dlg button.amb-paper:disabled { opacity: 0.4; }
+
+.amb-dlg .amb-dlg-foot { margin-top: 16px; }
+.amb-dlg button.amb-dlg-primary,
+.amb-dlg button.amb-dlg-ghost {
+    min-height: 32px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background-image: none;
+    font-size: 13px;
+}
+.amb-dlg button.amb-dlg-primary { background: @amb_accent; color: @amb_on_accent; font-weight: 600; }
+.amb-dlg button.amb-dlg-primary:hover { background: shade(@amb_accent, 1.25); }
+.amb-dlg button.amb-dlg-primary:disabled { opacity: 0.45; }
+.amb-dlg button.amb-dlg-ghost { background: transparent; color: @amb_text2; padding: 0 12px; }
+.amb-dlg button.amb-dlg-ghost:hover { background: @amb_hover; color: @amb_text; }
+.amb-dlg button.amb-dlg-primary:focus,
+.amb-dlg button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_bg, 0 0 0 4px @amb_text; }
+
+#mainWindow.darkMode .amb-dlg entry.amb-cmd-entry.amb-dlg-bad { border-color: @amb_danger; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-field { background-color: @amb_dk_layer; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-field:hover { background-color: @amb_dk_hover; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-field:focus { border-color: @amb_dk_accent; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-field image { color: @amb_dk_text3; }
+#mainWindow.darkMode .amb-dlg button.amb-paper { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-dlg button.amb-paper.on { color: @amb_dk_text; }
+#mainWindow.darkMode .amb-dlg .amb-paper-pg { color: @amb_dk_text; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-primary { background: @amb_dk_accent; color: @amb_dk_on_accent; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-primary:hover { background: shade(@amb_dk_accent, 0.9); }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-ghost { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-ghost:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-primary:focus,
+#mainWindow.darkMode .amb-dlg button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_dk_bg, 0 0 0 4px @amb_dk_text; }
+
 /* ---------- painel de versões (protótipo r6, seção 5) ----------
    O painel à direita da página (250 px, borda à esquerda): título com o ✕, os dias em caixa alta pequena, a linha com
    a miniatura 30×38 e a hora, a marcada em @amb_selected. A prévia de uma cópia fica sobre a página, no fundo
@@ -979,7 +1063,8 @@ popover.amb-ctxpop button.amb-selpop-danger { color: @amb_danger; }
     border-radius: 8px;
     padding: 12px;
 }
-popover.amb-optpop .amb-opt-label {
+popover.amb-optpop .amb-opt-label,
+.amb-dlg .amb-opt-label {
     font-size: 11px;
     font-weight: 600;
     color: @amb_text3;
@@ -987,12 +1072,14 @@ popover.amb-optpop .amb-opt-label {
 popover.amb-optpop .amb-opt-row label { color: @amb_text; }
 
 /* segmentados: botões ligados, como os de modo do topo */
-popover.amb-optpop .amb-seg {
+popover.amb-optpop .amb-seg,
+.amb-dlg .amb-seg {
     background: @amb_layer;
     border-radius: 4px;
     padding: 2px;
 }
-popover.amb-optpop .amb-seg button {
+popover.amb-optpop .amb-seg button,
+.amb-dlg .amb-seg button {
     background: transparent;
     background-image: none;
     border: none;
@@ -1004,8 +1091,10 @@ popover.amb-optpop .amb-seg button {
     font-size: 10pt;
     color: @amb_text2;
 }
-popover.amb-optpop .amb-seg button:hover { background: @amb_hover; color: @amb_text; }
-popover.amb-optpop .amb-seg button:checked {
+popover.amb-optpop .amb-seg button:hover,
+.amb-dlg .amb-seg button:hover { background: @amb_hover; color: @amb_text; }
+popover.amb-optpop .amb-seg button:checked,
+.amb-dlg .amb-seg button:checked {
     background: @amb_bg;
     color: @amb_text;
     font-weight: 600;
@@ -1026,12 +1115,17 @@ popover.amb-optpop switch:checked slider { background: @amb_on_accent; border-co
     background: @amb_dk_layer;
     border-color: @amb_dk_border;
 }
-#mainWindow.darkMode popover.amb-optpop .amb-opt-label { color: @amb_dk_text3; }
+#mainWindow.darkMode popover.amb-optpop .amb-opt-label,
+#mainWindow.darkMode .amb-dlg .amb-opt-label { color: @amb_dk_text3; }
 #mainWindow.darkMode popover.amb-optpop .amb-opt-row label { color: @amb_dk_text; }
-#mainWindow.darkMode popover.amb-optpop .amb-seg { background: @amb_dk_bg; }
-#mainWindow.darkMode popover.amb-optpop .amb-seg button { color: @amb_dk_text2; }
-#mainWindow.darkMode popover.amb-optpop .amb-seg button:hover { background: @amb_dk_hover; color: @amb_dk_text; }
-#mainWindow.darkMode popover.amb-optpop .amb-seg button:checked {
+#mainWindow.darkMode popover.amb-optpop .amb-seg,
+#mainWindow.darkMode .amb-dlg .amb-seg { background: @amb_dk_bg; }
+#mainWindow.darkMode popover.amb-optpop .amb-seg button,
+#mainWindow.darkMode .amb-dlg .amb-seg button { color: @amb_dk_text2; }
+#mainWindow.darkMode popover.amb-optpop .amb-seg button:hover,
+#mainWindow.darkMode .amb-dlg .amb-seg button:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode popover.amb-optpop .amb-seg button:checked,
+#mainWindow.darkMode .amb-dlg .amb-seg button:checked {
     background: @amb_dk_layer2;
     color: @amb_dk_text;
     box-shadow: none;
@@ -1207,6 +1301,10 @@ headerbar.amb-titlebar button.amb-tab,
 .amb-vers-preview .amb-vers-banner button,
 popover.amb-selpop button.amb-selpop-item,
 .amb-board-pill button,
+.amb-dlg button.amb-dlg-field,
+.amb-dlg button.amb-dlg-primary,
+.amb-dlg button.amb-dlg-ghost,
+.amb-dlg .amb-seg button,
 menu menuitem,
 .menu menuitem {
     transition: background-color 120ms cubic-bezier(.22, .61, .36, 1),

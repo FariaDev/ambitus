@@ -28,6 +28,7 @@
 
 #include "GladeGui.h"            // for GladeGui
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIONS_LEN
+#include "filesystem.h"          // for path
 
 class Control;
 class Layout;
@@ -52,6 +53,7 @@ class SelectionBar;
 class BoardNavigator;
 class Toast;
 class CommandPalette;
+class NewNotebookDialog;
 class VersionsPanel;
 enum class EditorMode;
 }
@@ -132,6 +134,9 @@ public:
     void showToastError(const std::string& text, const std::string& detail);
     /// Ambitus: the command palette (see ambitus::CommandPalette)
     void openCommandPalette();
+    /// Ambitus: the "New notebook" card (see ambitus::NewNotebookDialog). `folder` is where it starts, when the caller
+    /// knows (the folder the library shows); else the folder the library shows, else the one of the open notebook.
+    void showNewNotebook(const fs::path& folder = {});
     /// Ambitus: File → Earlier versions opens the panel of versions at the right of the page, or closes it
     void toggleVersions();
     /// Ambitus: the notebook was put back to a version (out of the preview, the list follows)
@@ -233,6 +238,8 @@ private:
     xoj::util::WidgetSPtr sidebarWidget;
 
     GtkWidget* viewStack = nullptr;
+    /// Ambitus: over the library and the editor alike, for what is shown over the whole window
+    GtkWidget* windowOverlay = nullptr;
     std::unique_ptr<ambitus::library::LibraryView> library;
     /// Ambitus: "+2 cm" on the page edges
     std::unique_ptr<ambitus::PageGrowHandle> growHandle;
@@ -246,6 +253,7 @@ private:
     std::unique_ptr<ambitus::SelectionBar> selectionBar;
     std::unique_ptr<ambitus::Toast> toast;
     std::unique_ptr<ambitus::CommandPalette> commandPalette;
+    std::unique_ptr<ambitus::NewNotebookDialog> newNotebookDialog;
     /// Ambitus: the versions of the notebook, at the right of the page, and the preview of one over it
     std::unique_ptr<ambitus::VersionsPanel> versionsPanel;
     /// Ambitus: minimap and zoom of a board

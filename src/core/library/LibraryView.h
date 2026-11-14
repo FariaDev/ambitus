@@ -38,6 +38,14 @@ struct NotebookRef {
     std::string place;  ///< course or folder name; may be empty
 };
 
+/// A place for a new notebook: a course of Summa or a folder of the library
+struct Subject {
+    std::string name;
+    fs::path path;
+    std::string color;   ///< "#rrggbb"; empty when it has none
+    std::string newest;  ///< name of the notebook changed last in it; empty when it has none
+};
+
 class LibraryView {
 public:
     struct Actions {
@@ -68,6 +76,11 @@ public:
     std::vector<NotebookRef> allNotebooks() const;
     /// The notebooks opened lately, as the "Recent" of the library shows them
     std::vector<NotebookRef> recentNotebooks() const;
+    /// The courses of Summa, then the folders of the library: where a new notebook can go (as scanned by the last
+    /// refresh)
+    std::vector<Subject> subjects() const;
+    /// The folder the library is showing; empty for Recent and All
+    fs::path currentFolder() const { return sourceFolder(current); }
     /// Colour of the course the file is in ("#rrggbb"), empty when none
     std::string colorOf(const fs::path& file) const;
     /// Brings the search index up to date in a worker thread.

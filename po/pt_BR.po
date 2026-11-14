@@ -5356,3 +5356,56 @@ msgstr "Apagar a página"
 
 msgid "Hold to straighten"
 msgstr "Segurar para endireitar"
+
+msgid "Subject"
+msgstr "Matéria"
+
+msgid "Paper"
+msgstr "Papel"
+
+msgid "Create"
+msgstr "Criar"
+
+msgid "No subject"
+msgstr "Sem matéria"
+
+msgid "Give the notebook a name."
+msgstr "Dê um nome ao caderno."
+
+msgid "There is already a notebook with this name here."
+msgstr "Já existe um caderno com este nome aqui."
+
+msgid "Use a name without / or \\, and not starting with a dot."
+msgstr "Use um nome sem / nem \\ e que não comece com ponto."
+
+msgctxt "paper"
+msgid "Summa"
+msgstr "Summa"
+
+msgctxt "paper"
+msgid "Blue ruled"
+msgstr "Pautado azul"
+
+msgctxt "paper"
+msgid "Grid"
+msgstr "Quadriculado"
+
+msgctxt "paper"
+msgid "Dotted"
+msgstr "Pontilhado"
+
+msgctxt "paper"
+msgid "Plain"
+msgstr "Liso"
+
+msgctxt "page size"
+msgid "A4"
+msgstr "A4"
+
+msgctxt "page size"
+msgid "Letter"
+msgstr "Carta"
+
+msgctxt "page size"
+msgid "Infinite"
+msgstr "Infinito"

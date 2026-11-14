@@ -259,6 +259,26 @@ auto LibraryView::colorOf(const fs::path& file) const -> std::string {
     return {};
 }
 
+auto LibraryView::subjects() const -> std::vector<Subject> {
+    std::vector<Subject> out;
+    for (size_t i = 0; i < courses.size(); i++) {
+        const auto& c = courses[i];
+        if (c.path.empty()) {
+            continue;
+        }
+        out.push_back(
+                {c.name, c.path, c.color,
+                 i < courseBooks.size() && !courseBooks[i].empty() ? courseBooks[i].front().name : std::string()});
+    }
+    for (size_t i = 0; i < store.folders().size(); i++) {
+        const auto& f = store.folders()[i];
+        out.push_back(
+                {f.name, f.path, "",
+                 i < folderBooks.size() && !folderBooks[i].empty() ? folderBooks[i].front().name : std::string()});
+    }
+    return out;
+}
+
 auto LibraryView::allNotebooks() const -> std::vector<NotebookRef> {
     std::vector<NotebookRef> out;
     std::set<fs::path> seen;

@@ -14,6 +14,7 @@
 #include "control/actions/ActionDatabase.h"             // for ActionDatabase
 #include "control/jobs/XournalScheduler.h"              // for XournalScheduler
 #include "control/layer/LayerController.h"              // for LayerController
+#include "control/settings/PageTemplateSettings.h"      // for PageTemplateSettings
 #include "control/settings/Settings.h"                  // for Settings
 #include "control/settings/SettingsEnums.h"             // for SCROLLBAR_HIDE_HO...
 #include "control/zoom/ZoomControl.h"                   // for ZoomControl
@@ -48,6 +49,7 @@
 #include "BoardNavigator.h"  // for BoardNavigator
 #include "CommandPalette.h"
 #include "GladeSearchpath.h"     // for GladeSearchpath
+#include "NewNotebookDialog.h"
 #include "PageGrowHandle.h"      // for PageGrowHandle
 #include "PageMenu.h"            // for PageMenu
 #include "RadialMenu.h"          // for RadialMenu
@@ -104,18 +106,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
         ambitus::library::LibraryView::Actions actions;
         actions.open = [control](const fs::path& p) { control->openInTab(p); };
         actions.openAt = [control](const fs::path& p, size_t page) { control->openInTab(p, static_cast<int>(page)); };
-        actions.newNotebook = [this, control](const fs::path& folder) {
-            fs::path file;
-            if (!folder.empty()) {
-                const std::string base = _("Untitled notebook");
-                file = folder / (base + ".xopp");
-                for (int i = 2; fs::exists(file); i++) {
-                    file = folder / (base + " " + std::to_string(i) + ".xopp");
-                }
-            }
-            showEditor();
-            control->newFile(file);
-        };
+        actions.newNotebook = [this](const fs::path& folder) { showNewNotebook(folder); };
         actions.newBoard = [this, control](const fs::path& folder) {
             fs::path file;
             if (!folder.empty()) {
@@ -138,8 +129,11 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
         library = std::make_unique<ambitus::library::LibraryView>(
                 Util::getConfigFile("library.ini"), Util::getCacheFile("library-index.json"), std::move(actions));
         gtk_stack_add_named(GTK_STACK(viewStack), library->getWidget(), "library");
-        gtk_container_add(GTK_CONTAINER(this->window), viewStack);
+        windowOverlay = gtk_overlay_new();
+        gtk_container_add(GTK_CONTAINER(windowOverlay), viewStack);
+        gtk_container_add(GTK_CONTAINER(this->window), windowOverlay);
         gtk_widget_show(viewStack);
+        gtk_widget_show(windowOverlay);
         gtk_stack_set_visible_child_name(GTK_STACK(viewStack), "editor");
     }
 
@@ -169,6 +163,9 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     this->commandPalette = std::make_unique<ambitus::CommandPalette>(
             overlay, GTK_WINDOW(this->window), [this] { return getMenuModel(); }, xournal->getWidget(),
             std::move(paletteBooks));
+
+    this->newNotebookDialog =
+            std::make_unique<ambitus::NewNotebookDialog>(GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
@@ -420,6 +417,46 @@ void MainWindow::openCommandPalette() {
     } else if (commandPalette) {
         commandPalette->open();
     }
+}
+
+void MainWindow::showNewNotebook(const fs::path& folder) {
+    if (!newNotebookDialog || newNotebookDialog->isOpen()) {
+        return;
+    }
+    fs::path near = folder;
+    if (near.empty() && isLibraryShown()) {
+        near = library->currentFolder();
+    }
+    if (near.empty()) {
+        // the subject of the notebook that is open
+        Document* doc = control->getDocument();
+        doc->lock_shared();
+        near = doc->getFilepath();
+        doc->unlock_shared();
+    }
+    newNotebookDialog->open(library->subjects(), near, [this](const ambitus::NewNotebookDialog::Request& r) {
+        using namespace ambitus::newnotebook;
+        if (!r.file.empty()) {
+            std::error_code ec;
+            fs::create_directories(r.file.parent_path(), ec);  // the "Boards" folder of a subject, the first time
+        }
+        showEditor();
+        if (r.size == PageSize::INFINITE) {
+            control->newBoard(r.file);  // the board that "New board" makes
+        } else {
+            PageTemplateSettings page = control->getSettings()->getPageTemplateSettings();
+            const Dimensions d = pageDimensions(r.size);
+            page.setPageWidth(d.width);
+            page.setPageHeight(d.height);
+            page.setBackgroundType(paperType(r.paper));
+            page.setBackgroundColor(Colors::white);
+            control->newFile(r.file, page);
+            setEditorMode(ambitus::EditorMode::STUDIO);
+        }
+        if (!r.file.empty()) {
+            control->save([](bool) {});  // in the folder of the subject: the first version is kept from the start
+        }
+    });
 }
 
 void MainWindow::showLibrary() {

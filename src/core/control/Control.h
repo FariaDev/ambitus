@@ -93,6 +93,8 @@ public:
 public:
     /// Ambitus: a new document in a tab of its own (Xournal++ closed the current one)
     void newFile(fs::path filepath = {});
+    /// the same, with the size and paper of the first page
+    void newFile(fs::path filepath, const std::optional<PageTemplateSettings>& pageTemplate);
     /// Ambitus: a new board, one page that grows (see ambitus/Board.h)
     void newBoard(fs::path filepath = {});
     /// Ambitus: on a board, makes the page bigger when the writing gets near its right or bottom edge
