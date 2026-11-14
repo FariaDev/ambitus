@@ -519,11 +519,6 @@ headerbar.amb-titlebar {
     color: @amb_text;
 }
 headerbar.amb-titlebar:backdrop { background: @amb_bg; }
-headerbar.amb-titlebar .amb-brand {
-    font-family: "Instrument Serif", "IBM Plex Serif", serif;
-    font-size: 17pt;
-    margin-right: 6px;
-}
 headerbar.amb-titlebar .amb-tb-title { font-weight: 600; }
 headerbar.amb-titlebar button {
     background: transparent;

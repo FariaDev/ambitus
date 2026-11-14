@@ -23,12 +23,7 @@ TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(Edito
     gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(bar), true);
     addClass(bar, "amb-titlebar");
 
-    // left: the mark and the tabs
-    GtkWidget* brand = gtk_label_new("∂");
-    addClass(brand, "amb-brand");
-    gtk_widget_set_tooltip_text(brand, "Ambitus");
-    gtk_header_bar_pack_start(GTK_HEADER_BAR(bar), brand);
-
+    // left: the tabs (no mark: the Library tab comes first, as in Summa)
     strip = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     addClass(strip, "amb-tabs");
     gtk_header_bar_pack_start(GTK_HEADER_BAR(bar), strip);
