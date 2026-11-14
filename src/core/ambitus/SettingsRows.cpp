@@ -91,4 +91,16 @@ std::optional<newnotebook::Paper> paperFromId(const std::string& id) {
     return std::nullopt;
 }
 
+const char* sizeId(newnotebook::PageSize size) { return size == newnotebook::PageSize::LETTER ? "letter" : "a4"; }
+
+std::optional<newnotebook::PageSize> sizeFromId(const std::string& id) {
+    if (id == "a4") {
+        return newnotebook::PageSize::A4;
+    }
+    if (id == "letter") {
+        return newnotebook::PageSize::LETTER;
+    }
+    return std::nullopt;
+}
+
 }  // namespace ambitus::settingsrows

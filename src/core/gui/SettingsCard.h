@@ -85,7 +85,6 @@ private:
 
     // the settings that need something done after they change, as SettingsDialog::save does
     void inputChanged();  ///< pressure, touch, pen button: the tools and the touchscreen follow
-    void themeChanged();
     void chooseFolder();
     void updateFolderLine();
     std::string notebooksFolder() const;  ///< the one chosen here, else the one of Summa; empty if there is none

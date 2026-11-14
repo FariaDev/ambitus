@@ -575,9 +575,18 @@ public:
     void setAmbitusNewPaper(const std::string& paper);
     const std::string& getAmbitusNewPaper() const;
 
+    /// Ambitus: the size of the page a new notebook starts with: "a4" or "letter"
+    void setAmbitusNewSize(const std::string& size);
+    const std::string& getAmbitusNewSize() const;
+
     /// Ambitus: the folder of the notebooks chosen in the settings (empty: the one of Summa)
     void setAmbitusNotebooksFolder(const std::string& folder);
     const std::string& getAmbitusNotebooksFolder() const;
+
+    /// Ambitus: whether the first-time setup is over (done or skipped). A settings file that did not exist when the
+    /// program opened starts with false; one that exists without the key is taken as done.
+    void setAmbitusSetupDone(bool done);
+    bool getAmbitusSetupDone() const;
 
     /// Ambitus: whether the second button of the pen opens the radial menu (it has no tool of its own) or is the eraser
     bool getAmbitusStylusRadial() const;
@@ -1208,7 +1217,10 @@ private:
     bool ambitusSummaBridge{};
     bool ambitusSearchInk{};
     std::string ambitusNewPaper;
+    std::string ambitusNewSize;
     std::string ambitusNotebooksFolder;
+    bool ambitusSetupDone{};
+    bool ambitusSetupKeyRead{};  ///< the file has the key of the setup
 
     /// Ambitus: screen mode of the editor
     int editorMode{};

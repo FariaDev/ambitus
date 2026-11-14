@@ -5633,3 +5633,135 @@ msgstr "Pasta dos cadernos"
 
 msgid "The bridge with Summa is off. Switch it on in the settings."
 msgstr "A ponte com o Summa está desligada. Ligue em Configurações."
+
+msgctxt "setup step"
+msgid "Welcome"
+msgstr "Boas-vindas"
+
+msgctxt "setup step"
+msgid "Notebooks"
+msgstr "Cadernos"
+
+msgctxt "setup step"
+msgid "Pen"
+msgstr "Caneta"
+
+msgctxt "setup step"
+msgid "Paper"
+msgstr "Papel"
+
+msgctxt "setup step"
+msgid "Summa"
+msgstr "Summa"
+
+msgctxt "setup step"
+msgid "Done"
+msgstr "Pronto"
+
+msgid "Let's get Ambitus ready."
+msgstr "Vamos preparar o Ambitus."
+
+msgid "Where the notebooks live."
+msgstr "Onde ficam os cadernos."
+
+msgid "Try the pen."
+msgstr "Experimente a caneta."
+
+msgid "The everyday sheet."
+msgstr "A folha de todo dia."
+
+msgid "The two talk to each other."
+msgstr "Os dois conversam."
+
+msgid "All ready."
+msgstr "Tudo pronto."
+
+msgid "Skip and use the default"
+msgstr "Pular e usar o padrão"
+
+msgctxt "setup"
+msgid "Start"
+msgstr "Começar"
+
+msgctxt "setup"
+msgid "Next"
+msgstr "Próximo"
+
+msgctxt "setup"
+msgid "Open the library"
+msgstr "Abrir a biblioteca"
+
+msgid "Welcome to Ambitus."
+msgstr "Boas-vindas ao Ambitus."
+
+msgid "Where do your notebooks live?"
+msgstr "Onde ficam os seus cadernos?"
+
+msgid "Summa is here."
+msgstr "O Summa está aqui."
+
+msgid "Summa is not here."
+msgstr "O Summa não está aqui."
+
+msgid "you can change it later"
+msgstr "dá para trocar depois"
+
+msgid "All of this can be changed later, in Settings."
+msgstr "Dá para mudar tudo isso depois, em Configurações."
+
+msgid "The same folder as Summa"
+msgstr "A mesma pasta do Summa"
+
+msgid "the subjects of Summa become the folders of the library"
+msgstr "as matérias do Summa viram as pastas da biblioteca"
+
+msgid "recommended"
+msgstr "recomendado"
+
+msgid "A folder only for Ambitus"
+msgstr "Uma pasta só do Ambitus"
+
+msgid "Choose another…"
+msgstr "Escolher outra…"
+
+msgid "any folder, even a synced one"
+msgstr "qualquer pasta, inclusive uma sincronizada"
+
+msgid "The notebooks are plain .xopp files: they open in Xournal++ too."
+msgstr "Os cadernos são arquivos .xopp comuns: abrem no Xournal++ também."
+
+msgid "write here"
+msgstr "escreva aqui"
+
+msgid "only the pen writes; with the finger you scroll and zoom"
+msgstr "só a caneta escreve; com o dedo você rola e dá zoom"
+
+msgid "off, it becomes an eraser while held"
+msgstr "desligado, ele vira borracha enquanto segurado"
+
+msgid "Each new notebook can change this. This is only the default."
+msgstr "Cada caderno novo pode trocar. Isto é só o padrão."
+
+msgid "Summa is the study desk that reads your notebooks and tutors you. It is not installed on this computer, so there is nothing to set up here: Ambitus works without it."
+msgstr "O Summa é a mesa de estudo que lê os seus cadernos e faz de tutor. Ele não está instalado neste computador, então não há o que ajustar aqui: o Ambitus funciona sem ele."
+
+msgid "If you install it later, the bridge is in Settings."
+msgstr "Se você instalar depois, a ponte fica em Configurações."
+
+msgid "pages with ink go to your model and become text for the search. It leaves the computer, so it starts off."
+msgstr "as páginas com tinta vão ao seu modelo e viram texto para a busca. Sai do computador: por isso começa desligado."
+
+msgid "pen, highlighter, eraser"
+msgstr "caneta, marca-texto, borracha"
+
+msgid "selection, text, LaTeX"
+msgstr "seleção, texto, LaTeX"
+
+msgid "search the notebooks, or any command by name"
+msgstr "buscar nos cadernos, ou qualquer comando pelo nome"
+
+msgid "hold still"
+msgstr "segurar parado"
+
+msgid "straightens the stroke into a line, circle, arrow…"
+msgstr "endireita o traço em reta, círculo, seta…"

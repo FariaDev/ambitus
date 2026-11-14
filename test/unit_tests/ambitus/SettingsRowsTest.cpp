@@ -62,3 +62,15 @@ TEST(SettingsRows, everyPaperKeepsItsIdAndComesBack) {
     EXPECT_FALSE(paperFromId("cork"));
     EXPECT_FALSE(paperFromId(""));
 }
+
+TEST(SettingsRows, theSizeOfThePageKeepsItsIdAndComesBack) {
+    using ambitus::newnotebook::PageSize;
+    for (PageSize size: {PageSize::A4, PageSize::LETTER}) {
+        auto back = sizeFromId(sizeId(size));
+        ASSERT_TRUE(back.has_value());
+        EXPECT_EQ(*back, size);
+    }
+    EXPECT_EQ(std::string(sizeId(PageSize::A4)), "a4");
+    EXPECT_FALSE(sizeFromId("a3"));
+    EXPECT_FALSE(sizeFromId(""));
+}

@@ -159,6 +159,9 @@ void clickOf(GtkWidget* w, std::function<void()> f) {
 bool animationsOn(GtkWidget* w) { return !motion::reducedMotion(w); }
 }  // namespace
 
+void drawPaperThumbnail(cairo_t* cr, Paper paper) { drawPaper(cr, paper); }
+const char* paperThumbnailName(Paper paper) { return paperName(paper); }
+
 NewNotebookDialog::NewNotebookDialog(GtkOverlay* overlay, GtkWindow* window): window(window) {
     // the veil covers the window; the card is in the middle of it. The veil takes the clicks: a name half typed is
     // not lost by a slip of the mouse
@@ -387,7 +390,7 @@ void NewNotebookDialog::open(std::vector<library::Subject> list, const fs::path&
     subjects = std::move(list);
     onCreate = std::move(create);
     paper = startPaper;
-    size = DEFAULT_SIZE;
+    size = startSize;
     nameEdited = false;
 
     // the subject that holds `near`; the deepest when they are nested

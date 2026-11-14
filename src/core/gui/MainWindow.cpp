@@ -57,6 +57,7 @@
 #include "RadialMenu.h"          // for RadialMenu
 #include "SelectionBar.h"        // for SelectionBar
 #include "SettingsCard.h"
+#include "SetupCard.h"
 #include "StudioPalette.h"       // for StudioPalette
 #include "TitleBar.h"            // for TitleBar
 #include "Toast.h"               // for Toast
@@ -173,6 +174,9 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     this->newNotebookDialog =
             std::make_unique<ambitus::NewNotebookDialog>(GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
+
+    // the first time the program opens: the setup, over the whole window
+    ambitus::SetupCard::openIfFirstTime(control, GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
@@ -443,6 +447,8 @@ void MainWindow::showNewNotebook(const fs::path& folder) {
     }
     newNotebookDialog->setStartPaper(ambitus::settingsrows::paperFromId(control->getSettings()->getAmbitusNewPaper())
                                              .value_or(ambitus::newnotebook::DEFAULT_PAPER));
+    newNotebookDialog->setStartSize(ambitus::settingsrows::sizeFromId(control->getSettings()->getAmbitusNewSize())
+                                            .value_or(ambitus::newnotebook::DEFAULT_SIZE));
     newNotebookDialog->open(library->subjects(), near, [this](const ambitus::NewNotebookDialog::Request& r) {
         using namespace ambitus::newnotebook;
         if (!r.file.empty()) {

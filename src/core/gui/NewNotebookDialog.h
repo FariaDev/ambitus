@@ -24,6 +24,13 @@
 
 namespace ambitus {
 
+/// The thumbnail of a paper as the card draws it, 86 x 104 units from the top left of `cr` (the setup shows it too)
+constexpr int PAPER_THUMB_W = 86;
+constexpr int PAPER_THUMB_H = 104;
+void drawPaperThumbnail(cairo_t* cr, newnotebook::Paper paper);
+const char* paperThumbnailName(newnotebook::Paper paper);
+
+
 namespace newnotebook {
 /// The fade in and out (ms), the motion tokens of Summa
 constexpr int FADE_IN_MS = 180;
@@ -53,6 +60,8 @@ public:
               std::function<void(const Request&)> onCreate);
     /// The paper chosen the next time it opens (the settings keep it)
     void setStartPaper(newnotebook::Paper paper) { startPaper = paper; }
+    /// The page size chosen the next time it opens (the setup keeps it)
+    void setStartSize(newnotebook::PageSize size) { startSize = size; }
     void close();
     bool isOpen() const;
 
@@ -89,6 +98,7 @@ private:
     size_t subject = 0;
     newnotebook::Paper startPaper = newnotebook::DEFAULT_PAPER;
     newnotebook::Paper paper = newnotebook::DEFAULT_PAPER;
+    newnotebook::PageSize startSize = newnotebook::DEFAULT_SIZE;
     newnotebook::PageSize size = newnotebook::DEFAULT_SIZE;
     bool nameEdited = false;  ///< the user typed in the field: the suggestion is not put there again
     bool settingName = false;

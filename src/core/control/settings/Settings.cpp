@@ -254,7 +254,10 @@ void Settings::loadDefault() {
     this->ambitusSummaBridge = true;
     this->ambitusSearchInk = false;
     this->ambitusNewPaper = "summa";
+    this->ambitusNewSize = "a4";
     this->ambitusNotebooksFolder.clear();
+    this->ambitusSetupDone = true;  // load() starts the setup only for a settings file that did not exist
+    this->ambitusSetupKeyRead = false;
     this->editorMode = 0;
     this->ambitusPaletteTools.clear();
     this->ambitusPaletteColors.clear();
@@ -751,6 +754,11 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->ambitusSearchInk = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewPaper")) == 0) {
         this->ambitusNewPaper = reinterpret_cast<const char*>(value);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewSize")) == 0) {
+        this->ambitusNewSize = reinterpret_cast<const char*>(value);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSetupDone")) == 0) {
+        this->ambitusSetupDone = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+        this->ambitusSetupKeyRead = true;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNotebooksFolder")) == 0) {
         this->ambitusNotebooksFolder = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteTools")) == 0) {
@@ -898,8 +906,10 @@ void Settings::loadButtonConfig() {
 auto Settings::load() -> bool {
     xmlKeepBlanksDefault(0);
 
-    if (!fs::exists(loadPath)) {
+    const bool existed = fs::exists(loadPath);
+    if (!existed) {
         g_warning("Settings file %s does not exist. Regenerating. ", loadPath.string().c_str());
+        this->ambitusSetupDone = false;  // Ambitus: the first time, the setup shows
         save();
     }
 
@@ -938,6 +948,12 @@ auto Settings::load() -> bool {
 
     loadButtonConfig();
     loadDeviceClasses();
+
+    // Ambitus: a settings file from before the setup is not a first time; it is saved as done
+    if (existed && !this->ambitusSetupKeyRead) {
+        this->ambitusSetupDone = true;
+        save();
+    }
 
     // This must be done before the color palette to ensure the color names are translated properly
 #ifdef _WIN32
@@ -1252,6 +1268,8 @@ void Settings::save() {
     SAVE_BOOL_PROP(ambitusSummaBridge);
     SAVE_BOOL_PROP(ambitusSearchInk);
     SAVE_STRING_PROP(ambitusNewPaper);
+    SAVE_STRING_PROP(ambitusNewSize);
+    SAVE_BOOL_PROP(ambitusSetupDone);
     SAVE_STRING_PROP(ambitusNotebooksFolder);
     SAVE_INT_PROP(editorMode);
     SAVE_STRING_PROP(ambitusPaletteTools);
@@ -2473,6 +2491,26 @@ void Settings::setAmbitusNewPaper(const std::string& paper) {
 }
 
 auto Settings::getAmbitusNewPaper() const -> const std::string& { return this->ambitusNewPaper; }
+
+void Settings::setAmbitusNewSize(const std::string& size) {
+    if (this->ambitusNewSize == size) {
+        return;
+    }
+    this->ambitusNewSize = size;
+    save();
+}
+
+auto Settings::getAmbitusNewSize() const -> const std::string& { return this->ambitusNewSize; }
+
+void Settings::setAmbitusSetupDone(bool done) {
+    if (this->ambitusSetupDone == done) {
+        return;
+    }
+    this->ambitusSetupDone = done;
+    save();
+}
+
+auto Settings::getAmbitusSetupDone() const -> bool { return this->ambitusSetupDone; }
 
 void Settings::setAmbitusNotebooksFolder(const std::string& folder) {
     if (this->ambitusNotebooksFolder == folder) {

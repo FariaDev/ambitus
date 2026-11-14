@@ -15,6 +15,7 @@
 #include <system_error>
 
 #include "ambitus/NewNotebook.h"
+#include "ambitus/SettingsApply.h"
 #include "ambitus/SettingsRows.h"
 #include "control/Control.h"
 #include "control/actions/ActionDatabase.h"
@@ -101,38 +102,8 @@ std::string shown(const fs::path& p) {
     return settingsrows::shownPath(std::string(char_cast(p.u8string())), home ? home : "");
 }
 
-std::string readFile(const fs::path& p) {
-    std::ifstream in(p, std::ios::binary);
-    std::ostringstream out;
-    out << in.rdbuf();
-    return out.str();
-}
-
-/// The folder that Summa calls its vault, from its config; empty when Summa is not set up
-std::string summaVault() {
-    std::error_code ec;
-    const fs::path config = library::summaConfigPath();
-    if (!fs::exists(config, ec)) {
-        return {};
-    }
-    return settingsrows::vaultPathOf(readFile(config));
-}
-
-/// The language of the interface as the segmented control names it: 0 Portuguese, 1 English, -1 any other
-int languageIndex(const std::string& preferred) {
-    std::string lang = preferred;
-    if (lang.empty()) {
-        const char* const* names = g_get_language_names();
-        lang = names && names[0] ? names[0] : "";
-    }
-    if (lang.rfind("pt", 0) == 0) {
-        return 0;
-    }
-    if (lang.rfind("en", 0) == 0) {
-        return 1;
-    }
-    return -1;
-}
+using settingsapply::languageIndex;
+using settingsapply::summaVault;
 }  // namespace
 
 // There is one card at a time
@@ -556,15 +527,10 @@ void SettingsCard::buildPenAndTouch() {
         inputChanged();
     });
     // the finger moves the page when it does not draw
-    addSwitch(PEN, _("Finger on the screen moves the page"), "", !settings->getTouchDrawingEnabled(), [this](bool on) {
-        ctrl->getSettings()->setTouchDrawingEnabled(!on);
-        ctrl->getActionDatabase()->setActionState(Action::TOGGLE_TOUCH_DRAWING, !on);
-        inputChanged();
-    });
-    addSwitch(PEN, _("Pen button opens the radial menu"), "", settings->getAmbitusStylusRadial(), [this](bool on) {
-        ctrl->getSettings()->setAmbitusStylusRadial(on);
-        inputChanged();
-    });
+    addSwitch(PEN, _("Finger on the screen moves the page"), "", !settings->getTouchDrawingEnabled(),
+              [this](bool on) { settingsapply::applyFingerMovesPage(ctrl, on); });
+    addSwitch(PEN, _("Pen button opens the radial menu"), "", settings->getAmbitusStylusRadial(),
+              [this](bool on) { settingsapply::applyPenRadial(ctrl, on); });
     // the palm: the touchscreen is switched off while the pen is near (the "Hand recognition" of Xournal++)
     bool palm = false;
     settings->getCustomElement("touch").getBool("disableTouch", palm);
@@ -593,67 +559,18 @@ void SettingsCard::buildTools() {
 void SettingsCard::buildAppearance() {
     Settings* settings = ctrl->getSettings();
 
-    int theme = 0;
-    switch (settings->getThemeVariant()) {
-        case THEME_VARIANT_FORCE_LIGHT:
-            theme = 1;
-            break;
-        case THEME_VARIANT_FORCE_DARK:
-            theme = 2;
-            break;
-        default:
-            break;
-    }
-    addRow(APPEARANCE, _("Theme"), "", makeSegmented({_("System"), _("Light"), _("Dark")}, theme, [this](int i) {
-               ctrl->getSettings()->setThemeVariant(i == 1 ? THEME_VARIANT_FORCE_LIGHT :
-                                                    i == 2 ? THEME_VARIANT_FORCE_DARK :
-                                                             THEME_VARIANT_USE_SYSTEM);
-               themeChanged();
-           }));
+    addRow(APPEARANCE, _("Theme"), "",
+           makeSegmented({_("System"), _("Light"), _("Dark")}, settingsapply::themeIndex(ctrl),
+                         [this](int i) { settingsapply::applyTheme(ctrl, i); }));
 
     // the accent of Summa lives in the state of that app, which Ambitus does not read; the row is there, off
-    GtkWidget* dots = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
-    for (bool violet: {false, true}) {
-        GtkWidget* dot = gtk_drawing_area_new();
-        gtk_widget_set_size_request(dot, 24, 24);
-        g_object_set_data(G_OBJECT(dot), "amb-violet", GINT_TO_POINTER(violet ? 1 : 0));
-        g_signal_connect(dot, "draw", G_CALLBACK(+[](GtkWidget* w, cairo_t* cr, gpointer) -> gboolean {
-                             const bool v = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(w), "amb-violet")) != 0;
-                             const double cx = gtk_widget_get_allocated_width(w) / 2.0;
-                             const double cy = gtk_widget_get_allocated_height(w) / 2.0;
-                             // the graphite of the Summa is light on the dark theme
-                             GtkWidget* top = gtk_widget_get_toplevel(w);
-                             const bool dark =
-                                     gtk_style_context_has_class(gtk_widget_get_style_context(top), "darkMode");
-                             if (v) {
-                                 cairo_set_source_rgb(cr, 0x80 / 255.0, 0x44 / 255.0, 0xca / 255.0);
-                             } else if (dark) {
-                                 cairo_set_source_rgb(cr, 0xe6 / 255.0, 0xe6 / 255.0, 0xe6 / 255.0);
-                             } else {
-                                 cairo_set_source_rgb(cr, 0x30 / 255.0, 0x30 / 255.0, 0x30 / 255.0);
-                             }
-                             cairo_arc(cr, cx, cy, 8, 0, 2 * G_PI);
-                             cairo_fill(cr);
-                             if (!v) {  // the one in use, with the ring 2 px apart
-                                 cairo_arc(cr, cx, cy, 11, 0, 2 * G_PI);
-                                 cairo_set_line_width(cr, 2);
-                                 cairo_stroke(cr);
-                             }
-                             return FALSE;
-                         }),
-                         nullptr);
-        gtk_box_pack_start(GTK_BOX(dots), dot, false, false, 0);
-    }
+    GtkWidget* dots = settingsapply::makeAccentDots();
     addRow(APPEARANCE, _("Accent color"), _("the same as Summa, if it is open; not available yet"), dots, false);
 
     // the language: Xournal++ keeps the locale and reads it when it starts
     addRow(APPEARANCE, _("Language"), _("applies the next time Ambitus opens"),
-           makeSegmented({"Português", "English"}, languageIndex(settings->getPreferredLocale()), [this](int i) {
-               Settings* s = ctrl->getSettings();
-               s->setPreferredLocale(i == 0 ? "pt_BR" : "en");
-               s->customSettingsChanged();
-               setenv("LANGUAGE", s->getPreferredLocale().c_str(), 1);
-           }));
+           makeSegmented({"Português", "English"}, languageIndex(settings->getPreferredLocale()),
+                         [this](int i) { settingsapply::applyLanguage(ctrl, i); }));
 }
 
 void SettingsCard::buildSumma() {
@@ -817,20 +734,7 @@ void SettingsCard::onRevealerDestroyed() {
 // ---------------------------------------------------------------------------------------------------------------------
 // what a change does besides being saved
 
-void SettingsCard::inputChanged() {
-    // as the end of SettingsDialog::save: the touchscreen, the tools of the buttons and the view follow
-    if (auto* win = ctrl->getWindow()) {
-        win->setGtkTouchscreenScrollingForDeviceMapping();
-        win->getXournal()->onSettingsChanged();
-    }
-    ctrl->initButtonTool();
-}
-
-void SettingsCard::themeChanged() {
-    if (auto* win = ctrl->getWindow()) {
-        win->updateColorscheme();
-    }
-}
+void SettingsCard::inputChanged() { settingsapply::inputChanged(ctrl); }
 
 std::string SettingsCard::notebooksFolder() const {
     const std::string own = ctrl->getSettings()->getAmbitusNotebooksFolder();
@@ -871,15 +775,7 @@ void SettingsCard::chooseFolder() {
                              if (f) {
                                  const fs::path chosen =
                                          Util::fromGFile(xoj::util::GObjectSPtr<GFile>(f, xoj::util::adopt).get());
-                                 Settings* s = self->ctrl->getSettings();
-                                 const std::string before = s->getAmbitusNotebooksFolder();
-                                 s->setAmbitusNotebooksFolder(std::string(char_cast(chosen.u8string())));
-                                 // the library shows it, as it shows a folder added by hand; the one chosen before
-                                 // here goes out
-                                 if (auto* win = self->ctrl->getWindow()) {
-                                     win->setLibraryFolder(chosen,
-                                                           fs::path(std::u8string(before.begin(), before.end())));
-                                 }
+                                 settingsapply::applyNotebooksFolder(self->ctrl, chosen);
                                  self->updateFolderLine();
                              }
                          }

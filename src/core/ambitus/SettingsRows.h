@@ -32,4 +32,10 @@ const char* paperId(newnotebook::Paper paper);
 /// The paper of a saved id; an id that is not known gives nothing
 std::optional<newnotebook::Paper> paperFromId(const std::string& id);
 
+/// What the settings save for the page size of a new notebook ("a4", "letter"; the infinite board is not a size to
+/// keep)
+const char* sizeId(newnotebook::PageSize size);
+/// The size of a saved id; an id that is not known gives nothing
+std::optional<newnotebook::PageSize> sizeFromId(const std::string& id);
+
 }  // namespace ambitus::settingsrows
