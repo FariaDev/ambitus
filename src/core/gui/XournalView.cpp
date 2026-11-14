@@ -24,6 +24,7 @@
 #include "control/zoom/ZoomControl.h"            // for ZoomControl
 #include "gui/MainWindow.h"                      // for MainWindow
 #include "gui/PdfFloatingToolbox.h"              // for PdfFloatingToolbox
+#include "gui/StudioPalette.h"                   // for callPaletteFavorite
 #include "gui/inputdevices/GeometryToolInputHandler.h"  // for GeometryToolInputHandler
 #include "gui/inputdevices/HandRecognition.h"    // for HandRecognition
 #include "gui/inputdevices/InputContext.h"       // for InputContext
@@ -333,6 +334,13 @@ auto XournalView::onKeyPressEvent(const KeyEvent& event) -> bool {
             if (auto* db = control->getActionDatabase(); db->isActionEnabled(Action::SELECT_TOOL)) {
                 db->fireChangeActionState(Action::SELECT_TOOL, *tool);
             }
+            return true;
+        }
+    }
+
+    // Ambitus: with favourite pens in the Studio palette, the keys 1-4 call them instead of changing the colour
+    if (!state && keyval >= GDK_KEY_1 && keyval <= GDK_KEY_4) {
+        if (ambitus::callPaletteFavorite(control, keyval - GDK_KEY_1)) {
             return true;
         }
     }

@@ -251,6 +251,7 @@ void Settings::loadDefault() {
     this->editorMode = 0;
     this->ambitusPaletteTools.clear();
     this->ambitusPaletteColors.clear();
+    this->ambitusPaletteFavorites.clear();
     this->restoreLineWidthEnabled = false;
 
     this->inTransaction = false;
@@ -734,6 +735,8 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->ambitusPaletteTools = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteColors")) == 0) {
         this->ambitusPaletteColors = reinterpret_cast<const char*>(value);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusPaletteFavorites")) == 0) {
+        this->ambitusPaletteFavorites = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("restoreLineWidthEnabled")) == 0) {
         this->restoreLineWidthEnabled = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("preferredLocale")) == 0) {
@@ -1222,6 +1225,7 @@ void Settings::save() {
     SAVE_INT_PROP(editorMode);
     SAVE_STRING_PROP(ambitusPaletteTools);
     SAVE_STRING_PROP(ambitusPaletteColors);
+    SAVE_STRING_PROP(ambitusPaletteFavorites);
     SAVE_BOOL_PROP(restoreLineWidthEnabled);
 
     SAVE_INT_PROP(numIgnoredStylusEvents);
@@ -2431,6 +2435,16 @@ void Settings::setAmbitusPaletteColors(const std::string& colors) {
 }
 
 auto Settings::getAmbitusPaletteColors() const -> const std::string& { return this->ambitusPaletteColors; }
+
+void Settings::setAmbitusPaletteFavorites(const std::string& favorites) {
+    if (this->ambitusPaletteFavorites == favorites) {
+        return;
+    }
+    this->ambitusPaletteFavorites = favorites;
+    save();
+}
+
+auto Settings::getAmbitusPaletteFavorites() const -> const std::string& { return this->ambitusPaletteFavorites; }
 
 
 void Settings::setRestoreLineWidthEnabled(bool enabled) { this->restoreLineWidthEnabled = enabled; }

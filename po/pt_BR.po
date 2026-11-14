@@ -5246,3 +5246,9 @@ msgstr "%d na paleta"
 
 msgid "Restore the default"
 msgstr "Restaurar o padrão"
+
+msgid "Save as favorite"
+msgstr "Guardar como favorita"
+
+msgid "Only 4 favorites fit. Remove one with the right button to save another."
+msgstr "Só cabem 4 favoritas. Tire uma com o botão direito para guardar outra."

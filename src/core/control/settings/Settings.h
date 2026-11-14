@@ -563,6 +563,10 @@ public:
     void setAmbitusPaletteColors(const std::string& colors);
     const std::string& getAmbitusPaletteColors() const;
 
+    /// Ambitus: the favourite pens of the Studio palette, "tool:RRGGBB:size" separated by semicolons (empty: none)
+    void setAmbitusPaletteFavorites(const std::string& favorites);
+    const std::string& getAmbitusPaletteFavorites() const;
+
     /**
      * Set line width restoring for resized edit selctions enabled
      */
@@ -1167,6 +1171,7 @@ private:
     /// Ambitus: tools and colours of the Studio palette, as saved
     std::string ambitusPaletteTools;
     std::string ambitusPaletteColors;
+    std::string ambitusPaletteFavorites;
 
     /**
      * Whether the line width should be preserved in a resizing operation

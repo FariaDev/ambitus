@@ -72,3 +72,55 @@ TEST(StudioPalette, theTipOfAColorWithoutNameIsItsHexInCapitals) {
     EXPECT_EQ(paletteColorHex(0xa21caf), "#A21CAF");
     EXPECT_EQ(paletteColorHex(0x000001), "#000001");
 }
+
+TEST(StudioPalette, favoritesRoundTripInTheSavedFormat) {
+    std::vector<PaletteFavorite> favs = {{"pencil", 0x8044ca, 2}, {"highlighter", 0xfde047, 3}};
+    EXPECT_EQ(serializePaletteFavorites(favs), "pencil:8044ca:2;highlighter:fde047:3");
+    EXPECT_EQ(parsePaletteFavorites("pencil:8044ca:2;highlighter:fde047:3"), favs);
+    EXPECT_EQ(parsePaletteFavorites(serializePaletteFavorites(favs)), favs);
+}
+
+TEST(StudioPalette, noFavoritesIsNotTheDefaultOfAnything) {
+    EXPECT_TRUE(parsePaletteFavorites("").empty());
+    EXPECT_TRUE(parsePaletteFavorites(";;").empty());
+    EXPECT_EQ(serializePaletteFavorites({}), "");
+}
+
+TEST(StudioPalette, invalidFavoritesAreDropped) {
+    // unknown tool, bad colour, size out of range or not a number, wrong number of fields: only the last entry is good
+    EXPECT_EQ(parsePaletteFavorites("eraser:8044ca:2;pencil:nothex:2;pencil:8044ca:5;pencil:8044ca:x;pencil:8044ca;"
+                                    "pencil:8044ca:2:1;pencil:8044ca:-1;pencil:12345:1;highlighter:fde047:0"),
+              (std::vector<PaletteFavorite>{{"highlighter", 0xfde047, 0}}));
+}
+
+TEST(StudioPalette, favoritesAcceptCapitalsAHashAndSpaces) {
+    EXPECT_EQ(parsePaletteFavorites(" pencil : #8044CA : 4 ; "),
+              (std::vector<PaletteFavorite>{{"pencil", 0x8044ca, 4}}));
+}
+
+TEST(StudioPalette, repeatedFavoritesAreDroppedButTheSameColourWithAnotherSizeIsNot) {
+    EXPECT_EQ(parsePaletteFavorites("pencil:8044ca:2;pencil:8044ca:2;pencil:8044ca:3;highlighter:8044ca:2"),
+              (std::vector<PaletteFavorite>{
+                      {"pencil", 0x8044ca, 2}, {"pencil", 0x8044ca, 3}, {"highlighter", 0x8044ca, 2}}));
+}
+
+TEST(StudioPalette, noMoreThanFourFavorites) {
+    std::string many;
+    for (int i = 0; i < 7; i++) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%spencil:%06x:1", i ? ";" : "", (i + 1) * 0x101010);
+        many += buf;
+    }
+    auto favs = parsePaletteFavorites(many);
+    EXPECT_EQ(favs.size(), PALETTE_MAX_FAVORITES);
+    EXPECT_EQ(favs.front().color, 0x101010u);
+    EXPECT_EQ(favs.back().color, 0x404040u);
+}
+
+TEST(StudioPalette, theIconOnALightColourIsDark) {
+    EXPECT_TRUE(paletteColorIsLight(0xfde047));  // yellow marker
+    EXPECT_TRUE(paletteColorIsLight(0xffffff));
+    EXPECT_FALSE(paletteColorIsLight(0x8044ca));  // violet
+    EXPECT_FALSE(paletteColorIsLight(0xc2410c));  // orange
+    EXPECT_FALSE(paletteColorIsLight(0x161616));
+}

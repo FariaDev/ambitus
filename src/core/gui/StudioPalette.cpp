@@ -21,6 +21,8 @@
 #include "util/i18n.h"
 
 #include "AmbitusTip.h"
+#include "MainWindow.h"
+#include "TitleBar.h"
 
 namespace ambitus {
 
@@ -207,6 +209,13 @@ std::string shortcutOf(GtkWidget* w, TipInfo const& info) {
     return out;
 }
 
+std::string escapeMarkup(const std::string& text) {
+    gchar* e = g_markup_escape_text(text.c_str(), -1);
+    std::string out = e;
+    g_free(e);
+    return out;
+}
+
 std::string tipMarkup(GtkWidget* w, TipInfo const& info) {
     gchar* name = g_markup_escape_text(info.name.c_str(), -1);
     std::string markup = name;
@@ -389,8 +398,55 @@ GtkWidget* fontButton(Control* control) {
     return fb;
 }
 
+// what the favourites need from the palette, defined with it below
+void saveFavorite(PaletteState* st, ToolType type);
+bool favoritesFull(PaletteState* st);
+void registerSaveButton(PaletteState* st, GtkWidget* button);
+
+struct SaveFavorite {
+    PaletteState* st;
+    ToolType type;
+};
+
+/// "Save as favorite", at the end of the options of the pen and of the marker: tool, colour and thickness in use
+GtkWidget* favoriteFoot(PaletteState* st, ToolType type) {
+    GtkWidget* foot = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    addClass(foot, "amb-fav-foot");
+    // a disabled button gets no pointer events: its tip hangs from a box around it, which takes the events over
+    // (above_child) only while the button is disabled
+    GtkWidget* around = gtk_event_box_new();
+    gtk_event_box_set_visible_window(GTK_EVENT_BOX(around), false);
+    gtk_container_add(GTK_CONTAINER(around), foot);
+    GtkWidget* b = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
+    gtk_widget_set_can_focus(b, false);
+    gtk_widget_set_halign(b, GTK_ALIGN_START);
+    addClass(b, "amb-lnk");
+    addClass(b, "amb-fav-save");
+    GtkWidget* label = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    GtkWidget* star = gtk_image_new_from_icon_name("xopp-star", GTK_ICON_SIZE_MENU);
+    gtk_image_set_pixel_size(GTK_IMAGE(star), 14);
+    gtk_box_pack_start(GTK_BOX(label), star, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(label), gtk_label_new(_("Save as favorite")), false, false, 0);
+    gtk_container_add(GTK_CONTAINER(b), label);
+    gtk_box_pack_start(GTK_BOX(foot), b, false, false, 0);
+    g_signal_connect_data(
+            b, "clicked", G_CALLBACK(+[](GtkButton*, SaveFavorite* d) { saveFavorite(d->st, d->type); }),
+            new SaveFavorite{st, type}, +[](gpointer p, GClosure*) { delete static_cast<SaveFavorite*>(p); },
+            GConnectFlags(0));
+    g_object_set_data(G_OBJECT(b), "amb-around", around);
+    // a disabled button says why (the tip of the palette: it also shows over a popover)
+    setOverlayTip(around, [st]() -> std::string {
+        return favoritesFull(st) ?
+                       escapeMarkup(_("Only 4 favorites fit. Remove one with the right button to save another.")) :
+                       "";
+    });
+    registerSaveButton(st, b);
+    return around;
+}
+
 /// The content of the popover of a tool, or null for a tool without options
-GtkWidget* optionsOf(Control* control, ToolType type) {
+GtkWidget* optionsOf(Control* control, PaletteState* st, ToolType type) {
     GtkWidget* body = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_set_size_request(body, 264, -1);
     auto add = [&](GtkWidget* w) { gtk_box_pack_start(GTK_BOX(body), w, false, false, 0); };
@@ -407,11 +463,13 @@ GtkWidget* optionsOf(Control* control, ToolType type) {
                                   control, +[](Settings* s) { return s->isPressureSensitivity(); },
                                   +[](Settings* s, bool on) { s->setPressureSensitivity(on); })));
             add(switchRow(_("Smooth the stroke"), settingSwitch(control, strokeIsSmoothed, smoothStroke)));
+            add(favoriteFoot(st, type));
             break;
         case TOOL_HIGHLIGHTER:
             // Xournal++ has no colours of its own for the highlighter: it uses the ones of the palette
             add(sectionLabel(_("Thickness"), true));
             add(sizeScale("tool-highlighter-size"));
+            add(favoriteFoot(st, type));
             break;
         case TOOL_ERASER:
             add(sectionLabel(_("Erases"), true));
@@ -528,6 +586,8 @@ void followSelectionTool(GtkWidget* button) {
 struct PaletteState {
     Control* control = nullptr;
     GtkWidget* box = nullptr;  ///< The palette itself
+    GtkWidget* favsBox = nullptr;  ///< The favourite pens, before the tools
+    GtkWidget* favSep = nullptr;   ///< Between the favourites and the tools: hidden with no favourite
     GtkWidget* toolsBox = nullptr;
     GtkWidget* colorsBox = nullptr;
     GtkWidget* more = nullptr;      ///< The "..." button
@@ -536,6 +596,10 @@ struct PaletteState {
     GtkWidget* count = nullptr;     ///< "N in the palette", in the panel
     std::vector<std::string> tools;
     std::vector<uint32_t> colors;  ///< 0xRRGGBB
+    std::vector<PaletteFavorite> favorites;
+    std::vector<GtkWidget*> favButtons;   ///< One for each favourite
+    bool syncingFavorites = false;        ///< set_active of a toggle button also emits "clicked"
+    std::vector<GtkWidget*> saveButtons;  ///< "Save as favorite", in the popovers of the pen and of the marker
     Popovers pops;
     std::vector<std::pair<std::string, GtkWidget*>> pins;  ///< The pin of each row of the panel
     std::vector<GtkWidget*> audioRows;                     ///< Hidden while the audio is off
@@ -555,6 +619,9 @@ void saveTools(PaletteState* st) {
 }
 void saveColors(PaletteState* st) {
     st->control->getSettings()->setAmbitusPaletteColors(serializePaletteColors(st->colors));
+}
+void saveFavorites(PaletteState* st) {
+    st->control->getSettings()->setAmbitusPaletteFavorites(serializePaletteFavorites(st->favorites));
 }
 
 /// The audio controller is made after the window: ask when the palette is about to show, not when it is built
@@ -678,7 +745,7 @@ void addToolButton(PaletteState* st, Item const& it, bool followSelection) {
 
     // touching the tool that is already active opens its options, below the button
     GtkWidget* pop = nullptr;
-    if (GtkWidget* options = optionsOf(st->control, it.tool)) {
+    if (GtkWidget* options = optionsOf(st->control, st, it.tool)) {
         pop = gtk_popover_new(b);
         gtk_popover_set_position(GTK_POPOVER(pop), GTK_POS_BOTTOM);
         addClass(pop, "amb-optpop");
@@ -703,6 +770,7 @@ void rebuildTools(PaletteState* st) {
     gtk_container_foreach(GTK_CONTAINER(st->toolsBox), destroyChild, nullptr);
     st->pops.all.clear();
     st->pops.buttons.clear();
+    st->saveButtons.clear();
     st->audioButtons.clear();
 
     // with the rectangle or the object pinned the lasso stays the lasso; alone it shows the selection tool used last
@@ -954,13 +1022,264 @@ void askColor(PaletteState* st) {
     gtk_window_present(GTK_WINDOW(dialog));
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// The favourite pens: tool, colour and thickness together
+// ---------------------------------------------------------------------------------------------------------------------
+
+const char* favoriteSizeAction(const std::string& tool) {
+    return tool == "highlighter" ? "tool-highlighter-size" : "tool-pen-size";
+}
+
+/// The thickness names Xournal++ already has, in lower case for the tip
+std::string sizeName(int size) {
+    const char* name = "";
+    switch (size) {
+        case TOOL_SIZE_VERY_FINE:
+            name = _("Very thin");
+            break;
+        case TOOL_SIZE_FINE:
+            name = _("Thin");
+            break;
+        case TOOL_SIZE_MEDIUM:
+            name = _("Medium");
+            break;
+        case TOOL_SIZE_THICK:
+            name = _("Thick");
+            break;
+        case TOOL_SIZE_VERY_THICK:
+            name = _("Very thick");
+            break;
+        default:
+            break;
+    }
+    gchar* low = g_utf8_strdown(name, -1);
+    std::string out = low;
+    g_free(low);
+    return out;
+}
+
+/// Tool, colour and thickness at once, through the actions of the window
+void applyFavorite(GActionGroup* g, PaletteFavorite const& f) {
+    Item const* it = findItem(f.tool);
+    if (!g || !it) {
+        return;
+    }
+    g_action_group_activate_action(g, "select-tool", makeGVariant(it->tool));
+    Color color(static_cast<uint8_t>(f.color >> 16), static_cast<uint8_t>(f.color >> 8), static_cast<uint8_t>(f.color));
+    g_action_group_activate_action(g, "tool-color", makeGVariant(color));
+    g_action_group_activate_action(g, favoriteSizeAction(f.tool), makeGVariant(static_cast<ToolSize>(f.size)));
+}
+
+/// The tool, colour and thickness in use now, as a favourite (an empty tool: the tool in use cannot be a favourite)
+PaletteFavorite currentFavorite(GActionGroup* g) {
+    PaletteFavorite f;
+    GVariant* tool = g_action_group_get_action_state(g, "select-tool");
+    if (!tool) {
+        return f;
+    }
+    ToolType type = getGVariantValue<ToolType>(tool);
+    g_variant_unref(tool);
+    if (type != TOOL_PEN && type != TOOL_HIGHLIGHTER) {
+        return f;
+    }
+    f.tool = type == TOOL_PEN ? "pencil" : "highlighter";
+    if (GVariant* color = g_action_group_get_action_state(g, "tool-color")) {
+        f.color = static_cast<uint32_t>(getGVariantValue<Color>(color)) & 0xffffffU;
+        g_variant_unref(color);
+    }
+    if (GVariant* size = g_action_group_get_action_state(g, favoriteSizeAction(f.tool))) {
+        f.size = static_cast<int>(getGVariantValue<ToolSize>(size));
+        g_variant_unref(size);
+    }
+    return f;
+}
+
+/// A favourite is on while the tool, the colour and the thickness in use are its own
+void syncFavorites(PaletteState* st) {
+    GActionGroup* g = winActions(st->box);
+    PaletteFavorite now = g ? currentFavorite(g) : PaletteFavorite{};
+    st->syncingFavorites = true;
+    for (size_t i = 0; i < st->favButtons.size() && i < st->favorites.size(); i++) {
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(st->favButtons[i]),
+                                     !now.tool.empty() && now == st->favorites[i]);
+    }
+    st->syncingFavorites = false;
+}
+
+void followFavorites(GtkWidget* box) {
+    if (g_object_get_data(G_OBJECT(box), "amb-follows")) {
+        return;
+    }
+    GActionGroup* g = winActions(box);
+    if (!g) {
+        return;
+    }
+    g_object_set_data(G_OBJECT(box), "amb-follows", GINT_TO_POINTER(1));
+    auto update = +[](GActionGroup*, const gchar*, GVariant*, GtkWidget* b) {
+        if (auto* st = static_cast<PaletteState*>(g_object_get_data(G_OBJECT(b), "amb-state"))) {
+            syncFavorites(st);
+        }
+    };
+    for (const char* action: {"select-tool", "tool-color", "tool-pen-size", "tool-highlighter-size"}) {
+        std::string signal = std::string("action-state-changed::") + action;
+        g_signal_connect_object(g, signal.c_str(), G_CALLBACK(update), box, GConnectFlags(0));
+    }
+}
+
+/// The circle of a favourite: its colour, with the icon of the tool in white (dark, on a light colour)
+struct FavoriteLook {
+    uint32_t rgb;
+    const char* icon;
+};
+
+gboolean drawFavorite(GtkWidget* w, cairo_t* cr, FavoriteLook* look) {
+    constexpr int ICON = 13;
+    double cx = gtk_widget_get_allocated_width(w) / 2.0;
+    double cy = gtk_widget_get_allocated_height(w) / 2.0;
+    double r = ((look->rgb >> 16) & 0xff) / 255.0, g = ((look->rgb >> 8) & 0xff) / 255.0,
+           b = (look->rgb & 0xff) / 255.0;
+    GtkWidget* button = gtk_widget_get_parent(w);
+    cairo_set_source_rgb(cr, r, g, b);
+    cairo_arc(cr, cx, cy, 12, 0, 2 * M_PI);
+    GdkRGBA text;
+    gtk_style_context_get_color(gtk_widget_get_style_context(button), gtk_widget_get_state_flags(button), &text);
+    if (text.green > 0.5 && g < 0.2) {  // a dark colour would vanish on the dark theme: a thin light ring keeps it
+        cairo_fill_preserve(cr);
+        cairo_set_source_rgb(cr, 0xf4 / 255.0, 0xf4 / 255.0, 0xf4 / 255.0);
+        cairo_set_line_width(cr, 1);
+        cairo_stroke(cr);
+    } else {
+        cairo_fill(cr);
+    }
+    // the icons of the theme have their colour in the file: use them as a mask and paint it white or dark
+    int scale = gtk_widget_get_scale_factor(w);
+    GtkIconTheme* theme = gtk_icon_theme_get_for_screen(gtk_widget_get_screen(w));
+    if (cairo_surface_t* icon = gtk_icon_theme_load_surface(theme, look->icon, ICON, scale, nullptr,
+                                                            GTK_ICON_LOOKUP_FORCE_SIZE, nullptr)) {
+        if (paletteColorIsLight(look->rgb)) {
+            cairo_set_source_rgb(cr, 0x16 / 255.0, 0x16 / 255.0, 0x16 / 255.0);
+        } else {
+            cairo_set_source_rgb(cr, 1, 1, 1);
+        }
+        cairo_mask_surface(cr, icon, std::round(cx - ICON / 2.0), std::round(cy - ICON / 2.0));
+        cairo_surface_destroy(icon);
+    }
+    return true;
+}
+
+void enableSaveButton(GtkWidget* button, bool on) {
+    gtk_widget_set_sensitive(button, on);
+    if (auto* around = static_cast<GtkWidget*>(g_object_get_data(G_OBJECT(button), "amb-around"))) {
+        gtk_event_box_set_above_child(GTK_EVENT_BOX(around), !on);
+    }
+}
+
+void rebuildFavorites(PaletteState* st) {
+    gtk_container_foreach(GTK_CONTAINER(st->favsBox), destroyChild, nullptr);
+    st->favButtons.clear();
+    for (size_t i = 0; i < st->favorites.size(); i++) {
+        PaletteFavorite const& fav = st->favorites[i];
+        Item const* it = findItem(fav.tool);
+        if (!it) {
+            continue;
+        }
+        GtkWidget* b = gtk_toggle_button_new();
+        gtk_widget_set_can_focus(b, false);
+        gtk_widget_set_valign(b, GTK_ALIGN_CENTER);
+        addClass(b, "amb-pal-tool");  // marked like the tools
+        addClass(b, "amb-pal-fav");
+        GtkWidget* area = gtk_drawing_area_new();
+        gtk_widget_set_size_request(area, 24, 24);
+        g_signal_connect_data(
+                area, "draw", G_CALLBACK(drawFavorite), new FavoriteLook{fav.color, it->icon},
+                +[](gpointer p, GClosure*) { delete static_cast<FavoriteLook*>(p); }, GConnectFlags(0));
+        g_signal_connect_swapped(b, "toggled", G_CALLBACK(gtk_widget_queue_draw), area);
+        gtk_container_add(GTK_CONTAINER(b), area);
+        gtk_widget_show_all(b);
+
+        // "Pen · Violet · thin", and the number key of its position
+        setOverlayTip(b, [name = std::string(_(it->name)), color = colorName(fav.color), size = sizeName(fav.size),
+                          key = std::to_string(i + 1)]() {
+            return escapeMarkup(name + " · " + color + " · " + size) + "  <span alpha=\"70%\">" + key + "</span>";
+        });
+
+        g_object_set_data_full(
+                G_OBJECT(b), "amb-fav", new PaletteFavorite(fav),
+                +[](gpointer p) { delete static_cast<PaletteFavorite*>(p); });
+        g_signal_connect(b, "clicked", G_CALLBACK(+[](GtkButton* w, PaletteState* st) {
+                             if (st->syncingFavorites) {
+                                 return;  // the button was only brought in step with the tool, not touched
+                             }
+                             auto* f = static_cast<PaletteFavorite*>(g_object_get_data(G_OBJECT(w), "amb-fav"));
+                             applyFavorite(winActions(GTK_WIDGET(w)), *f);
+                             syncFavorites(st);
+                         }),
+                         st);
+        // the right button takes it off, with no question (and does not reach the palette, which opens the panel)
+        g_signal_connect(b, "button-press-event",
+                         G_CALLBACK(+[](GtkWidget* w, GdkEventButton* ev, PaletteState* st) -> gboolean {
+                             if (ev->button != GDK_BUTTON_SECONDARY) {
+                                 return FALSE;
+                             }
+                             auto* f = static_cast<PaletteFavorite*>(g_object_get_data(G_OBJECT(w), "amb-fav"));
+                             st->favorites.erase(std::remove(st->favorites.begin(), st->favorites.end(), *f),
+                                                 st->favorites.end());
+                             saveFavorites(st);
+                             // not from inside the event of the button that goes away
+                             g_idle_add(
+                                     +[](gpointer p) -> gboolean {
+                                         rebuildFavorites(static_cast<PaletteState*>(p));
+                                         return G_SOURCE_REMOVE;
+                                     },
+                                     st);
+                             return TRUE;
+                         }),
+                         st);
+        gtk_box_pack_start(GTK_BOX(st->favsBox), b, false, false, 0);
+        st->favButtons.push_back(b);
+    }
+    gtk_widget_set_visible(st->favsBox, !st->favorites.empty());
+    gtk_widget_set_visible(st->favSep, !st->favorites.empty());
+    for (GtkWidget* b: st->saveButtons) {
+        enableSaveButton(b, !favoritesFull(st));
+    }
+    syncFavorites(st);
+}
+
+bool favoritesFull(PaletteState* st) { return st->favorites.size() >= PALETTE_MAX_FAVORITES; }
+
+void registerSaveButton(PaletteState* st, GtkWidget* button) {
+    st->saveButtons.push_back(button);
+    enableSaveButton(button, !favoritesFull(st));
+}
+
+void saveFavorite(PaletteState* st, ToolType type) {
+    GActionGroup* g = winActions(st->box);
+    if (!g || favoritesFull(st)) {
+        return;
+    }
+    PaletteFavorite fav = currentFavorite(g);
+    if (fav.tool.empty() || fav.tool != (type == TOOL_PEN ? "pencil" : "highlighter")) {
+        return;
+    }
+    if (std::find(st->favorites.begin(), st->favorites.end(), fav) != st->favorites.end()) {
+        return;  // the same one again does not repeat
+    }
+    st->favorites.push_back(fav);
+    saveFavorites(st);
+    rebuildFavorites(st);
+}
+
 void restoreDefaults(PaletteState* st) {
     st->tools = defaultPaletteTools();
     st->colors = defaultPaletteColors();
+    st->favorites.clear();
     saveTools(st);
     saveColors(st);
+    saveFavorites(st);
     rebuildTools(st);
     rebuildColors(st);
+    rebuildFavorites(st);
     updatePanel(st);
 }
 
@@ -1051,6 +1370,81 @@ std::string serializePaletteColors(const std::vector<uint32_t>& colors) {
     return joinList(hex);
 }
 
+namespace {
+std::vector<std::string> splitFields(const std::string& text, char sep) {
+    std::vector<std::string> out;
+    size_t from = 0;
+    while (from <= text.size()) {
+        size_t to = text.find(sep, from);
+        if (to == std::string::npos) {
+            to = text.size();
+        }
+        std::string item = text.substr(from, to - from);
+        size_t a = item.find_first_not_of(" \t\r\n");
+        size_t b = item.find_last_not_of(" \t\r\n");
+        out.push_back(a == std::string::npos ? "" : item.substr(a, b - a + 1));
+        from = to + 1;
+    }
+    return out;
+}
+}  // namespace
+
+std::vector<PaletteFavorite> parsePaletteFavorites(const std::string& text) {
+    std::vector<PaletteFavorite> favorites;
+    for (auto const& entry: splitFields(text, ';')) {
+        auto fields = splitFields(entry, ':');
+        if (fields.size() != 3 || (fields[0] != "pencil" && fields[0] != "highlighter")) {
+            continue;
+        }
+        std::string hex = !fields[1].empty() && fields[1][0] == '#' ? fields[1].substr(1) : fields[1];
+        if (hex.size() != 6 || !std::all_of(hex.begin(), hex.end(), [](unsigned char c) { return std::isxdigit(c); })) {
+            continue;
+        }
+        if (fields[2].size() != 1 || fields[2][0] < '0' || fields[2][0] > '0' + TOOL_SIZE_VERY_THICK) {
+            continue;
+        }
+        PaletteFavorite fav{fields[0], static_cast<uint32_t>(std::stoul(hex, nullptr, 16)), fields[2][0] - '0'};
+        if (favorites.size() < PALETTE_MAX_FAVORITES &&
+            std::find(favorites.begin(), favorites.end(), fav) == favorites.end()) {
+            favorites.push_back(std::move(fav));
+        }
+    }
+    return favorites;
+}
+
+std::string serializePaletteFavorites(const std::vector<PaletteFavorite>& favorites) {
+    std::string out;
+    for (auto const& f: favorites) {
+        char buf[16];
+        g_snprintf(buf, sizeof(buf), ":%06x:%d", f.color & 0xffffffU, f.size);
+        if (!out.empty()) {
+            out += ';';
+        }
+        out += f.tool + buf;
+    }
+    return out;
+}
+
+bool paletteColorIsLight(uint32_t rgb) {
+    double luminance = 0.299 * ((rgb >> 16) & 0xff) + 0.587 * ((rgb >> 8) & 0xff) + 0.114 * (rgb & 0xff);
+    return luminance / 255.0 > 0.6;
+}
+
+bool callPaletteFavorite(Control* control, size_t index) {
+    Settings* settings = control->getSettings();
+    if (settings->getEditorMode() != static_cast<int>(EditorMode::STUDIO)) {
+        return false;
+    }
+    auto favorites = parsePaletteFavorites(settings->getAmbitusPaletteFavorites());
+    if (favorites.empty()) {
+        return false;
+    }
+    if (index < favorites.size()) {
+        applyFavorite(gtk_widget_get_action_group(control->getWindow()->getWindow(), "win"), favorites[index]);
+    }
+    return true;
+}
+
 std::string paletteColorHex(uint32_t rgb) {
     char buf[8];
     g_snprintf(buf, sizeof(buf), "#%06X", rgb & 0xffffffU);
@@ -1062,6 +1456,7 @@ StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay) {
     state->control = control;
     state->tools = parsePaletteTools(control->getSettings()->getAmbitusPaletteTools());
     state->colors = parsePaletteColors(control->getSettings()->getAmbitusPaletteColors());
+    state->favorites = parsePaletteFavorites(control->getSettings()->getAmbitusPaletteFavorites());
 
     // the event box catches the right button over the gaps of the palette too
     root = gtk_event_box_new();
@@ -1076,6 +1471,22 @@ StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay) {
     addClass(box, "amb-palette");
     gtk_container_add(GTK_CONTAINER(root), box);
     state->box = box;
+    g_object_set_data(G_OBJECT(box), "amb-state", state);
+
+    // the favourites first; with none, neither they nor their separator show
+    state->favsBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    gtk_box_pack_start(GTK_BOX(box), state->favsBox, false, false, 0);
+    state->favSep = separator();
+    gtk_widget_set_no_show_all(state->favsBox, true);  // shown by rebuildFavorites, only with favourites
+    gtk_widget_set_no_show_all(state->favSep, true);
+    gtk_box_pack_start(GTK_BOX(box), state->favSep, false, false, 0);
+    g_signal_connect(box, "hierarchy-changed", G_CALLBACK(+[](GtkWidget* w, GtkWidget*, gpointer) {
+                         followFavorites(w);
+                         if (auto* st = static_cast<PaletteState*>(g_object_get_data(G_OBJECT(w), "amb-state"))) {
+                             syncFavorites(st);
+                         }
+                     }),
+                     nullptr);
 
     state->toolsBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_box_pack_start(GTK_BOX(box), state->toolsBox, false, false, 0);
@@ -1115,6 +1526,7 @@ StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay) {
 
     rebuildTools(state);
     rebuildColors(state);
+    rebuildFavorites(state);
     updatePanel(state);
 
     gtk_widget_show_all(root);

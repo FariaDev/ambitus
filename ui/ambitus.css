@@ -804,6 +804,21 @@ popover.amb-optpop .amb-lnk:hover { background: @amb_hover; }
 #mainWindow.darkMode popover.amb-optpop .amb-pick-count { color: @amb_dk_text2; }
 #mainWindow.darkMode popover.amb-optpop .amb-lnk:hover { background: @amb_dk_hover; }
 
+/* ---------- canetas favoritas ----------
+   O círculo de 24px na cor da favorita é desenhado no código (o ícone da ferramenta, branco ou escuro, dentro); o botão
+   marcado usa o mesmo estilo das ferramentas (.amb-pal-tool). Aqui, só o rodapé "Guardar como favorita" das opções da
+   caneta e do marca-texto, separado como o rodapé do painel ⋯. */
+
+popover.amb-optpop .amb-fav-foot {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid @amb_border;
+}
+popover.amb-optpop .amb-fav-save:disabled { opacity: 0.45; }
+popover.amb-optpop .amb-fav-save:disabled:hover { background: transparent; }
+
+#mainWindow.darkMode popover.amb-optpop .amb-fav-foot { border-top-color: @amb_dk_border; }
+
 /* Quadro: minimapa (desenhado no código) e pílula do zoom */
 .amb-board-pill {
     background: @amb_bg;
