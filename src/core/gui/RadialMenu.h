@@ -33,6 +33,8 @@ class XournalView;
 
 namespace ambitus {
 
+class PageMenu;
+
 class RadialMenu {
 public:
     RadialMenu(Control* control, XournalView* xournal, GtkOverlay* overlay);
@@ -49,6 +51,13 @@ public:
     static constexpr double HOLE = 76;    ///< diameter of the hole in the middle
     static constexpr double RADIUS = 82;  ///< distance from the centre to the items
     static constexpr double ITEM = 40;    ///< diameter of an item
+
+    /// The page menu opens on the right button of the mouse or touchpad, in the modes that have it; the stylus
+    /// button, and the mouse where the page menu is not available (Classic), keep the ring
+    static bool opensPageMenu(InputDeviceClass device, bool pageMenuAvailable) {
+        return pageMenuAvailable && device == INPUT_DEVICE_MOUSE;
+    }
+    void setPageMenu(PageMenu* menu) { pageMenu = menu; }
 
     /// Index of the item at (dx, dy) from the centre, -1 for none (the hole, outside)
     static int itemAt(double dx, double dy, size_t count);
@@ -78,6 +87,8 @@ private:
     Control* control;
     XournalView* xournal;
     GtkOverlay* overlay;
+    PageMenu* pageMenu = nullptr;  ///< the right button of the mouse opens it instead of the ring
+    bool swallowRelease = false;   ///< the page menu opened on a press; its release is not for the page
     GtkWidget* layer = nullptr;
     std::vector<Item> items;
 

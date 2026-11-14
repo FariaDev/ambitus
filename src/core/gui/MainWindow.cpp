@@ -49,6 +49,7 @@
 #include "CommandPalette.h"
 #include "GladeSearchpath.h"     // for GladeSearchpath
 #include "PageGrowHandle.h"      // for PageGrowHandle
+#include "PageMenu.h"            // for PageMenu
 #include "RadialMenu.h"          // for RadialMenu
 #include "SelectionBar.h"        // for SelectionBar
 #include "StudioPalette.h"       // for StudioPalette
@@ -152,6 +153,8 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     this->growHandle = std::make_unique<ambitus::PageGrowHandle>(control, xournal.get(), overlay);
     this->studioPalette = std::make_unique<ambitus::StudioPalette>(control, overlay);
     this->radialMenu = std::make_unique<ambitus::RadialMenu>(control, xournal.get(), overlay);
+    this->pageMenu = std::make_unique<ambitus::PageMenu>(control, xournal.get(), overlay);
+    this->radialMenu->setPageMenu(this->pageMenu.get());
     this->selectionBar = std::make_unique<ambitus::SelectionBar>(control, xournal.get(), overlay);
     this->boardNavigator = std::make_unique<ambitus::BoardNavigator>(control, xournal.get(), overlay);
     this->toast = std::make_unique<ambitus::Toast>(overlay);

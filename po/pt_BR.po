@@ -5284,3 +5284,43 @@ msgstr "Trazer para frente"
 msgctxt "Selection bar"
 msgid "Send to back"
 msgstr "Mandar para trás"
+
+msgctxt "Page menu"
+msgid "Cut"
+msgstr "Recortar"
+
+msgctxt "Page menu"
+msgid "Copy"
+msgstr "Copiar"
+
+msgctxt "Page menu"
+msgid "Arrange"
+msgstr "Organizar"
+
+msgctxt "Page menu"
+msgid "Paste"
+msgstr "Colar"
+
+msgctxt "Page menu"
+msgid "Insert image…"
+msgstr "Inserir imagem…"
+
+msgctxt "Page menu"
+msgid "New page below"
+msgstr "Página nova abaixo"
+
+msgctxt "Page menu"
+msgid "Paper of this page"
+msgstr "Papel desta página"
+
+msgctxt "Page menu"
+msgid "Vertical space"
+msgstr "Espaço vertical"
+
+msgctxt "Page menu"
+msgid "Send page to Summa"
+msgstr "Enviar a página ao Summa"
+
+msgctxt "Page menu"
+msgid "Delete page"
+msgstr "Apagar a página"

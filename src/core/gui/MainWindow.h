@@ -45,6 +45,7 @@ namespace ambitus {
 class PageGrowHandle;
 class TitleBar;
 class StudioPalette;
+class PageMenu;
 class RadialMenu;
 class SelectionBar;
 class BoardNavigator;
@@ -227,7 +228,9 @@ private:
     std::unique_ptr<ambitus::PageGrowHandle> growHandle;
     /// Ambitus: palette of the Studio mode
     std::unique_ptr<ambitus::StudioPalette> studioPalette;
-    /// Ambitus: ring of tools on the right button
+    /// Ambitus: the menu of the right mouse button (declared before the ring, which points at it)
+    std::unique_ptr<ambitus::PageMenu> pageMenu;
+    /// Ambitus: ring of tools on the stylus button
     std::unique_ptr<ambitus::RadialMenu> radialMenu;
     /// Ambitus: the bar over the selection
     std::unique_ptr<ambitus::SelectionBar> selectionBar;

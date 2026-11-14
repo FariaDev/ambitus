@@ -23,6 +23,7 @@
 @define-color amb_active #d4d4d4;
 @define-color amb_selected #dedede;
 @define-color amb_fg_strong #0e0e0e;
+@define-color amb_danger #da1e28;
 @define-color amb_accent #303030;
 @define-color amb_on_accent #ffffff;
 
@@ -742,6 +743,18 @@ popover.amb-selpop .amb-selpop-sep { margin: 4px 0; background: @amb_border; min
 #mainWindow.darkMode popover.amb-selpop button.amb-selpop-item { color: @amb_dk_text; }
 #mainWindow.darkMode popover.amb-selpop button.amb-selpop-item:hover { background: @amb_dk_hover; }
 #mainWindow.darkMode popover.amb-selpop .amb-selpop-sep { background: @amb_dk_border; }
+
+/* o botão direito na página (PageMenu.cpp): o .menu do protótipo r6, em cima do mesmo popover do ⋯ */
+popover.amb-ctxpop button.amb-selpop-item { min-height: 30px; }
+popover.amb-ctxpop .amb-selpop-key {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: @amb_text3;
+    margin-left: 14px;
+}
+popover.amb-ctxpop button.amb-selpop-danger { color: @amb_danger; }
+#mainWindow.darkMode popover.amb-ctxpop .amb-selpop-key { color: @amb_dk_text3; }
+#mainWindow.darkMode popover.amb-ctxpop button.amb-selpop-danger { color: @amb_danger; }
 
 /* ---------- opções da ferramenta: o popover de tocar de novo ----------
    O .pop do protótipo (docs/design/r5): fundo, fio de 1px, cantos de 8px, 12px de respiro. */

@@ -29,3 +29,14 @@ TEST(RadialMenu, slightlyOffTheItemStillPicksIt) {
     double a = 20.0 * M_PI / 180.0;
     EXPECT_EQ(RadialMenu::itemAt(r * std::cos(a), r * std::sin(a), 8), 2);
 }
+
+TEST(RadialMenu, theMouseOpensThePageMenuAndTheStylusKeepsTheRing) {
+    // Studio and Focus: the right button of the mouse (or touchpad) opens the page menu
+    EXPECT_TRUE(RadialMenu::opensPageMenu(INPUT_DEVICE_MOUSE, true));
+    // the stylus button never does
+    EXPECT_FALSE(RadialMenu::opensPageMenu(INPUT_DEVICE_PEN, true));
+    EXPECT_FALSE(RadialMenu::opensPageMenu(INPUT_DEVICE_ERASER, true));
+    // Classic mode, where there is no page menu: the mouse keeps opening the ring, as before
+    EXPECT_FALSE(RadialMenu::opensPageMenu(INPUT_DEVICE_MOUSE, false));
+    EXPECT_FALSE(RadialMenu::opensPageMenu(INPUT_DEVICE_PEN, false));
+}

@@ -8,6 +8,7 @@
 #include "control/ToolHandler.h"
 #include "control/settings/ButtonConfig.h"
 #include "control/settings/Settings.h"
+#include "gui/PageMenu.h"
 #include "gui/XournalView.h"
 #include "gui/inputdevices/InputContext.h"
 #include "util/GVariantTemplate.h"
@@ -110,9 +111,14 @@ bool RadialMenu::onPagesEvent(const InputEvent& e) {
         return true;
     }
 
+    if (swallowRelease && e.type == BUTTON_RELEASE_EVENT && e.button == 3) {
+        swallowRelease = false;
+        return true;
+    }
     if (e.type != BUTTON_PRESS_EVENT || e.button != 3) {
         return false;
     }
+    swallowRelease = false;
     Button b;
     if (e.deviceClass == INPUT_DEVICE_MOUSE) {
         b = BUTTON_MOUSE_RIGHT;
@@ -124,6 +130,11 @@ bool RadialMenu::onPagesEvent(const InputEvent& e) {
     ButtonConfig* cfg = control->getSettings()->getButtonConfig(b);
     if (!cfg || cfg->getAction() != TOOL_NONE) {
         return false;  // the button has a tool of its own
+    }
+    if (opensPageMenu(e.deviceClass, pageMenu && pageMenu->enabled())) {
+        pageMenu->open(e);
+        swallowRelease = true;
+        return true;
     }
     double x, y;
     toOverlay(e, x, y);
