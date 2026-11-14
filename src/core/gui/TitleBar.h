@@ -3,8 +3,9 @@
  *
  * The title bar of the window (client side decorations): the ∂ mark, the tabs (the
  * library, then one per open document), the screen modes (Classic, Studio, Focus),
- * undo and a menu with everything the menu bar has, for the modes where the menu
- * bar is hidden.
+ * undo and the "⋯" menu: the few things that live nowhere else (new, open, export,
+ * settings...), in the style of the Summa menus (PopupMenu). The rest of the menu bar
+ * is found with the command box (Ctrl+K), which reads the same menu model.
  *
  * @license GNU GPLv2 or later
  */
@@ -16,6 +17,8 @@
 #include <vector>
 
 #include <gtk/gtk.h>
+
+#include "gui/PopupMenu.h"
 
 namespace ambitus {
 
@@ -37,7 +40,7 @@ struct TabItem {
 
 class TitleBar {
 public:
-    /// menu: the model of the menu bar, shown under the "⋯" button
+    /// menu: the model of the menu bar; the "⋯" takes the shortcuts that only it knows
     TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(EditorMode)> onMode);
 
     GtkWidget* getWidget() const { return bar; }
@@ -55,6 +58,9 @@ public:
     void setTabCallbacks(std::function<void(size_t)> activate, std::function<void(size_t)> close);
 
 private:
+    static constexpr int MENU_WIDTH = 292;  ///< px of the column of the "⋯" menu (300 with the padding, as in the r6)
+
+    void openMenu();
     void rebuildTabs();
     void closeLater(size_t index);
 
@@ -67,6 +73,8 @@ private:
     std::function<void(size_t)> onClose;
     GtkWidget* modes = nullptr;
     GtkWidget* undo = nullptr;
+    GtkWidget* more = nullptr;
+    PopupMenu moreMenu;
     GtkWidget* modeButtons[3] = {};
     std::function<void(EditorMode)> onMode;
     bool editorShown = true;

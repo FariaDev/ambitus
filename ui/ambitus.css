@@ -1264,14 +1264,17 @@ popover.amb-selpop button.amb-selpop-item {
     color: @amb_text;
     font-size: 12.5px;
 }
-popover.amb-selpop button.amb-selpop-item:hover { background: @amb_hover; }
+popover.amb-selpop button.amb-selpop-item:hover,
+popover.amb-selpop button.amb-selpop-item.amb-selpop-active { background: @amb_hover; }
 popover.amb-selpop button.amb-selpop-item:disabled { opacity: 0.45; }
 popover.amb-selpop .amb-selpop-sep { margin: 4px 0; background: @amb_border; min-height: 1px; }
 #mainWindow.darkMode popover.amb-selpop button.amb-selpop-item { color: @amb_dk_text; }
-#mainWindow.darkMode popover.amb-selpop button.amb-selpop-item:hover { background: @amb_dk_hover; }
+#mainWindow.darkMode popover.amb-selpop button.amb-selpop-item:hover,
+#mainWindow.darkMode popover.amb-selpop button.amb-selpop-item.amb-selpop-active { background: @amb_dk_hover; }
 #mainWindow.darkMode popover.amb-selpop .amb-selpop-sep { background: @amb_dk_border; }
 
-/* o botão direito na página (PageMenu.cpp): o .menu do protótipo r6, em cima do mesmo popover do ⋯ */
+/* o botão direito na página (PageMenu.cpp) e o ⋯ da barra (TitleBar.cpp), os dois feitos por PopupMenu.cpp: o .menu do
+   protótipo r6, em cima do mesmo popover. .amb-selpop-active é o item em que o teclado (ou o ponteiro) está */
 popover.amb-ctxpop button.amb-selpop-item { min-height: 30px; }
 popover.amb-ctxpop .amb-selpop-key {
     font-family: "IBM Plex Mono", monospace;

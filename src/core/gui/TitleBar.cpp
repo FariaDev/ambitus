@@ -18,7 +18,8 @@ GtkWidget* iconButton(const char* icon, const char* action, const char* tooltip)
 }  // namespace
 
 TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(EditorMode)> onMode):
-        window(window), onMode(std::move(onMode)) {
+        window(window), moreMenu([window] { return window; }), onMode(std::move(onMode)) {
+    moreMenu.setFallbackAccels(menu);
     bar = gtk_header_bar_new();
     gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(bar), true);
     addClass(bar, "amb-titlebar");
@@ -32,10 +33,8 @@ TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(Edito
     gtk_header_bar_set_custom_title(GTK_HEADER_BAR(bar), gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
 
     // right (packed from the right edge): menu, undo, modes
-    GtkWidget* more = gtk_menu_button_new();
-    gtk_menu_button_set_menu_model(GTK_MENU_BUTTON(more), menu);
-    gtk_menu_button_set_use_popover(GTK_MENU_BUTTON(more), true);
-    gtk_button_set_image(GTK_BUTTON(more), gtk_image_new_from_icon_name("view-more-horizontal-symbolic", GTK_ICON_SIZE_BUTTON));
+    more = gtk_button_new_from_icon_name("view-more-horizontal-symbolic", GTK_ICON_SIZE_BUTTON);
+    g_signal_connect_swapped(more, "clicked", G_CALLBACK(+[](TitleBar* self) { self->openMenu(); }), this);
     gtk_widget_set_tooltip_text(more, _("Menu"));
     gtk_widget_set_valign(more, GTK_ALIGN_CENTER);
     addClass(more, "amb-tb-icon");
@@ -71,6 +70,32 @@ TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(Edito
 
     gtk_widget_show_all(bar);
     rebuildTabs();
+}
+
+void TitleBar::openMenu() {
+    // what the notebook gives: there is nothing to save, export or look back on in the library
+    auto onlyInEditor = [this](GtkWidget* item) {
+        if (!editorShown) {
+            gtk_widget_set_sensitive(item, false);
+        }
+    };
+
+    GtkWidget* box = moreMenu.begin(more, GTK_POS_BOTTOM, MENU_WIDTH);
+    moreMenu.addItem(box, "xopp-file-plus", C_("Title bar menu", "New notebook"), "new-file", nullptr);
+    moreMenu.addItem(box, "xopp-folder", C_("Title bar menu", "Open…"), "open", nullptr);
+    onlyInEditor(moreMenu.addItem(box, "xopp-edit-copy", C_("Title bar menu", "Save a copy as…"), "save-as", nullptr));
+    moreMenu.addSeparator(box);
+    onlyInEditor(
+            moreMenu.addItem(box, "xopp-file-down", C_("Title bar menu", "Export as PDF…"), "export-as-pdf", nullptr));
+    moreMenu.addItem(box, "xopp-tool-image", C_("Title bar menu", "Annotate a PDF…"), "annotate-pdf", nullptr);
+    onlyInEditor(moreMenu.addItem(box, "xopp-history", C_("Title bar menu", "Versions of this notebook"),
+                                  "earlier-versions", nullptr));
+    moreMenu.addSeparator(box);
+    moreMenu.addItem(box, "xopp-search", C_("Title bar menu", "Commands and notebooks"), "command-palette", nullptr);
+    moreMenu.addItem(box, "xopp-settings", C_("Title bar menu", "Settings"), "app.preferences", nullptr);
+    moreMenu.addSeparator(box);
+    moreMenu.addItem(box, "xopp-book", C_("Title bar menu", "About Ambitus"), "app.about", nullptr);
+    moreMenu.popup();
 }
 
 void TitleBar::setEditorShown(bool editor) {

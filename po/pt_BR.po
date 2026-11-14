@@ -5343,6 +5343,42 @@ msgctxt "Page menu"
 msgid "Delete page"
 msgstr "Apagar a página"
 
+msgctxt "Title bar menu"
+msgid "New notebook"
+msgstr "Caderno novo"
+
+msgctxt "Title bar menu"
+msgid "Open…"
+msgstr "Abrir…"
+
+msgctxt "Title bar menu"
+msgid "Save a copy as…"
+msgstr "Salvar uma cópia como…"
+
+msgctxt "Title bar menu"
+msgid "Export as PDF…"
+msgstr "Exportar como PDF…"
+
+msgctxt "Title bar menu"
+msgid "Annotate a PDF…"
+msgstr "Anotar um PDF…"
+
+msgctxt "Title bar menu"
+msgid "Versions of this notebook"
+msgstr "Versões deste caderno"
+
+msgctxt "Title bar menu"
+msgid "Commands and notebooks"
+msgstr "Comandos e cadernos"
+
+msgctxt "Title bar menu"
+msgid "Settings"
+msgstr "Configurações"
+
+msgctxt "Title bar menu"
+msgid "About Ambitus"
+msgstr "Sobre o Ambitus"
+
 msgid "Hold to straighten"
 msgstr "Segurar para endireitar"
 
