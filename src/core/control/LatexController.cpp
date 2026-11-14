@@ -18,6 +18,7 @@
 #include "control/settings/LatexSettings.h"  // for LatexSettings
 #include "control/settings/Settings.h"       // for Settings
 #include "control/tools/EditSelection.h"     // for EditSelection
+#include "gui/LatexCard.h"                   // for LatexCard
 #include "gui/Layout.h"                      // for Layout
 #include "gui/MainWindow.h"                  // for MainWindow
 #include "gui/PageView.h"                    // for XojPageView
@@ -101,6 +102,10 @@ void LatexController::showTexEditDialog(std::unique_ptr<LatexController> ctrl) {
         xoj::popup::PopupWindowWrapper<ExtEdLatexDialog> popup(texCtrl->control->getGladeSearchPath(), std::move(ctrl));
 
         popup.show(GTK_WINDOW(texCtrl->control->getWindow()->getWindow()));
+    } else if (GtkWidget* overlay = texCtrl->control->getWindow()->getWindowOverlay()) {
+        // Ambitus: a card inside the window; the separate window below is for when there is no overlay to put it in
+        GtkWindow* window = GTK_WINDOW(texCtrl->control->getWindow()->getWindow());
+        ambitus::LatexCard::open(GTK_OVERLAY(overlay), window, std::move(ctrl));
     } else {
         xoj::popup::PopupWindowWrapper<IntEdLatexDialog> popup(texCtrl->control->getGladeSearchPath(), std::move(ctrl));
 
@@ -126,7 +131,13 @@ void LatexController::triggerImageUpdate(const string& texString) {
     const std::string texContents = LatexGenerator::templateSub(texString, latexTemplate, textColor);
     auto result = generator.asyncRun(texTmpDir, texContents);
     if (auto* err = std::get_if<LatexGenerator::GenError>(&result)) {
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), err->message);
+        if (dynamic_cast<ambitus::LatexCard*>(dlg)) {
+            // the card says it in its line under the field, not in a window over it
+            texProcessOutput = err->message;
+            isValidTex = false;
+        } else {
+            XojMsgBox::showErrorToUser(control->getGtkWindow(), err->message);
+        }
     } else if (auto** proc = std::get_if<GSubprocess*>(&result)) {
         // Render the TeX and capture the process' output.
         updating_cancellable = g_cancellable_new();

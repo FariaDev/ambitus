@@ -5421,3 +5421,12 @@ msgstr "Continuar"
 
 msgid "page %zu of %zu"
 msgstr "página %zu de %zu"
+
+msgid "Formula"
+msgstr "Fórmula"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "LaTeX could not compile this formula."
+msgstr "O LaTeX não conseguiu compilar esta fórmula."

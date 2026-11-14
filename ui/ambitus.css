@@ -880,6 +880,31 @@ popover.amb-dlg-pop { padding: 4px; }
 #mainWindow.darkMode .amb-dlg button.amb-dlg-primary:focus,
 #mainWindow.darkMode .amb-dlg button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_dk_bg, 0 0 0 4px @amb_dk_text; }
 
+/* ---------- LaTeX (protótipo r6, seção 8; LatexCard.cpp) ----------
+   É o cartão de .amb-dlg: título, botões e a linha de erro (.amb-dlg-problem) são os de lá. Aqui só a prévia (caixa
+   com fio e canto de 4 px; o papel é desenhado no código, branco ou preto conforme a tinta) e o campo da fórmula: o
+   .mono do protótipo, em camada, com o fio só no foco como os outros campos. */
+
+.amb-tex-prev { border: 1px solid @amb_border; border-radius: 4px; }
+.amb-tex-scroll { border: 1px solid transparent; border-radius: 4px; background: @amb_layer; }
+.amb-tex-scroll.focused { border-color: @amb_accent; }
+textview.amb-tex-field,
+textview.amb-tex-field text {
+    background: transparent;
+    color: @amb_text;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    font-feature-settings: "liga=0, calt=0";
+}
+textview.amb-tex-field text selection { background-color: @amb_selected; color: @amb_text; }
+
+#mainWindow.darkMode .amb-tex-prev { border-color: @amb_dk_border; }
+#mainWindow.darkMode .amb-tex-scroll { background: @amb_dk_layer; }
+#mainWindow.darkMode .amb-tex-scroll.focused { border-color: @amb_dk_accent; }
+#mainWindow.darkMode textview.amb-tex-field,
+#mainWindow.darkMode textview.amb-tex-field text { color: @amb_dk_text; }
+#mainWindow.darkMode textview.amb-tex-field text selection { background-color: @amb_dk_selected; color: @amb_dk_text; }
+
 /* ---------- painel de versões (protótipo r6, seção 5) ----------
    O painel à direita da página (250 px, borda à esquerda): título com o ✕, os dias em caixa alta pequena, a linha com
    a miniatura 30×38 e a hora, a marcada em @amb_selected. A prévia de uma cópia fica sobre a página, no fundo

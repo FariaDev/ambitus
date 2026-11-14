@@ -35,6 +35,9 @@ class Layer;
 class RectangularElement;
 class LatexSettings;
 class IntEdLatexDialog;
+namespace ambitus {
+class LatexCard;
+}
 
 class LatexController final {
 public:
@@ -127,6 +130,7 @@ private:
     friend class AbstractLatexDialog;
     friend class ExtEdLatexDialog;
     friend class IntEdLatexDialog;
+    friend class ambitus::LatexCard;
 
     /**
      * Tex binary full path

@@ -137,6 +137,8 @@ public:
     /// Ambitus: the "New notebook" card (see ambitus::NewNotebookDialog). `folder` is where it starts, when the caller
     /// knows (the folder the library shows); else the folder the library shows, else the one of the open notebook.
     void showNewNotebook(const fs::path& folder = {});
+    /// Ambitus: the overlay over the whole window, for the cards that go over the library and the page alike
+    GtkWidget* getWindowOverlay() const { return windowOverlay; }
     /// Ambitus: File → Earlier versions opens the panel of versions at the right of the page, or closes it
     void toggleVersions();
     /// Ambitus: the notebook was put back to a version (out of the preview, the list follows)
