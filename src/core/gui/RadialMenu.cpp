@@ -16,8 +16,6 @@
 namespace ambitus {
 
 namespace {
-enum Index { PEN, HIGHLIGHTER, ERASER, LASSO, TEXT, SHAPES, LATEX, UNDO };
-
 GdkRGBA lookup(GtkWidget* w, const char* name, const char* fallback) {
     GdkRGBA c;
     if (!gtk_style_context_lookup_color(gtk_widget_get_style_context(w), name, &c)) {
@@ -65,15 +63,6 @@ int RadialMenu::itemAt(double dx, double dy, size_t count) {
 
 RadialMenu::RadialMenu(Control* control, XournalView* xournal, GtkOverlay* overlay):
         control(control), xournal(xournal), overlay(overlay) {
-    items = {{"xopp-tool-pencil", _("Pen")},
-             {"xopp-tool-highlighter", _("Highlighter")},
-             {"xopp-tool-eraser", _("Eraser")},
-             {"xopp-select-lasso", _("Select Region")},
-             {"xopp-tool-text", _("Text")},
-             {"xopp-shape-recognizer", _("Shape Recognizer")},
-             {"xopp-tool-math-tex", _("Add/Edit TeX")},
-             {"xopp-edit-undo", _("Undo")}};
-
     layer = gtk_drawing_area_new();
     gtk_widget_add_events(
             layer, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK | GDK_KEY_PRESS_MASK);
@@ -145,12 +134,13 @@ bool RadialMenu::onPagesEvent(const InputEvent& e) {
 }
 
 void RadialMenu::openAt(double x, double y) {
-    // keep the ring, and the label above it, inside the window
+    // keep the ring inside the window
     double w = gtk_widget_get_allocated_width(GTK_WIDGET(overlay));
     double h = gtk_widget_get_allocated_height(GTK_WIDGET(overlay));
     double r = SIZE / 2 + 4;
     cx = std::clamp(x, r, std::max(r, w - r));
-    cy = std::clamp(y, r + 30, std::max(r + 30, h - r));
+    cy = std::clamp(y, r, std::max(r, h - r));
+    loadItems();
     open = true;
     hovered = -1;
     gtk_widget_show(layer);
@@ -174,61 +164,61 @@ void RadialMenu::hover(double x, double y) {
     }
 }
 
-int RadialMenu::activeItem() const {
-    ToolHandler* th = control->getToolHandler();
-    switch (th->getToolType()) {
-        case TOOL_PEN:
-            return th->getDrawingType() == DRAWING_TYPE_SHAPE_RECOGNIZER ? SHAPES : PEN;
-        case TOOL_HIGHLIGHTER:
-            return HIGHLIGHTER;
-        case TOOL_ERASER:
-            return ERASER;
-        case TOOL_SELECT_REGION:
-            return LASSO;
-        case TOOL_TEXT:
-            return TEXT;
-        case TOOL_LATEX:
-            return LATEX;
-        default:
-            return -1;
+void RadialMenu::loadItems() {
+    items.clear();
+    for (auto const& id: parseRadialSlots(control->getSettings()->getAmbitusRadialSlots())) {
+        if (const RadialOption* o = findRadialOption(id)) {
+            items.push_back({o, _(o->name)});
+        }
     }
 }
 
+bool RadialMenu::isActive(size_t index) const {
+    ToolHandler* th = control->getToolHandler();
+    ToolType type = th->getToolType();
+    bool shapes = type == TOOL_PEN && th->getDrawingType() == DRAWING_TYPE_SHAPE_RECOGNIZER;
+    const RadialOption* o = items[index].option;
+    switch (o->kind) {
+        case RadialKind::TOOL:
+            return o->tool == type && !shapes;
+        case RadialKind::SHAPES:
+            return shapes;
+        default:
+            return false;
+    }
+}
+
+bool RadialMenu::isEnabled(size_t index) const {
+    const RadialOption* o = items[index].option;
+    if (o->kind != RadialKind::ACTION) {
+        return true;
+    }
+    auto* win = G_ACTION_GROUP(gtk_widget_get_toplevel(GTK_WIDGET(overlay)));
+    return g_action_group_has_action(win, o->action) && g_action_group_get_action_enabled(win, o->action);
+}
+
 void RadialMenu::activate(int index) {
+    if (index < 0 || static_cast<size_t>(index) >= items.size() || !isEnabled(static_cast<size_t>(index))) {
+        return;  // a disabled action does nothing, and the ring stays open
+    }
     close();
     auto* win = G_ACTION_GROUP(gtk_widget_get_toplevel(GTK_WIDGET(overlay)));
     auto tool = [win](ToolType t) { g_action_group_activate_action(win, "select-tool", makeGVariant(t)); };
     bool shapes = control->getToolHandler()->getDrawingType() == DRAWING_TYPE_SHAPE_RECOGNIZER;
-    switch (index) {
-        case PEN:
-            tool(TOOL_PEN);
-            if (shapes) {
+    const RadialOption* o = items[static_cast<size_t>(index)].option;
+    switch (o->kind) {
+        case RadialKind::TOOL:
+            tool(o->tool);
+            if (o->tool == TOOL_PEN && shapes) {
                 g_action_group_change_action_state(win, "tool-draw-shape-recognizer", g_variant_new_boolean(false));
             }
             break;
-        case HIGHLIGHTER:
-            tool(TOOL_HIGHLIGHTER);
-            break;
-        case ERASER:
-            tool(TOOL_ERASER);
-            break;
-        case LASSO:
-            tool(TOOL_SELECT_REGION);
-            break;
-        case TEXT:
-            tool(TOOL_TEXT);
-            break;
-        case SHAPES:
+        case RadialKind::SHAPES:
             tool(TOOL_PEN);
             g_action_group_change_action_state(win, "tool-draw-shape-recognizer", g_variant_new_boolean(true));
             break;
-        case LATEX:
-            tool(TOOL_LATEX);
-            break;
-        case UNDO:
-            g_action_group_activate_action(win, "undo", nullptr);
-            break;
-        default:
+        case RadialKind::ACTION:
+            g_action_group_activate_action(win, o->action, nullptr);
             break;
     }
 }
@@ -263,60 +253,48 @@ gboolean RadialMenu::onDraw(GtkWidget* w, cairo_t* cr, RadialMenu* self) {
     cairo_set_line_width(cr, 1);
     cairo_stroke(cr);
 
-    // the hole with the mark
+    // the hole, empty unless the pointer is over an item: then its name, small and centred
     gdk_cairo_set_source_rgba(cr, &layer);
     circle(cr, cx, cy, HOLE / 2);
     cairo_fill_preserve(cr);
     gdk_cairo_set_source_rgba(cr, &border);
     cairo_stroke(cr);
-    PangoLayout* mark = gtk_widget_create_pango_layout(w, "∂");
-    PangoFontDescription* fd = pango_font_description_from_string("Serif Italic 22");
-    pango_layout_set_font_description(mark, fd);
-    int mw, mh;
-    pango_layout_get_pixel_size(mark, &mw, &mh);
-    gdk_cairo_set_source_rgba(cr, &text2);
-    cairo_move_to(cr, cx - mw / 2.0, cy - mh / 2.0);
-    pango_cairo_show_layout(cr, mark);
-    pango_font_description_free(fd);
-    g_object_unref(mark);
+    if (self->hovered >= 0 && static_cast<size_t>(self->hovered) < self->items.size()) {
+        PangoLayout* l =
+                gtk_widget_create_pango_layout(w, self->items[static_cast<size_t>(self->hovered)].label.c_str());
+        PangoFontDescription* fd = pango_font_description_new();
+        pango_font_description_set_size(fd, static_cast<gint>(8.5 * PANGO_SCALE));
+        pango_layout_set_font_description(l, fd);
+        pango_font_description_free(fd);
+        pango_layout_set_width(l, static_cast<int>(HOLE - 14) * PANGO_SCALE);
+        pango_layout_set_wrap(l, PANGO_WRAP_WORD_CHAR);
+        pango_layout_set_alignment(l, PANGO_ALIGN_CENTER);
+        int lw, lh;
+        pango_layout_get_pixel_size(l, &lw, &lh);
+        gdk_cairo_set_source_rgba(cr, &text);
+        cairo_move_to(cr, cx - (HOLE - 14) / 2.0, cy - lh / 2.0);
+        pango_cairo_show_layout(cr, l);
+        g_object_unref(l);
+    }
 
-    int active = self->activeItem();
     size_t n = self->items.size();
     for (size_t i = 0; i < n; i++) {
         double a = -M_PI / 2 + static_cast<double>(i) * 2 * M_PI / static_cast<double>(n);
         double x = cx + std::cos(a) * RADIUS, y = cy + std::sin(a) * RADIUS;
-        bool on = static_cast<int>(i) == active;
-        bool hov = static_cast<int>(i) == self->hovered;
+        bool enabled = self->isEnabled(i);
+        bool on = self->isActive(i);
+        bool hov = static_cast<int>(i) == self->hovered && enabled;
         if (on || hov) {
             gdk_cairo_set_source_rgba(cr, on ? &accent : &hover);
             circle(cr, x, y, ITEM / 2);
             cairo_fill(cr);
         }
-        gdk_cairo_set_source_rgba(cr, on ? &onAccent : (hov ? &text : &text2));
-        drawIcon(cr, w, self->items[i].icon, x, y, 18);
-    }
-
-    // label of the item under the pointer (or of the active one), above the ring
-    int shown = self->hovered >= 0 ? self->hovered : active;
-    if (shown >= 0) {
-        PangoLayout* l = gtk_widget_create_pango_layout(w, self->items[static_cast<size_t>(shown)].label.c_str());
-        int lw, lh;
-        pango_layout_get_pixel_size(l, &lw, &lh);
-        double bw = lw + 16, bh = lh + 6;
-        double bx = cx - bw / 2, by = cy - R - 30;
-        gdk_cairo_set_source_rgba(cr, &text);
-        double rr = 4;
-        cairo_new_sub_path(cr);
-        cairo_arc(cr, bx + bw - rr, by + rr, rr, -M_PI / 2, 0);
-        cairo_arc(cr, bx + bw - rr, by + bh - rr, rr, 0, M_PI / 2);
-        cairo_arc(cr, bx + rr, by + bh - rr, rr, M_PI / 2, M_PI);
-        cairo_arc(cr, bx + rr, by + rr, rr, M_PI, 3 * M_PI / 2);
-        cairo_close_path(cr);
-        cairo_fill(cr);
-        gdk_cairo_set_source_rgba(cr, &bg);
-        cairo_move_to(cr, bx + 8, by + 3);
-        pango_cairo_show_layout(cr, l);
-        g_object_unref(l);
+        GdkRGBA ink = on ? onAccent : (hov ? text : text2);
+        if (!enabled) {
+            ink.alpha *= 0.35;  // an action that cannot be called now
+        }
+        gdk_cairo_set_source_rgba(cr, &ink);
+        drawIcon(cr, w, self->items[i].option->icon, x, y, 18);
     }
     return true;
 }

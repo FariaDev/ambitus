@@ -3,7 +3,10 @@
  *
  * Radial menu: a ring of tools that opens where the pointer is, on the right
  * mouse button (or the second stylus button) when that button has no tool of
- * its own. Pen, highlighter, eraser, lasso, text, shapes, LaTeX and undo.
+ * its own. It has eight positions, each one a tool or an action; the user picks
+ * them in the panel of the Studio palette and they are read from the settings
+ * every time the ring opens. The name of the item under the pointer shows in
+ * the hole, and an action that is disabled is drawn faded and does nothing.
  *
  * Two ways to use it: press, move to an item and release; or click, then click
  * an item. A click outside or Esc closes it.
@@ -22,6 +25,7 @@
 
 #include <gtk/gtk.h>
 
+#include "gui/StudioPalette.h"
 #include "gui/inputdevices/InputEvents.h"
 
 class Control;
@@ -51,7 +55,7 @@ public:
 
 private:
     struct Item {
-        const char* icon;
+        const RadialOption* option;
         std::string label;
     };
 
@@ -59,7 +63,12 @@ private:
     bool onPagesEvent(const InputEvent& e);
     void hover(double x, double y);
     void activate(int index);
-    int activeItem() const;
+    /// Reads the eight positions from the settings
+    void loadItems();
+    /// Whether the position holds the tool in use (with the shape recognizer, the pen is "shapes")
+    bool isActive(size_t index) const;
+    /// An action that the window has disabled does nothing; tools are always enabled
+    bool isEnabled(size_t index) const;
 
     static gboolean onDraw(GtkWidget* w, cairo_t* cr, RadialMenu* self);
     static gboolean onButton(GtkWidget* w, GdkEventButton* e, RadialMenu* self);

@@ -22,6 +22,7 @@
 
 #include "AmbitusTip.h"
 #include "MainWindow.h"
+#include "RadialMenu.h"
 #include "TitleBar.h"
 
 namespace ambitus {
@@ -604,6 +605,18 @@ struct PaletteState {
     std::vector<std::pair<std::string, GtkWidget*>> pins;  ///< The pin of each row of the panel
     std::vector<GtkWidget*> audioRows;                     ///< Hidden while the audio is off
     std::vector<GtkWidget*> audioButtons;
+
+    // the "Radial menu" tab of the panel
+    GtkWidget* stack = nullptr;  ///< "tools" and "radial"
+    GtkWidget* tabTools = nullptr;
+    GtkWidget* tabRadial = nullptr;
+    bool syncingTabs = false;  ///< set_active of a toggle button also emits "clicked"
+    GtkWidget* ring = nullptr;
+    GtkWidget* radialTitle = nullptr;
+    std::vector<std::string> radialSlots;                   ///< The option of each position, as saved
+    int radialSel = 0;                                      ///< The position being edited
+    int radialHover = -1;                                   ///< The position under the pointer in the ring
+    std::vector<std::pair<std::string, GtkWidget*>> chips;  ///< One for each option
 };
 
 namespace {
@@ -622,6 +635,9 @@ void saveColors(PaletteState* st) {
 }
 void saveFavorites(PaletteState* st) {
     st->control->getSettings()->setAmbitusPaletteFavorites(serializePaletteFavorites(st->favorites));
+}
+void saveRadial(PaletteState* st) {
+    st->control->getSettings()->setAmbitusRadialSlots(serializeRadialSlots(st->radialSlots));
 }
 
 /// The audio controller is made after the window: ask when the palette is about to show, not when it is built
@@ -885,6 +901,237 @@ GtkWidget* panelRow(PaletteState* st, Item const& it) {
     return row;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// The "Radial menu" tab: a small ring to pick a position, and every option as a chip
+// ---------------------------------------------------------------------------------------------------------------------
+
+constexpr double RING_SIZE = 184;  ///< Side of the drawing area
+constexpr double RING_R = 66;      ///< Distance from the centre to the positions
+constexpr double RING_ITEM = 34;   ///< Diameter of a position
+constexpr double RING_HOLE = 60;   ///< Diameter of the hole in the middle
+
+GdkRGBA ringColor(GtkWidget* w, bool dark, const char* light, const char* darkName) {
+    GdkRGBA c;
+    if (!gtk_style_context_lookup_color(gtk_widget_get_style_context(w), dark ? darkName : light, &c)) {
+        gdk_rgba_parse(&c, dark ? "#c6c6c6" : "#525252");
+    }
+    return c;
+}
+
+void ringCircle(cairo_t* cr, double x, double y, double r) {
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, x, y, r, 0, 2 * M_PI);
+}
+
+gboolean drawRing(GtkWidget* w, cairo_t* cr, PaletteState* st) {
+    bool dark = gtk_style_context_has_class(gtk_widget_get_style_context(gtk_widget_get_toplevel(w)), "darkMode");
+    GdkRGBA fill = ringColor(w, dark, "amb_layer", "amb_dk_bg");
+    GdkRGBA hole = ringColor(w, dark, "amb_bg", "amb_dk_layer");
+    GdkRGBA border = ringColor(w, dark, "amb_border", "amb_dk_border");
+    GdkRGBA hover = ringColor(w, dark, "amb_hover", "amb_dk_hover");
+    GdkRGBA selected = ringColor(w, dark, "amb_selected", "amb_dk_selected");
+    GdkRGBA text = ringColor(w, dark, "amb_text", "amb_dk_text");
+    GdkRGBA text2 = ringColor(w, dark, "amb_text2", "amb_dk_text2");
+    GdkRGBA accent = ringColor(w, dark, "amb_accent", "amb_dk_accent");
+
+    double cx = gtk_widget_get_allocated_width(w) / 2.0, cy = gtk_widget_get_allocated_height(w) / 2.0;
+    gdk_cairo_set_source_rgba(cr, &fill);
+    ringCircle(cr, cx, cy, RING_SIZE / 2 - 1);
+    cairo_fill_preserve(cr);
+    gdk_cairo_set_source_rgba(cr, &border);
+    cairo_set_line_width(cr, 1);
+    cairo_stroke(cr);
+    gdk_cairo_set_source_rgba(cr, &hole);
+    ringCircle(cr, cx, cy, RING_HOLE / 2);
+    cairo_fill_preserve(cr);
+    gdk_cairo_set_source_rgba(cr, &border);
+    cairo_stroke(cr);
+
+    // the name of what sits in the chosen position
+    if (const RadialOption* o = findRadialOption(st->radialSlots[static_cast<size_t>(st->radialSel)])) {
+        PangoLayout* l = gtk_widget_create_pango_layout(w, _(o->name));
+        PangoFontDescription* fd = pango_font_description_new();
+        pango_font_description_set_size(fd, static_cast<gint>(8 * PANGO_SCALE));
+        pango_layout_set_font_description(l, fd);
+        pango_font_description_free(fd);
+        pango_layout_set_width(l, static_cast<int>(RING_HOLE - 10) * PANGO_SCALE);
+        pango_layout_set_wrap(l, PANGO_WRAP_WORD_CHAR);
+        pango_layout_set_alignment(l, PANGO_ALIGN_CENTER);
+        int lw, lh;
+        pango_layout_get_pixel_size(l, &lw, &lh);
+        gdk_cairo_set_source_rgba(cr, &text);
+        cairo_move_to(cr, cx - (RING_HOLE - 10) / 2.0, cy - lh / 2.0);
+        pango_cairo_show_layout(cr, l);
+        g_object_unref(l);
+    }
+
+    int scale = gtk_widget_get_scale_factor(w);
+    GtkIconTheme* theme = gtk_icon_theme_get_for_screen(gtk_widget_get_screen(w));
+    for (size_t i = 0; i < RADIAL_SLOTS; i++) {
+        double a = -M_PI / 2 + static_cast<double>(i) * 2 * M_PI / RADIAL_SLOTS;
+        double x = cx + std::cos(a) * RING_R, y = cy + std::sin(a) * RING_R;
+        bool sel = static_cast<int>(i) == st->radialSel;
+        if (sel || static_cast<int>(i) == st->radialHover) {
+            gdk_cairo_set_source_rgba(cr, sel ? &selected : &hover);
+            ringCircle(cr, x, y, RING_ITEM / 2);
+            cairo_fill_preserve(cr);
+            if (sel) {
+                gdk_cairo_set_source_rgba(cr, &accent);
+                cairo_set_line_width(cr, 1.5);
+                cairo_stroke(cr);
+            } else {
+                cairo_new_path(cr);
+            }
+        }
+        const RadialOption* o = findRadialOption(st->radialSlots[i]);
+        if (!o) {
+            continue;
+        }
+        if (cairo_surface_t* icon = gtk_icon_theme_load_surface(theme, o->icon, 16, scale, nullptr,
+                                                                GTK_ICON_LOOKUP_FORCE_SIZE, nullptr)) {
+            gdk_cairo_set_source_rgba(cr, sel ? &text : &text2);
+            cairo_mask_surface(cr, icon, std::round(x - 8), std::round(y - 8));
+            cairo_surface_destroy(icon);
+        }
+    }
+    return true;
+}
+
+/// The position under (x, y) of the ring, -1 for none (RadialMenu::itemAt knows the big ring: bring the point to it)
+int ringPositionAt(double x, double y) {
+    double k = RadialMenu::RADIUS / RING_R;
+    return RadialMenu::itemAt((x - RING_SIZE / 2) * k, (y - RING_SIZE / 2) * k, RADIAL_SLOTS);
+}
+
+void updateRadialPanel(PaletteState* st) {
+    gtk_widget_queue_draw(st->ring);
+    gchar* title = g_strdup_printf(_("Position %d: choose what goes in it"), st->radialSel + 1);
+    gtk_label_set_text(GTK_LABEL(st->radialTitle), title);
+    g_free(title);
+    const std::string& here = st->radialSlots[static_cast<size_t>(st->radialSel)];
+    for (auto const& [id, chip]: st->chips) {
+        GtkStyleContext* ctx = gtk_widget_get_style_context(chip);
+        if (id == here) {
+            gtk_style_context_add_class(ctx, "on");
+        } else {
+            gtk_style_context_remove_class(ctx, "on");
+        }
+    }
+}
+
+struct ChipData {
+    PaletteState* st;
+    const char* id;
+};
+
+GtkWidget* radialChip(PaletteState* st, RadialOption const& o) {
+    GtkWidget* b = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
+    gtk_widget_set_can_focus(b, false);
+    addClass(b, "amb-chip");
+    GtkWidget* inner = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    gtk_box_pack_start(GTK_BOX(inner), panelImage(o.icon, 16), false, false, 0);
+    GtkWidget* name = gtk_label_new(_(o.name));
+    gtk_label_set_xalign(GTK_LABEL(name), 0);
+    gtk_box_pack_start(GTK_BOX(inner), name, true, true, 0);
+    gtk_container_add(GTK_CONTAINER(b), inner);
+    g_signal_connect_data(
+            b, "clicked", G_CALLBACK(+[](GtkButton*, ChipData* d) {
+                d->st->radialSlots[static_cast<size_t>(d->st->radialSel)] = d->id;
+                saveRadial(d->st);
+                updateRadialPanel(d->st);
+            }),
+            new ChipData{st, o.id}, +[](gpointer p, GClosure*) { delete static_cast<ChipData*>(p); }, GConnectFlags(0));
+    st->chips.emplace_back(o.id, b);
+    return b;
+}
+
+GtkWidget* buildRadialPage(PaletteState* st) {
+    GtkWidget* page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
+    st->ring = gtk_drawing_area_new();
+    gtk_widget_set_size_request(st->ring, static_cast<int>(RING_SIZE), static_cast<int>(RING_SIZE));
+    gtk_widget_set_halign(st->ring, GTK_ALIGN_CENTER);
+    gtk_widget_add_events(st->ring, GDK_BUTTON_PRESS_MASK | GDK_POINTER_MOTION_MASK | GDK_LEAVE_NOTIFY_MASK);
+    g_signal_connect(st->ring, "draw", G_CALLBACK(drawRing), st);
+    g_signal_connect(st->ring, "button-press-event",
+                     G_CALLBACK(+[](GtkWidget*, GdkEventButton* ev, PaletteState* st) -> gboolean {
+                         if (ev->button != GDK_BUTTON_PRIMARY) {
+                             return FALSE;
+                         }
+                         if (int i = ringPositionAt(ev->x, ev->y); i >= 0) {
+                             st->radialSel = i;
+                             updateRadialPanel(st);
+                         }
+                         return TRUE;
+                     }),
+                     st);
+    g_signal_connect(st->ring, "motion-notify-event",
+                     G_CALLBACK(+[](GtkWidget* w, GdkEventMotion* ev, PaletteState* st) -> gboolean {
+                         int i = ringPositionAt(ev->x, ev->y);
+                         if (i != st->radialHover) {
+                             st->radialHover = i;
+                             gtk_widget_queue_draw(w);
+                         }
+                         return FALSE;
+                     }),
+                     st);
+    g_signal_connect(st->ring, "leave-notify-event",
+                     G_CALLBACK(+[](GtkWidget* w, GdkEventCrossing*, PaletteState* st) -> gboolean {
+                         st->radialHover = -1;
+                         gtk_widget_queue_draw(w);
+                         return FALSE;
+                     }),
+                     st);
+    gtk_box_pack_start(GTK_BOX(page), st->ring, false, false, 0);
+
+    st->radialTitle = gtk_label_new("");
+    gtk_label_set_xalign(GTK_LABEL(st->radialTitle), 0);
+    addClass(st->radialTitle, "amb-radial-title");
+    gtk_box_pack_start(GTK_BOX(page), st->radialTitle, false, false, 0);
+
+    GtkWidget* flow = gtk_flow_box_new();
+    gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(flow), GTK_SELECTION_NONE);
+    gtk_flow_box_set_homogeneous(GTK_FLOW_BOX(flow), true);
+    gtk_flow_box_set_min_children_per_line(GTK_FLOW_BOX(flow), 3);
+    gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(flow), 4);
+    gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(flow), 6);
+    gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(flow), 6);
+    for (auto const& o: radialOptions()) {
+        gtk_container_add(GTK_CONTAINER(flow), radialChip(st, o));
+    }
+    gtk_box_pack_start(GTK_BOX(page), flow, false, false, 0);
+    return page;
+}
+
+/// Shows a tab of the panel; the buttons follow it
+void showTab(PaletteState* st, bool radial) {
+    gtk_stack_set_visible_child_name(GTK_STACK(st->stack), radial ? "radial" : "tools");
+    gtk_widget_set_visible(st->count, !radial);
+    st->syncingTabs = true;  // set_active also emits "clicked"
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(st->tabTools), !radial);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(st->tabRadial), radial);
+    st->syncingTabs = false;
+}
+
+struct TabData {
+    PaletteState* st;
+    bool radial;
+};
+
+GtkWidget* tabButton(PaletteState* st, const char* label, bool radial) {
+    GtkWidget* b = gtk_toggle_button_new_with_label(label);
+    gtk_widget_set_can_focus(b, false);
+    g_signal_connect_data(
+            b, "clicked", G_CALLBACK(+[](GtkButton*, TabData* d) {
+                if (!d->st->syncingTabs) {
+                    showTab(d->st, d->radial);  // touching the tab already on keeps it on
+                }
+            }),
+            new TabData{st, radial}, +[](gpointer p, GClosure*) { delete static_cast<TabData*>(p); }, GConnectFlags(0));
+    return b;
+}
+
 void restoreDefaults(PaletteState* st);
 
 GtkWidget* buildPanel(PaletteState* st) {
@@ -893,6 +1140,23 @@ GtkWidget* buildPanel(PaletteState* st) {
     addClass(pop, "amb-optpop");
 
     GtkWidget* body = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
+    // two tabs: the tools of the palette, and the ring of the right button
+    GtkWidget* tabs = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    addClass(tabs, "amb-seg");
+    gtk_widget_set_halign(tabs, GTK_ALIGN_START);
+    gtk_widget_set_margin_bottom(tabs, 12);
+    st->tabTools = tabButton(st, _("Tools"), false);
+    st->tabRadial = tabButton(st, _("Radial menu"), true);
+    gtk_box_pack_start(GTK_BOX(tabs), st->tabTools, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(tabs), st->tabRadial, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(body), tabs, false, false, 0);
+    st->stack = gtk_stack_new();
+    gtk_stack_set_hhomogeneous(GTK_STACK(st->stack), true);
+    gtk_stack_set_vhomogeneous(GTK_STACK(st->stack), false);
+    gtk_stack_set_interpolate_size(GTK_STACK(st->stack), false);
+    gtk_box_pack_start(GTK_BOX(body), st->stack, false, false, 0);
+
     GtkWidget* grid = gtk_grid_new();
     gtk_grid_set_column_spacing(GTK_GRID(grid), 18);
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
@@ -908,7 +1172,8 @@ GtkWidget* buildPanel(PaletteState* st) {
         }
         gtk_grid_attach(GTK_GRID(grid), col, g % 3, g / 3, 1, 1);
     }
-    gtk_box_pack_start(GTK_BOX(body), grid, false, false, 0);
+    gtk_stack_add_named(GTK_STACK(st->stack), grid, "tools");
+    gtk_stack_add_named(GTK_STACK(st->stack), buildRadialPage(st), "radial");
 
     GtkWidget* foot = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
     addClass(foot, "amb-pick-foot");
@@ -929,6 +1194,8 @@ GtkWidget* buildPanel(PaletteState* st) {
 
     gtk_container_add(GTK_CONTAINER(pop), body);
     gtk_widget_show_all(body);
+    showTab(st, false);
+    updateRadialPanel(st);
     g_signal_connect(pop, "show", G_CALLBACK(+[](GtkWidget*, PaletteState* st) { refreshAudio(st); }), st);
     // the "..." button stays down while the panel is open
     g_signal_connect(pop, "notify::visible", G_CALLBACK(+[](GObject* o, GParamSpec*, PaletteState* st) {
@@ -1280,13 +1547,16 @@ void restoreDefaults(PaletteState* st) {
     st->tools = defaultPaletteTools();
     st->colors = defaultPaletteColors();
     st->favorites.clear();
+    st->radialSlots = defaultRadialSlots();
     saveTools(st);
     saveColors(st);
     saveFavorites(st);
+    saveRadial(st);
     rebuildTools(st);
     rebuildColors(st);
     rebuildFavorites(st);
     updatePanel(st);
+    updateRadialPanel(st);
 }
 
 GtkWidget* paletteButton(const char* icon, const char* tip, GtkWidget* (*make)()) {
@@ -1431,6 +1701,57 @@ std::string serializePaletteFavorites(const std::vector<PaletteFavorite>& favori
     return out;
 }
 
+const std::vector<RadialOption>& radialOptions() {
+    static const std::vector<RadialOption> options = {
+            {"pencil", RadialKind::TOOL, TOOL_PEN, nullptr, "xopp-tool-pencil", N_("Pen")},
+            {"highlighter", RadialKind::TOOL, TOOL_HIGHLIGHTER, nullptr, "xopp-tool-highlighter", N_("Marker")},
+            {"eraser", RadialKind::TOOL, TOOL_ERASER, nullptr, "xopp-tool-eraser", N_("Eraser")},
+            {"lasso", RadialKind::TOOL, TOOL_SELECT_REGION, nullptr, "xopp-select-lasso", N_("Lasso")},
+            {"text", RadialKind::TOOL, TOOL_TEXT, nullptr, "xopp-tool-text", N_("Text")},
+            {"latex", RadialKind::TOOL, TOOL_LATEX, nullptr, "xopp-tool-math-tex", N_("LaTeX")},
+            {"hand", RadialKind::TOOL, TOOL_HAND, nullptr, "xopp-hand", N_("Hand")},
+            {"laser", RadialKind::TOOL, TOOL_LASER_POINTER_PEN, nullptr, "xopp-laser-pointer", N_("Laser pointer")},
+            {"shapes", RadialKind::SHAPES, TOOL_PEN, nullptr, "xopp-shape-recognizer", N_("Shape recognizer")},
+            {"image", RadialKind::TOOL, TOOL_IMAGE, nullptr, "xopp-tool-image", N_("Image")},
+            {"vspace", RadialKind::TOOL, TOOL_VERTICAL_SPACE, nullptr, "xopp-vertical-space", N_("Vertical space")},
+            {"undo", RadialKind::ACTION, TOOL_NONE, "undo", "xopp-edit-undo", N_("Undo")},
+            {"redo", RadialKind::ACTION, TOOL_NONE, "redo", "xopp-edit-redo", N_("Redo")},
+            {"convert", RadialKind::ACTION, TOOL_NONE, "convert-to-text", "xopp-convert-text", N_("Convert to text")},
+            {"send", RadialKind::ACTION, TOOL_NONE, "send-page-to-summa", "xopp-send", N_("Send to Summa")},
+            {"copy", RadialKind::ACTION, TOOL_NONE, "copy-page-as-image", "xopp-edit-copy", N_("Copy the page")},
+    };
+    return options;
+}
+
+const RadialOption* findRadialOption(const std::string& id) {
+    for (auto const& o: radialOptions()) {
+        if (id == o.id) {
+            return &o;
+        }
+    }
+    return nullptr;
+}
+
+std::vector<std::string> defaultRadialSlots() {
+    return {"pencil", "highlighter", "eraser", "lasso", "undo", "convert", "send", "hand"};
+}
+
+std::vector<std::string> parseRadialSlots(const std::string& text) {
+    std::vector<std::string> slots = splitFields(text, ',');
+    std::vector<std::string> defaults = defaultRadialSlots();
+    if (slots.size() != RADIAL_SLOTS) {
+        return defaults;
+    }
+    for (size_t i = 0; i < slots.size(); i++) {
+        if (!findRadialOption(slots[i])) {
+            slots[i] = defaults[i];
+        }
+    }
+    return slots;
+}
+
+std::string serializeRadialSlots(const std::vector<std::string>& slots) { return joinList(slots); }
+
 bool paletteColorIsLight(uint32_t rgb) {
     double luminance = 0.299 * ((rgb >> 16) & 0xff) + 0.587 * ((rgb >> 8) & 0xff) + 0.114 * (rgb & 0xff);
     return luminance / 255.0 > 0.6;
@@ -1463,6 +1784,7 @@ StudioPalette::StudioPalette(Control* control, GtkOverlay* overlay) {
     state->tools = parsePaletteTools(control->getSettings()->getAmbitusPaletteTools());
     state->colors = parsePaletteColors(control->getSettings()->getAmbitusPaletteColors());
     state->favorites = parsePaletteFavorites(control->getSettings()->getAmbitusPaletteFavorites());
+    state->radialSlots = parseRadialSlots(control->getSettings()->getAmbitusRadialSlots());
 
     // the event box catches the right button over the gaps of the palette too
     root = gtk_event_box_new();

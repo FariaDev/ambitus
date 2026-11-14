@@ -5252,3 +5252,19 @@ msgstr "Guardar como favorita"
 
 msgid "Only 4 favorites fit. Remove one with the right button to save another."
 msgstr "Só cabem 4 favoritas. Tire uma com o botão direito para guardar outra."
+
+msgid "Radial menu"
+msgstr "Menu radial"
+
+#, c-format
+msgid "Position %d: choose what goes in it"
+msgstr "Posição %d: escolha o que vai nela"
+
+msgid "Convert to text"
+msgstr "Converter em texto"
+
+msgid "Send to Summa"
+msgstr "Enviar ao Summa"
+
+msgid "Copy the page"
+msgstr "Copiar a página"

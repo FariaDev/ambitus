@@ -11,6 +11,9 @@
  * panel with every tool, each with a pin to put it on the palette or take it off; a "+" asks for one more colour and
  * the right button on a colour removes it. Both lists live only in the settings of Ambitus (never in the .xopp).
  *
+ * The same panel has a second tab, "Radial menu": the eight positions of the ring that opens on the right button. Each
+ * takes a tool or an action; the choice lives in the settings of Ambitus too and the ring reads it every time it opens.
+ *
  * The favourite pens (up to four) come first: each keeps a tool (pen or marker), a colour and a thickness, is saved
  * from the options of the pen and of the marker, and is taken off with the right button. The keys 1-4 call them.
  *
@@ -25,6 +28,8 @@
 #include <vector>
 
 #include <gtk/gtk.h>
+
+#include "control/ToolEnums.h"
 
 class Control;
 
@@ -76,6 +81,40 @@ bool paletteColorIsLight(uint32_t rgb);
 /// when nothing sits at that position (the key then does nothing). Without favourites, or out of the Studio mode,
 /// returns false and does nothing: the caller goes on with what the key did before
 bool callPaletteFavorite(Control* control, size_t index);
+
+/// The positions of the radial menu
+constexpr size_t RADIAL_SLOTS = 8;
+
+enum class RadialKind {
+    TOOL,    ///< Selects a tool
+    SHAPES,  ///< The pen with the shape recognizer on
+    ACTION,  ///< Calls an action of the window
+};
+
+/// What a position of the radial menu can hold. The ids are what the settings save: never change one
+struct RadialOption {
+    const char* id;
+    RadialKind kind;
+    ToolType tool;       ///< TOOL: the tool to select
+    const char* action;  ///< ACTION: the action of the window, without "win."
+    const char* icon;
+    const char* name;  ///< In English: translate with _()
+};
+
+/// Every option, in the order the panel shows them
+const std::vector<RadialOption>& radialOptions();
+/// The option with this id, or null
+const RadialOption* findRadialOption(const std::string& id);
+
+/// The eight positions the ring starts with (and goes back to): pen, marker, eraser, lasso, undo, convert to text, send
+/// to Summa and hand
+std::vector<std::string> defaultRadialSlots();
+
+/// The saved positions: eight ids separated by commas. An id that is not known gives its position the default one; text
+/// that is empty, or does not have exactly eight positions, gives the default for all of them. The same option may
+/// appear in more than one position
+std::vector<std::string> parseRadialSlots(const std::string& text);
+std::string serializeRadialSlots(const std::vector<std::string>& slots);
 
 struct PaletteState;
 

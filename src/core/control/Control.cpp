@@ -2510,6 +2510,8 @@ auto Control::loadViewMode(ViewModeId mode) -> bool {
 void Control::clipboardCutCopyEnabled(bool enabled) {
     this->actionDB->enableAction(Action::CUT, enabled);
     this->actionDB->enableAction(Action::COPY, enabled);
+    // Ambitus: like cut and copy, converting needs a selection (the radial menu shows it faded without one)
+    this->actionDB->enableAction(Action::CONVERT_TO_TEXT, enabled);
 }
 
 void Control::clipboardPasteEnabled(bool enabled) { this->actionDB->enableAction(Action::PASTE, enabled); }

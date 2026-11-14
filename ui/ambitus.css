@@ -819,6 +819,47 @@ popover.amb-optpop .amb-fav-save:disabled:hover { background: transparent; }
 
 #mainWindow.darkMode popover.amb-optpop .amb-fav-foot { border-top-color: @amb_dk_border; }
 
+/* ---------- aba "Menu radial" do painel ⋯ ----------
+   O anel pequeno é desenhado no código (cores @amb_*, claro e escuro). Aqui, o título da posição e os chips das opções
+   (o .chip do protótipo r4): a opção que já está na posição escolhida fica marcada. */
+
+popover.amb-optpop .amb-radial-title {
+    margin: 12px 0 8px 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: @amb_text3;
+}
+popover.amb-optpop .amb-chip {
+    background: @amb_bg;
+    background-image: none;
+    border: 1px solid @amb_border;
+    box-shadow: none;
+    border-radius: 4px;
+    min-height: 0;
+    min-width: 0;
+    padding: 5px 8px;
+    font-size: 10pt;
+    color: @amb_text;
+}
+popover.amb-optpop .amb-chip:hover { background: @amb_hover; }
+popover.amb-optpop .amb-chip.on {
+    background: @amb_selected;
+    border-color: @amb_selected;
+    font-weight: 600;
+}
+
+#mainWindow.darkMode popover.amb-optpop .amb-radial-title { color: @amb_dk_text3; }
+#mainWindow.darkMode popover.amb-optpop .amb-chip {
+    background: @amb_dk_layer;
+    border-color: @amb_dk_border;
+    color: @amb_dk_text;
+}
+#mainWindow.darkMode popover.amb-optpop .amb-chip:hover { background: @amb_dk_hover; }
+#mainWindow.darkMode popover.amb-optpop .amb-chip.on {
+    background: @amb_dk_selected;
+    border-color: @amb_dk_selected;
+}
+
 /* Quadro: minimapa (desenhado no código) e pílula do zoom */
 .amb-board-pill {
     background: @amb_bg;

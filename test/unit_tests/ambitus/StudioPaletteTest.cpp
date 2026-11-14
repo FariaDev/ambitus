@@ -124,3 +124,47 @@ TEST(StudioPalette, theIconOnALightColourIsDark) {
     EXPECT_FALSE(paletteColorIsLight(0xc2410c));  // orange
     EXPECT_FALSE(paletteColorIsLight(0x161616));
 }
+
+TEST(StudioPalette, radialDefaultHasEightKnownPositions) {
+    auto d = defaultRadialSlots();
+    EXPECT_EQ(d.size(), RADIAL_SLOTS);
+    for (auto const& id: d) {
+        EXPECT_NE(findRadialOption(id), nullptr) << id;
+    }
+    EXPECT_EQ(serializeRadialSlots(d), "pencil,highlighter,eraser,lasso,undo,convert,send,hand");
+    EXPECT_EQ(parseRadialSlots(serializeRadialSlots(d)), d);
+}
+
+TEST(StudioPalette, emptyOrWrongSizedRadialGoesBackToTheDefault) {
+    EXPECT_EQ(parseRadialSlots(""), defaultRadialSlots());
+    EXPECT_EQ(parseRadialSlots("pencil,eraser"), defaultRadialSlots());
+    EXPECT_EQ(parseRadialSlots("pencil,pencil,pencil,pencil,pencil,pencil,pencil"), defaultRadialSlots());
+    EXPECT_EQ(parseRadialSlots("pencil,pencil,pencil,pencil,pencil,pencil,pencil,pencil,pencil"), defaultRadialSlots());
+}
+
+TEST(StudioPalette, anUnknownRadialIdTakesTheDefaultOfItsPosition) {
+    auto d = defaultRadialSlots();
+    auto got = parseRadialSlots("pencil,bogus,eraser,lasso,undo,,send,hand");
+    EXPECT_EQ(got[0], "pencil");
+    EXPECT_EQ(got[1], d[1]);  // bogus
+    EXPECT_EQ(got[5], d[5]);  // empty position
+    EXPECT_EQ(got[6], "send");
+}
+
+TEST(StudioPalette, radialPositionsMayRepeatAnOption) {
+    std::vector<std::string> slots = {"laser", "laser", "shapes", "redo", "copy", "image", "vspace", "latex"};
+    EXPECT_EQ(parseRadialSlots(serializeRadialSlots(slots)), slots);
+    EXPECT_EQ(parseRadialSlots(" laser , laser,shapes,redo,copy,image,vspace,latex "), slots);
+}
+
+TEST(StudioPalette, everyRadialOptionHasAnIdAnIconAndAName) {
+    for (auto const& o: radialOptions()) {
+        EXPECT_EQ(findRadialOption(o.id), &o) << o.id;
+        EXPECT_NE(std::string(o.icon), "");
+        EXPECT_NE(std::string(o.name), "");
+        if (o.kind == RadialKind::ACTION) {
+            EXPECT_NE(o.action, nullptr) << o.id;
+        }
+    }
+    EXPECT_EQ(findRadialOption("nothing"), nullptr);
+}
