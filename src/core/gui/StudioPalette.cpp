@@ -16,6 +16,8 @@
 #include "util/GtkUtil.h"
 #include "util/i18n.h"
 
+#include "AmbitusTip.h"
+
 namespace ambitus {
 
 namespace {
@@ -143,27 +145,23 @@ std::string shortcutOf(GtkWidget* w, TipInfo const& info) {
     return out;
 }
 
-gboolean onQueryTooltip(GtkWidget* w, gint, gint, gboolean, GtkTooltip* tooltip, TipInfo* info) {
-    gchar* name = g_markup_escape_text(info->name.c_str(), -1);
+std::string tipMarkup(GtkWidget* w, TipInfo const& info) {
+    gchar* name = g_markup_escape_text(info.name.c_str(), -1);
     std::string markup = name;
     g_free(name);
-    if (std::string key = shortcutOf(w, *info); !key.empty()) {
+    if (std::string key = shortcutOf(w, info); !key.empty()) {
         gchar* k = g_markup_escape_text(key.c_str(), -1);
         markup += "  <span alpha=\"70%\">";
         markup += k;
         markup += "</span>";
         g_free(k);
     }
-    gtk_tooltip_set_markup(tooltip, markup.c_str());
-    return true;
+    return markup;
 }
 
+/// The buttons of the palette lie over the page, where the tooltips of GTK do not show: see AmbitusTip.h
 void setTip(GtkWidget* w, const char* name, ToolType keyTool) {
-    gtk_widget_set_tooltip_text(w, name);  // the plain name, should the handler below not answer
-    gtk_widget_set_has_tooltip(w, true);
-    g_signal_connect_data(
-            w, "query-tooltip", G_CALLBACK(onQueryTooltip), new TipInfo{name, keyTool},
-            +[](gpointer p, GClosure*) { delete static_cast<TipInfo*>(p); }, GConnectFlags(0));
+    setOverlayTip(w, [w, info = TipInfo{name, keyTool}]() { return tipMarkup(w, info); });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

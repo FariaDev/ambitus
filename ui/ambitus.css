@@ -275,6 +275,21 @@ tooltip.background {
 }
 tooltip label { color: @theme_bg_color; font-size: 12px; }
 
+/* dica dos botões que ficam sobre a página (AmbitusTip.cpp): janela própria, com a classe amb-tip. O tema vem da
+   classe amb-tip-dark, posta quando a janela principal tem .darkMode, e não do tema GTK: a cor sai exata. */
+window.amb-tip { background: transparent; }
+window.amb-tip label {
+    background-color: #0e0e0e;
+    color: #ffffff;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+window.amb-tip-dark label {
+    background-color: #ffffff;
+    color: #161616;
+}
+
 #mainWindow popover {
     background: @amb_bg;
     border: 1px solid @amb_border;
@@ -713,6 +728,9 @@ popover.amb-optpop .amb-seg button:checked {
 /* espessura: o trilho e o botão são os de #mainWindow scale; aqui só as marcas dos cinco valores */
 popover.amb-optpop scale marks indicator { background: @amb_border_strong; min-width: 1px; min-height: 4px; }
 
+/* sem os glifos I/O do Adwaita no interruptor: são ícones de um GtkImage, que ignora opacity e -gtk-icon-source;
+   só a escala do ícone a zero os faz sumir */
+popover.amb-optpop switch image { -gtk-icon-transform: scale(0); color: transparent; }
 /* interruptores no grafite do acento, não no azul do tema */
 popover.amb-optpop switch:checked { background: @amb_accent; border-color: @amb_accent; }
 popover.amb-optpop switch:checked slider { background: @amb_on_accent; border-color: @amb_on_accent; }

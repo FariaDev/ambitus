@@ -17,6 +17,8 @@
 #include "util/Util.h"
 #include "util/i18n.h"
 
+#include "AmbitusTip.h"
+
 namespace ambitus {
 
 namespace {
@@ -42,7 +44,7 @@ void roundedRect(cairo_t* cr, double x, double y, double w, double h, double r) 
 
 GtkWidget* pillButton(const char* icon, const char* tooltip) {
     GtkWidget* b = gtk_button_new_from_icon_name(icon, GTK_ICON_SIZE_MENU);
-    gtk_widget_set_tooltip_text(b, tooltip);
+    setOverlayTipText(b, tooltip);
     gtk_widget_set_can_focus(b, false);
     return b;
 }
