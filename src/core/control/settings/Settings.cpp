@@ -531,7 +531,14 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("pluginDisabled")) == 0) {
         this->pluginDisabled = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("pageTemplate")) == 0) {
-        this->pageTemplateSettings.parse(reinterpret_cast<const char*>(value));
+        // Ambitus: the former default as it was saved (blue rules, pink margin) moves to the Summa paper;
+        // a template the user changed stays
+        constexpr std::string_view oldDefault = "xoj/template\ncopyLastPageSize=false\ncopyLastPageSettings=true\n"
+                                                "size=595.275591x841.889764\nbackgroundType=lined\n"
+                                                "backgroundColor=#ffffff\n";
+        if (oldDefault != reinterpret_cast<const char*>(value)) {
+            this->pageTemplateSettings.parse(reinterpret_cast<const char*>(value));
+        }
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("sizeUnit")) == 0) {
         this->sizeUnit = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("audioFolder")) == 0) {
