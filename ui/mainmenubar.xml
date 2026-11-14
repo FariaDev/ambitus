@@ -12,7 +12,6 @@
     <item>
      <attribute name="label" translatable="yes">Search notebooks</attribute>
      <attribute name="action">win.search-notebooks</attribute>
-     <attribute name="accel">&lt;Ctrl&gt;k</attribute>
     </item>
     <item>
      <attribute name="label" translatable="true">New</attribute>
@@ -127,7 +126,7 @@
     <item>
      <attribute name="label" translatable="yes">Command palette</attribute>
      <attribute name="action">win.command-palette</attribute>
-     <attribute name="accel">&lt;Ctrl&gt;slash</attribute>
+     <!-- Ctrl+K and Ctrl+/ are set in control/actions/ActionProperties.h -->
     </item>
    </section>
    <section>

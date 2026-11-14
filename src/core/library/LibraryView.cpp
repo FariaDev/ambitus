@@ -259,6 +259,31 @@ auto LibraryView::colorOf(const fs::path& file) const -> std::string {
     return {};
 }
 
+auto LibraryView::allNotebooks() const -> std::vector<NotebookRef> {
+    std::vector<NotebookRef> out;
+    std::set<fs::path> seen;
+    auto add = [&](const Entry& e) {
+        if (seen.insert(e.nb.path).second) {
+            out.push_back({e.nb.path, e.nb.name, e.place});
+        }
+    };
+    for (auto& e: entriesFor({SourceKind::All})) {
+        add(e);
+    }
+    for (auto& e: recentEntries()) {
+        add(e);
+    }
+    return out;
+}
+
+auto LibraryView::recentNotebooks() const -> std::vector<NotebookRef> {
+    std::vector<NotebookRef> out;
+    for (auto& e: recentEntries()) {
+        out.push_back({e.nb.path, e.nb.name, e.place});
+    }
+    return out;
+}
+
 void LibraryView::reindex() {
     if (indexing) {
         indexAgain = true;

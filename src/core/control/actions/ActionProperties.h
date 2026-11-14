@@ -142,6 +142,8 @@ struct ActionProperties<Action::COPY_PAGE_AS_IMAGE> {
 
 template <>
 struct ActionProperties<Action::COMMAND_PALETTE> {
+    // Ctrl+K is the palette of Summa; Ctrl+/ is the key it had here first
+    static constexpr const char* accelerators[] = {"<Ctrl>K", "<Ctrl>slash", nullptr};
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getWindow()->openCommandPalette(); }
 };
 

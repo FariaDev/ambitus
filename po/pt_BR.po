@@ -4977,11 +4977,14 @@ msgstr "Página copiada como imagem."
 msgid "Command palette"
 msgstr "Paleta de comandos"
 
-msgid "Type a command…"
-msgstr "Digite um comando…"
+msgid "Command or notebook…"
+msgstr "Comando ou caderno…"
 
-msgid "No command with that name."
-msgstr "Nenhum comando com esse nome."
+msgid "Nothing with “%s”."
+msgstr "Nada com “%s”."
+
+msgid "Commands"
+msgstr "Comandos"
 
 msgid "Earlier versions…"
 msgstr "Versões anteriores…"

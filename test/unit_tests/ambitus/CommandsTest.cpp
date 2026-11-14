@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "ambitus/Commands.h"
+#include "gui/CommandPalette.h"
 
 using namespace ambitus;
 
@@ -81,4 +82,75 @@ TEST(Commands, theNameStartingWithTheWordComesFirst) {
     EXPECT_EQ(matchCommands(cmds, "editar imagem", 10), std::vector<size_t>{2});
     EXPECT_TRUE(matchCommands(cmds, "imagem zebra", 10).empty());
     EXPECT_EQ(matchCommands(cmds, "", 2).size(), 2u);
+}
+
+namespace {
+std::vector<Candidate> notebooks() {
+    return {{"Resumo para a P1", "Cálculo I"},
+            {"Rascunho à mão", "Cálculo I"},
+            {"Espaços vetoriais", "Álgebra Linear"},
+            {"Lista 2", "Física II"},
+            {"Reta tangente", "Cálculo I"}};
+}
+}  // namespace
+
+TEST(Commands, theThreeSearchesOfThePrototype) {
+    const auto books = notebooks();
+    // "cálc" finds what is in the course Cálculo I, with or without the accent, in any case
+    EXPECT_EQ(rankCandidates(books, "cálc", 10), (std::vector<size_t>{0, 1, 4}));
+    EXPECT_EQ(rankCandidates(books, "CALC", 10), (std::vector<size_t>{0, 1, 4}));
+    // "reta": the name starting with it first, then the others in the order given
+    EXPECT_EQ(rankCandidates(books, "reta", 10), (std::vector<size_t>{4}));
+    // "summa": the command that sends the page, no notebook
+    std::vector<Candidate> commands = {{"Enviar a página ao Summa", ""}, {"Grade de alinhamento", "Exibir"}};
+    EXPECT_EQ(rankCandidates(commands, "summa", 10), std::vector<size_t>{0});
+    EXPECT_TRUE(rankCandidates(books, "summa", 10).empty());
+}
+
+TEST(Commands, theLimitCutsAfterTheOrdering) {
+    std::vector<Candidate> c = {{"Cópia", ""}, {"Copiar", ""}, {"Copiar página", ""}};
+    EXPECT_EQ(rankCandidates(c, "cop", 2), (std::vector<size_t>{0, 1}));
+    EXPECT_TRUE(rankCandidates(c, "cop", 0).empty());
+}
+
+TEST(Commands, theMarkFollowsTheTextWithoutMindingAccents) {
+    using R = std::vector<std::pair<size_t, size_t>>;
+    EXPECT_EQ(highlightRanges("Cálculo I", "calc"), (R{{0, 5}}));  // "Cálc" has the á in two bytes
+    EXPECT_EQ(highlightRanges("Resumo para a P1", "PARA resumo"), (R{{0, 6}, {7, 11}}));
+    EXPECT_EQ(highlightRanges("Lista 2", "zebra"), R{});
+    EXPECT_EQ(highlightRanges("Lista 2", ""), R{});
+    // words that overlap are one mark
+    EXPECT_EQ(highlightRanges("Reta tangente", "ret eta"), (R{{0, 4}}));
+}
+
+TEST(Commands, withNothingTypedTheRecentNotebooksShow) {
+    const auto books = notebooks();
+    std::vector<Candidate> commands = {{"Caneta", ""}, {"Marca-texto", ""}};
+    using S = PaletteSection;
+    auto rows = arrangePalette(commands, books, {4, 0, 3}, "  ");
+    EXPECT_EQ(rows, (std::vector<PaletteRow>{{S::Recent, 4}, {S::Recent, 0}, {S::Recent, 3}}));
+    PaletteLimits two;
+    two.recent = 2;
+    EXPECT_EQ(arrangePalette(commands, books, {4, 0, 3}, "", two).size(), 2u);
+    // no recent notebook: the first commands, not an empty box
+    EXPECT_EQ(arrangePalette(commands, books, {}, ""), (std::vector<PaletteRow>{{S::Commands, 0}, {S::Commands, 1}}));
+}
+
+TEST(Commands, withATextTheCommandsComeBeforeTheNotebooks) {
+    const auto books = notebooks();
+    std::vector<Candidate> commands = {{"Caneta", ""}, {"Calcular área", "Ferramentas"}, {"Zoom", ""}};
+    using S = PaletteSection;
+    auto rows = arrangePalette(commands, books, {0}, "calc");
+    // "calc": one command, and the notebooks of Cálculo I in the order of the list
+    EXPECT_EQ(rows,
+              (std::vector<PaletteRow>{{S::Commands, 1}, {S::Notebooks, 0}, {S::Notebooks, 1}, {S::Notebooks, 4}}));
+    PaletteLimits one;
+    one.notebooks = 1;
+    EXPECT_EQ(arrangePalette(commands, books, {}, "calc", one).size(), 2u);
+    EXPECT_TRUE(arrangePalette(commands, books, {}, "zebra").empty());
+}
+
+TEST(Commands, theBoxFadesAtTheTimesOfTheSumma) {
+    EXPECT_EQ(palette::FADE_IN_MS, 180);
+    EXPECT_EQ(palette::FADE_OUT_MS, 120);
 }

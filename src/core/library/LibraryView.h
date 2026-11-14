@@ -31,6 +31,13 @@
 
 namespace ambitus::library {
 
+/// A notebook as the command box lists it
+struct NotebookRef {
+    fs::path path;
+    std::string name;   ///< file name without the extension
+    std::string place;  ///< course or folder name; may be empty
+};
+
 class LibraryView {
 public:
     struct Actions {
@@ -56,6 +63,11 @@ public:
     void refresh();
     /// Puts the keyboard in the search field.
     void focusSearch();
+    /// Every notebook of the library, newest first, with the recent ones that are outside of it (as scanned by the last
+    /// refresh); what the command box searches
+    std::vector<NotebookRef> allNotebooks() const;
+    /// The notebooks opened lately, as the "Recent" of the library shows them
+    std::vector<NotebookRef> recentNotebooks() const;
     /// Colour of the course the file is in ("#rrggbb"), empty when none
     std::string colorOf(const fs::path& file) const;
     /// Brings the search index up to date in a worker thread.

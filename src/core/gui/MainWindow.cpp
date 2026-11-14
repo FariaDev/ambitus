@@ -158,8 +158,13 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     this->selectionBar = std::make_unique<ambitus::SelectionBar>(control, xournal.get(), overlay);
     this->boardNavigator = std::make_unique<ambitus::BoardNavigator>(control, xournal.get(), overlay);
     this->toast = std::make_unique<ambitus::Toast>(overlay, winXournal);
+    ambitus::CommandPalette::Notebooks paletteBooks;
+    paletteBooks.all = [this] { return library->allNotebooks(); };
+    paletteBooks.recent = [this] { return library->recentNotebooks(); };
+    paletteBooks.open = [control](const fs::path& p) { control->openInTab(p); };  // as the library opens one
     this->commandPalette = std::make_unique<ambitus::CommandPalette>(
-            overlay, GTK_WINDOW(this->window), [this] { return getMenuModel(); }, xournal->getWidget());
+            overlay, GTK_WINDOW(this->window), [this] { return getMenuModel(); }, xournal->getWidget(),
+            std::move(paletteBooks));
 
     setSidebarVisible(control->getSettings()->isSidebarVisible());
 
@@ -385,7 +390,10 @@ void MainWindow::showToastError(const std::string& text, const std::string& deta
 }
 
 void MainWindow::openCommandPalette() {
-    if (commandPalette && !isLibraryShown()) {
+    if (isLibraryShown()) {
+        // the box lives over the page; in the library, Ctrl+K goes on putting the keyboard in its search
+        library->focusSearch();
+    } else if (commandPalette) {
         commandPalette->open();
     }
 }

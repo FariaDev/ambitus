@@ -93,12 +93,12 @@ std::string foldForSearch(const std::string& text) {
     return out;
 }
 
-std::vector<size_t> matchCommands(const std::vector<Command>& commands, const std::string& query, size_t limit) {
+std::vector<size_t> rankCandidates(const std::vector<Candidate>& candidates, const std::string& query, size_t limit) {
     const auto wanted = words(foldForSearch(query));
     std::vector<std::pair<int, size_t>> scored;  // (score, index)
-    for (size_t i = 0; i < commands.size(); i++) {
-        const std::string label = foldForSearch(commands[i].label);
-        const std::string path = foldForSearch(commands[i].path);
+    for (size_t i = 0; i < candidates.size(); i++) {
+        const std::string label = foldForSearch(candidates[i].label);
+        const std::string extra = foldForSearch(candidates[i].extra);
         int score = 0;
         bool all = true;
         for (auto const& w: wanted) {
@@ -109,7 +109,7 @@ std::vector<size_t> matchCommands(const std::vector<Command>& commands, const st
                 score += 2;
             } else if (at != std::string::npos) {
                 score += 1;
-            } else if (path.find(w) == std::string::npos) {
+            } else if (extra.find(w) == std::string::npos) {
                 all = false;
                 break;
             }
@@ -127,6 +127,73 @@ std::vector<size_t> matchCommands(const std::vector<Command>& commands, const st
         out.push_back(i);
     }
     return out;
+}
+
+std::vector<size_t> matchCommands(const std::vector<Command>& commands, const std::string& query, size_t limit) {
+    std::vector<Candidate> candidates;
+    candidates.reserve(commands.size());
+    for (auto const& c: commands) {
+        candidates.push_back({c.label, c.path});
+    }
+    return rankCandidates(candidates, query, limit);
+}
+
+std::vector<std::pair<size_t, size_t>> highlightRanges(const std::string& text, const std::string& query) {
+    // the text folded one character at a time, so that every byte of it knows the characters of `text` it came from
+    std::string folded;
+    std::vector<size_t> begin, end;
+    for (const gchar* p = text.c_str(); *p;) {
+        const gchar* next = g_utf8_next_char(p);
+        const size_t from = static_cast<size_t>(p - text.c_str());
+        const size_t to = static_cast<size_t>(next - text.c_str());
+        for (char c: foldForSearch(std::string(p, next))) {
+            folded += c;
+            begin.push_back(from);
+            end.push_back(std::min(to, text.size()));
+        }
+        p = next;
+    }
+    std::vector<std::pair<size_t, size_t>> found;
+    for (auto const& w: words(foldForSearch(query))) {
+        const auto at = folded.find(w);
+        if (at != std::string::npos) {
+            found.emplace_back(begin[at], end[at + w.size() - 1]);
+        }
+    }
+    std::sort(found.begin(), found.end());
+    std::vector<std::pair<size_t, size_t>> out;
+    for (auto const& r: found) {
+        if (!out.empty() && r.first <= out.back().second) {
+            out.back().second = std::max(out.back().second, r.second);
+        } else {
+            out.push_back(r);
+        }
+    }
+    return out;
+}
+
+std::vector<PaletteRow> arrangePalette(const std::vector<Candidate>& commands, const std::vector<Candidate>& notebooks,
+                                       const std::vector<size_t>& recent, const std::string& query,
+                                       const PaletteLimits& limits) {
+    std::vector<PaletteRow> rows;
+    if (words(query).empty()) {
+        for (size_t i = 0; i < recent.size() && i < limits.recent; i++) {
+            rows.push_back({PaletteSection::Recent, recent[i]});
+        }
+        if (rows.empty()) {
+            for (size_t i = 0; i < commands.size() && i < limits.commands; i++) {
+                rows.push_back({PaletteSection::Commands, i});
+            }
+        }
+        return rows;
+    }
+    for (size_t i: rankCandidates(commands, query, limits.commands)) {
+        rows.push_back({PaletteSection::Commands, i});
+    }
+    for (size_t i: rankCandidates(notebooks, query, limits.notebooks)) {
+        rows.push_back({PaletteSection::Notebooks, i});
+    }
+    return rows;
 }
 
 }  // namespace ambitus
