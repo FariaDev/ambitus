@@ -17,6 +17,7 @@
 #include <functional>
 #include <memory>   // for unique_ptr
 #include <string>   // for string
+#include <vector>   // for vector
 
 #include <gdk/gdk.h>      // for GdkDragContext, GdkEvent
 #include <glib-object.h>  // for GClosure
@@ -82,6 +83,8 @@ public:
 private:
     const ToolbarData* clearToolbar();
     void loadToolbar(ToolbarData* d);
+    /// Ambitus: the Studio shows the bottom bar alone, so the zoom buttons of the preset (in the top bar) go there
+    void updateStudioZoom();
 
 public:
     /**
@@ -227,6 +230,8 @@ private:
     // Toolbars
     std::unique_ptr<ToolMenuHandler> toolbar;
     ToolbarData* selectedToolbar = nullptr;
+    /// Ambitus: the zoom buttons put in the bottom bar for the Studio (empty in the other modes)
+    std::vector<GtkToolItem*> studioZoomItems;
 
     std::unique_ptr<Menubar> menubar;
 

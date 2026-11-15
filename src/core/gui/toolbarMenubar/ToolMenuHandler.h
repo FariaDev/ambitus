@@ -24,6 +24,7 @@
 
 #include "gui/IconNameHelper.h"  // for IconNameHelper
 #include "model/PaperSize.h"
+#include "util/Color.h"  // for Color
 #include "util/raii/GObjectSPtr.h"
 
 class AbstractToolItem;
@@ -84,6 +85,11 @@ public:
      * @param recolor
      */
     void updateColorToolItemsRecoloring(const std::optional<Recolor>& recolor);
+
+    /**
+     * @brief Ambitus: the outline of the colour swatches of the toolbars (the border of the theme)
+     */
+    void updateColorToolItemOutlines(Color outline);
 
     void initToolItems();
     void addPluginItem(ToolbarButtonEntry* t);

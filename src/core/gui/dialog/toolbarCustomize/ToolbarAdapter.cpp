@@ -6,6 +6,7 @@
 
 #include "control/Control.h"                           // for Control
 #include "control/settings/Settings.h"                 // for Settings
+#include "gui/AmbitusColors.h"                         // for borderColor
 #include "gui/MainWindow.h"                            // for MainWindow
 #include "gui/ToolitemDragDrop.h"                      // for ToolItemDragDr...
 #include "gui/toolbarMenubar/AbstractToolItem.h"       // for AbstractToolItem
@@ -275,7 +276,8 @@ void ToolbarAdapter::toolbarDragDataReceivedCb(GtkToolbar* toolbar, GdkDragConte
         auto recolor = r.recolorizeMainView ? std::make_optional(r.recolor) : std::nullopt;
 
         auto namedColor = adapter->palette.getColorAt(d->paletteColorIndex);
-        auto item = std::make_unique<ColorToolItem>(namedColor, recolor);
+        auto item = std::make_unique<ColorToolItem>(namedColor, recolor,
+                                                    ambitus::borderColor(adapter->window->isDarkTheme()));
 
         auto it = item->createToolItem(horizontal);
 

@@ -880,6 +880,85 @@ popover.amb-dlg-pop { padding: 4px; }
 #mainWindow.darkMode .amb-dlg button.amb-dlg-primary:focus,
 #mainWindow.darkMode .amb-dlg button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_dk_bg, 0 0 0 4px @amb_dk_text; }
 
+/* ---------- personalizar barras de ferramentas (ToolbarCustomizeDialog) ----------
+   A janela é própria, e por isso o .darkMode da mainWindow não a alcança: os tokens do tema entram direto e o
+   ToolbarCustomizeDialog põe .darkMode na janela quando o tema é escuro. As abas da esquerda são a navegação do
+   .amb-set (camada, item de 4 px de canto, o escolhido na seleção); as listas são as linhas de lá; o Fechar é o
+   botão fantasma dos cartões. */
+
+window.amb-tbdlg {
+    background: @amb_bg;
+    color: @amb_text;
+    border: 1px solid @amb_border;
+    border-radius: 8px;
+}
+window.amb-tbdlg label.amb-dlg-title {
+    font-family: "STIX Two Text", serif;
+    font-size: 20px;
+    color: @amb_fg_strong;
+}
+window.amb-tbdlg label.amb-tbdlg-hint { color: @amb_text3; font-size: 12px; }
+window.amb-tbdlg notebook > header {
+    background: @amb_layer;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 4px;
+}
+window.amb-tbdlg notebook > header > tabs > tab {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: @amb_text2;
+    font-size: 13px;
+}
+window.amb-tbdlg notebook > header > tabs > tab:hover { background: @amb_hover; color: @amb_text; }
+window.amb-tbdlg notebook > header > tabs > tab:checked {
+    background: @amb_selected;
+    color: @amb_text;
+    font-weight: 500;
+}
+window.amb-tbdlg notebook > stack { border: none; }
+window.amb-tbdlg notebook scrolledwindow { background: transparent; }
+window.amb-tbdlg notebook list { background: @amb_bg; }
+window.amb-tbdlg notebook list row {
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: @amb_text;
+    font-size: 13px;
+}
+window.amb-tbdlg notebook list row:hover { background: @amb_hover; }
+window.amb-tbdlg button.amb-dlg-ghost {
+    min-height: 32px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background: transparent;
+    background-image: none;
+    color: @amb_text2;
+    font-size: 13px;
+}
+window.amb-tbdlg button.amb-dlg-ghost:hover { background: @amb_hover; color: @amb_text; }
+window.amb-tbdlg button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_bg, 0 0 0 4px @amb_text; }
+
+window.amb-tbdlg.darkMode { background: @amb_dk_bg; color: @amb_dk_text; border-color: @amb_dk_border; }
+window.amb-tbdlg.darkMode label.amb-dlg-title { color: @amb_dk_fg_strong; }
+window.amb-tbdlg.darkMode label.amb-tbdlg-hint { color: @amb_dk_text3; }
+window.amb-tbdlg.darkMode notebook > header { background: @amb_dk_layer; }
+window.amb-tbdlg.darkMode notebook > header > tabs > tab { color: @amb_dk_text2; }
+window.amb-tbdlg.darkMode notebook > header > tabs > tab:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+window.amb-tbdlg.darkMode notebook > header > tabs > tab:checked {
+    background: @amb_dk_selected;
+    color: @amb_dk_text;
+}
+window.amb-tbdlg.darkMode notebook list { background: @amb_dk_bg; }
+window.amb-tbdlg.darkMode notebook list row { color: @amb_dk_text; }
+window.amb-tbdlg.darkMode notebook list row:hover { background: @amb_dk_hover; }
+window.amb-tbdlg.darkMode button.amb-dlg-ghost { color: @amb_dk_text2; }
+window.amb-tbdlg.darkMode button.amb-dlg-ghost:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+window.amb-tbdlg.darkMode button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_dk_bg, 0 0 0 4px @amb_dk_text; }
+
 /* ---------- LaTeX (protótipo r6, seção 8; LatexCard.cpp) ----------
    É o cartão de .amb-dlg: título, botões e a linha de erro (.amb-dlg-problem) são os de lá. Aqui só a prévia (caixa
    com fio e canto de 4 px; o papel é desenhado no código, branco ou preto conforme a tinta) e o campo da fórmula: o

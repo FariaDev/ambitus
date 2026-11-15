@@ -26,7 +26,7 @@ class ActionDatabase;
 
 class ColorToolItem: public AbstractToolItem {
 public:
-    ColorToolItem(NamedColor namedColor, const std::optional<Recolor>& recolor);
+    ColorToolItem(NamedColor namedColor, const std::optional<Recolor>& recolor, Color outline = Colors::black);
     ColorToolItem(ColorToolItem const&) = delete;
     ColorToolItem(ColorToolItem&&) noexcept = delete;
     auto operator=(ColorToolItem const&) -> ColorToolItem& = delete;
@@ -54,10 +54,15 @@ public:
      */
     void updateSecondaryColor(const std::optional<Recolor>& recolor);
 
+    /// Ambitus: the 1px outline of the swatch follows the theme, so a black swatch shows over the dark toolbar
+    void setOutline(Color color);
+
     xoj::util::WidgetSPtr createItem(bool horizontal) override;
 
 private:
     NamedColor namedColor;
     xoj::util::GVariantSPtr target;       ///< Contains the color in ARGB as a uint32_t
     std::optional<Color> secondaryColor;  //< color for small disk when recoloring is active
+    Color outline;                        ///< Ambitus: the border of the theme, not the black one of Xournal++
+    GtkWidget* icon = nullptr;            ///< The swatch on the toolbar, while it exists
 };

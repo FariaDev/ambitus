@@ -59,6 +59,9 @@ ToolbarCustomizeDialog::ToolbarCustomizeDialog(GladeSearchpath* gladeSearchPath,
         palette(handler->getControl()->getPalette()) {
     Builder builder(gladeSearchPath, UI_FILE);
     window.reset(GTK_WINDOW(builder.get(UI_DIALOG_NAME)));
+    if (win->isDarkTheme()) {  // the dialog is a window of its own: it takes the dark tokens of the main one
+        gtk_widget_add_css_class(GTK_WIDGET(window.get()), "darkMode");
+    }
     notebook = GTK_NOTEBOOK(builder.get("notebook"));
 
     using Cat = AbstractToolItem::Category;

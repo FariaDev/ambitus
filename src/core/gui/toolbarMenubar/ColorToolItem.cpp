@@ -7,10 +7,11 @@
 #include "util/GtkUtil.h"                       // for setToggleButtonUnreleasable
 #include "util/gtk4_helper.h"                   // for gtk_button_set_child
 
-ColorToolItem::ColorToolItem(NamedColor namedColor, const std::optional<Recolor>& recolor):
+ColorToolItem::ColorToolItem(NamedColor namedColor, const std::optional<Recolor>& recolor, Color outline):
         AbstractToolItem(std::string("COLOR(") + std::to_string(namedColor.getIndex()) + ")", Category::COLORS),
         namedColor(std::move(namedColor)),
-        target(xoj::util::makeGVariantSPtr(this->namedColor.getColor())) {
+        target(xoj::util::makeGVariantSPtr(this->namedColor.getColor())),
+        outline(outline) {
     if (recolor) {
         secondaryColor = std::make_optional(recolor->convertColor(namedColor.getColor()));
     } else {
@@ -18,7 +19,11 @@ ColorToolItem::ColorToolItem(NamedColor namedColor, const std::optional<Recolor>
     }
 }
 
-ColorToolItem::~ColorToolItem() = default;
+ColorToolItem::~ColorToolItem() {
+    if (this->icon) {
+        g_object_remove_weak_pointer(G_OBJECT(this->icon), reinterpret_cast<gpointer*>(&this->icon));
+    }
+}
 
 auto ColorToolItem::getColor() const -> Color { return this->namedColor.getColor(); }
 
@@ -31,7 +36,12 @@ auto ColorToolItem::createItem(bool) -> xoj::util::WidgetSPtr {
     xoj::util::gtk::setToggleButtonUnreleasable(GTK_TOGGLE_BUTTON(btn));
 
     gtk_widget_set_tooltip_text(btn, this->namedColor.getName().c_str());
-    gtk_button_set_child(GTK_BUTTON(btn), getNewToolIcon());
+    if (this->icon) {
+        g_object_remove_weak_pointer(G_OBJECT(this->icon), reinterpret_cast<gpointer*>(&this->icon));
+    }
+    this->icon = getNewToolIcon();
+    g_object_add_weak_pointer(G_OBJECT(this->icon), reinterpret_cast<gpointer*>(&this->icon));
+    gtk_button_set_child(GTK_BUTTON(btn), this->icon);
 
 
     // For the sake of deprecated GtkToolbar, wrap the button in a GtkToolItem
@@ -63,10 +73,21 @@ auto ColorToolItem::createItem(bool) -> xoj::util::WidgetSPtr {
 auto ColorToolItem::getToolDisplayName() const -> std::string { return this->namedColor.getName(); }
 
 auto ColorToolItem::getNewToolIcon() const -> GtkWidget* {
-    return ColorIcon::newGtkImage(this->namedColor.getColor(), 16, true, this->secondaryColor);
+    return ColorIcon::newGtkImage(this->namedColor.getColor(), 16, true, this->secondaryColor, this->outline);
 }
 
 void ColorToolItem::updateColor(const Palette& palette) { namedColor = palette.getColorAt(namedColor.getIndex()); }
+
+void ColorToolItem::setOutline(Color color) {
+    if (this->outline == color) {
+        return;
+    }
+    this->outline = color;
+    if (this->icon) {
+        auto img = ColorIcon::newGdkPixbuf(this->namedColor.getColor(), 16, true, this->secondaryColor, this->outline);
+        gtk_image_set_from_pixbuf(GTK_IMAGE(this->icon), img.get());
+    }
+}
 
 void ColorToolItem::updateSecondaryColor(const std::optional<Recolor>& recolor) {
     if (recolor) {

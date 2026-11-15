@@ -9,8 +9,9 @@ namespace ColorIcon {
 /**
  * Create a new GtkImage with preview color
  */
-auto newGtkImage(Color color, int size, bool circle, std::optional<Color> secondaryColor) -> GtkWidget* {
-    xoj::util::GObjectSPtr<GdkPixbuf> img(newGdkPixbuf(color, size, circle, secondaryColor));
+auto newGtkImage(Color color, int size, bool circle, std::optional<Color> secondaryColor, std::optional<Color> outline)
+        -> GtkWidget* {
+    xoj::util::GObjectSPtr<GdkPixbuf> img(newGdkPixbuf(color, size, circle, secondaryColor, outline));
     GtkWidget* w = gtk_image_new_from_pixbuf(img.get());
     gtk_widget_show(w);
     return w;
@@ -19,7 +20,7 @@ auto newGtkImage(Color color, int size, bool circle, std::optional<Color> second
 /**
  * Create a new GdkPixbuf* with preview color
  */
-auto newGdkPixbuf(Color color, int size, bool circle, std::optional<Color> secondaryColor)
+auto newGdkPixbuf(Color color, int size, bool circle, std::optional<Color> secondaryColor, std::optional<Color> outline)
         -> xoj::util::GObjectSPtr<GdkPixbuf> {
     xoj::util::CairoSurfaceSPtr buf(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size, size), xoj::util::adopt);
     xoj::util::CairoSPtr cr(cairo_create(buf.get()), xoj::util::adopt);
@@ -37,7 +38,7 @@ auto newGdkPixbuf(Color color, int size, bool circle, std::optional<Color> secon
     }
     cairo_fill_preserve(cr.get());
 
-    cairo_set_source_rgba(cr.get(), 0, 0, 0, 1);
+    Util::cairo_set_source_rgbi(cr.get(), outline.value_or(Colors::black), 1);
     cairo_set_line_width(cr.get(), 1);
     cairo_stroke(cr.get());
 

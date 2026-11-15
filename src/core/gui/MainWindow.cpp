@@ -25,11 +25,13 @@
 #include "gui/GladeGui.h"                               // for GladeGui
 #include "gui/PdfFloatingToolbox.h"                     // for PdfFloatingToolbox
 #include "gui/SearchBar.h"                              // for SearchBar
+#include "gui/ToolitemDragDrop.h"                       // for ToolitemDragDrop
 #include "gui/inputdevices/InputEvents.h"               // for INPUT_DEVICE_TOUC...
 #include "gui/menus/menubar/Menubar.h"                  // for Menubar
 #include "gui/menus/menubar/ToolbarSelectionSubmenu.h"  // for ToolbarSelectionSubmenu
 #include "gui/scroll/ScrollHandling.h"                  // for ScrollHandling
 #include "gui/sidebar/Sidebar.h"                        // for Sidebar
+#include "gui/toolbarMenubar/AbstractToolItem.h"        // for AbstractToolItem
 #include "gui/toolbarMenubar/ToolMenuHandler.h"         // for ToolMenuHandler
 #include "gui/toolbarMenubar/model/ToolbarData.h"       // for ToolbarData
 #include "gui/toolbarMenubar/model/ToolbarModel.h"      // for ToolbarModel
@@ -63,6 +65,7 @@
 #include "TitleBar.h"            // for TitleBar
 #include "Toast.h"               // for Toast
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
+#include "ToolbarPalette.h"      // for paletteFileForToolbar
 #include "VersionsPanel.h"
 #include "XournalView.h"         // for XournalView
 #include "config-dev.h"          // for TOOLBAR_CONFIG
@@ -330,6 +333,7 @@ void MainWindow::applyEditorMode() {
     // the library has no menu bar: the whole menu is under "⋯" in the title bar
     gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(this->window),
                                             classic && !isLibraryShown() && settings->isMenubarVisible());
+    updateStudioZoom();  // before the visibility of the bars, which counts the items of the bottom one
     for (size_t i = 0; i < TOOLBAR_DEFINITIONS_LEN; i++) {
         if (i >= TBFloatFirst && i <= TBFloatLast) {
             continue;  // the floating toolbox keeps its own
@@ -613,6 +617,9 @@ void MainWindow::updateColorscheme() {
     auto props = getThemeProperties(this->window);
 
     this->darkMode = (props.dark && variant != THEME_VARIANT_FORCE_LIGHT) || variant == THEME_VARIANT_FORCE_DARK;
+
+    // Ambitus: the outline of the colour swatches is the border of the theme, which the theme change replaces
+    this->toolbar->updateColorToolItemOutlines(ambitus::borderColor(this->darkMode));
 
     // Set up icons
     {
@@ -1016,7 +1023,26 @@ auto MainWindow::windowMaximizedCallback(GObject* window, GParamSpec*, MainWindo
 void MainWindow::toolbarSelected(const std::string& id) {
     const auto& toolbars = toolbar->getModel()->getToolbars();
     auto it = std::find_if(toolbars.begin(), toolbars.end(), [&](const auto& d) { return d->getId() == id; });
-    toolbarSelected(it == toolbars.end() ? nullptr : it->get());
+    ToolbarData* d = it == toolbars.end() ? nullptr : it->get();
+
+    // Ambitus: the presets of the house bring the palette they were made for; a palette chosen by the person stays
+    Settings* settings = control->getSettings();
+    const std::string palette =
+            d ? ambitus::paletteFileForToolbar(d->getId(), settings->getColorPaletteSetting().filename().string()) : "";
+    const bool same = d && this->selectedToolbar == d;
+    if (!palette.empty()) {
+        settings->setColorPaletteSetting(Util::getBuiltInPaletteDirectoryPath() / palette);
+        control->loadPaletteFromSettings();
+    }
+
+    toolbarSelected(d);
+
+    if (!palette.empty()) {
+        if (same) {  // the colour buttons follow the palette even when the bar itself stays
+            this->reloadToolbars();
+        }
+        settings->save();
+    }
 }
 
 void MainWindow::toolbarSelected(ToolbarData* d) {
@@ -1032,6 +1058,9 @@ void MainWindow::toolbarSelected(ToolbarData* d) {
 }
 
 auto MainWindow::clearToolbar() -> const ToolbarData* {
+    // the Studio zoom buttons go with the bars they were put in
+    this->studioZoomItems.clear();
+
     if (this->selectedToolbar != nullptr) {
         for (size_t i = 0; i < TOOLBAR_DEFINITIONS_LEN; i++) {
             ToolMenuHandler::unloadToolbar(this->toolbarWidgets[i].get());
@@ -1050,7 +1079,71 @@ void MainWindow::loadToolbar(ToolbarData* d) {
                             TOOLBAR_DEFINITIONS[i].horizontal);
     }
 
+    this->updateStudioZoom();
     this->floatingToolbox->flagRecalculateSizeRequired();
+}
+
+void MainWindow::updateStudioZoom() {
+    GtkWidget* bottom = nullptr;
+    for (size_t i = 0; i < TOOLBAR_DEFINITIONS_LEN; i++) {
+        if (std::string_view(TOOLBAR_DEFINITIONS[i].guiName) == "tbBottom1") {
+            bottom = this->toolbarWidgets[i].get();
+            break;
+        }
+    }
+    if (!bottom) {
+        return;
+    }
+
+    auto mode = static_cast<ambitus::EditorMode>(control->getSettings()->getEditorMode());
+    const bool board = control->isBoardOpen() && !isLibraryShown();
+    const bool studio = (mode == ambitus::EditorMode::STUDIO || board) && !isLibraryShown();
+
+    if (!studio) {
+        for (GtkToolItem* it: studioZoomItems) {
+            if (gtk_widget_get_parent(GTK_WIDGET(it)) == bottom) {
+                gtk_container_remove(GTK_CONTAINER(bottom), GTK_WIDGET(it));
+            }
+        }
+        studioZoomItems.clear();
+        return;
+    }
+    if (!studioZoomItems.empty() || this->toolbar->getToolItems().empty()) {
+        return;  // already there, or the tool items are not built yet
+    }
+
+    // the bottom bar alone has no zoom: the buttons of the preset are in the top bar, which the Studio hides
+    std::vector<std::string> present;
+    int position = -1;
+    const int count = gtk_toolbar_get_n_items(GTK_TOOLBAR(bottom));
+    for (int i = 0; i < count; i++) {
+        GtkWidget* widget = GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(bottom), i));
+        if (auto* data = ToolitemDragDrop::metadataGetMetadata(widget); data && data->item) {
+            present.push_back(data->item->getId());
+            if (data->item->getId() == "ZOOM_SLIDER") {
+                position = i;  // the zoom buttons go before the slider, as in the other bars
+            }
+        }
+    }
+
+    for (const char* id: {"ZOOM_OUT", "ZOOM_IN", "ZOOM_FIT"}) {
+        if (std::find(present.begin(), present.end(), id) != present.end()) {
+            continue;  // the preset already brings this one in its bottom bar
+        }
+        for (const auto& item: this->toolbar->getToolItems()) {
+            if (item->getId() != id) {
+                continue;
+            }
+            auto toolItem = item->createToolItem(true);
+            gtk_toolbar_insert(GTK_TOOLBAR(bottom), GTK_TOOL_ITEM(toolItem.get()), position);
+            ToolitemDragDrop::attachMetadata(toolItem.get(), -1, item.get());
+            this->studioZoomItems.push_back(GTK_TOOL_ITEM(toolItem.get()));
+            if (position >= 0) {
+                position++;
+            }
+            break;
+        }
+    }
 }
 
 void MainWindow::reloadToolbars() {

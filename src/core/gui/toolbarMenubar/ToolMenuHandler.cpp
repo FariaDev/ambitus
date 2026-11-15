@@ -8,8 +8,10 @@
 #include "control/ScrollHandler.h"                   // for ScrollHandler
 #include "control/actions/ActionDatabase.h"          // for ActionDatabase
 #include "control/settings/Settings.h"               // for Settings
+#include "gui/AmbitusColors.h"                       // for borderColor
 #include "gui/GladeGui.h"                            // for GladeGui
 #include "gui/GladeSearchpath.h"
+#include "gui/MainWindow.h"        // for MainWindow
 #include "gui/ToolitemDragDrop.h"  // for ToolitemDragDrop
 #include "gui/menus/popoverMenus/PageTypeSelectionPopover.h"
 #include "gui/toolbarMenubar/model/ColorPalette.h"  // for Palette
@@ -129,8 +131,8 @@ void ToolMenuHandler::load(const ToolbarData* d, GtkWidget* toolbar, const char*
 
                     count++;
                     const NamedColor& namedColor = palette.getColorAt(paletteIndex);
-                    auto& item =
-                            this->toolbarColorItems.emplace_back(std::make_unique<ColorToolItem>(namedColor, recolor));
+                    auto& item = this->toolbarColorItems.emplace_back(std::make_unique<ColorToolItem>(
+                            namedColor, recolor, ambitus::borderColor(this->control->getWindow()->isDarkTheme())));
 
                     auto it = item->createToolItem(horizontal);
                     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), GTK_TOOL_ITEM(it.get()), -1);
@@ -545,6 +547,12 @@ void ToolMenuHandler::updateColorToolItems(const Palette& palette) {
 void ToolMenuHandler::updateColorToolItemsRecoloring(const std::optional<Recolor>& recolor) {
     for (const auto& it: this->toolbarColorItems) {
         it->updateSecondaryColor(recolor);
+    }
+}
+
+void ToolMenuHandler::updateColorToolItemOutlines(Color outline) {
+    for (const auto& it: this->toolbarColorItems) {
+        it->setOutline(outline);
     }
 }
 
