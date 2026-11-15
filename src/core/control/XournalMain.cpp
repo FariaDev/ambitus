@@ -24,6 +24,9 @@
 #if !defined(_WIN32) && !defined(__APPLE__)
 #include <fontconfig/fontconfig.h>  // for FcConfigAppFontAddDir
 #endif
+#ifdef __APPLE__
+#include <CoreText/CoreText.h>  // for CTFontManagerRegisterFontsForURL
+#endif
 
 #include "ambitus/Folders.h"                 // for adoptXournalppFolders
 #include "control/RecentManager.h"           // for RecentManager
@@ -363,14 +366,40 @@ auto findResourcePath(const fs::path& searchFile) -> fs::path {
  * fonts installed on the system. Only with fontconfig; Windows and macOS still fall back to the system fonts.
  */
 void registerBundledFonts(GladeSearchpath* gladePath) {
-#if !defined(_WIN32) && !defined(__APPLE__)
+#if !defined(_WIN32)
     const auto dir = gladePath->getFirstSearchPath() / "fonts";
     if (!fs::is_directory(dir)) {
         return;
     }
+#endif
+#if !defined(_WIN32) && !defined(__APPLE__)
     if (!FcConfigAppFontAddDir(nullptr, reinterpret_cast<const FcChar8*>(dir.u8string().c_str()))) {
         g_warning("Could not register the fonts in %s", dir.u8string().c_str());
     }
+#elif defined(__APPLE__)
+    // Pango draws with Core Text on macOS: the fonts are registered for this process only
+    for (const auto& entry: fs::directory_iterator(dir)) {
+        const auto ext = entry.path().extension();
+        if (ext != ".ttf" && ext != ".otf") {
+            continue;
+        }
+        const std::string file = entry.path().string();
+        CFURLRef url = CFURLCreateFromFileSystemRepresentation(nullptr, reinterpret_cast<const UInt8*>(file.c_str()),
+                                                               static_cast<CFIndex>(file.size()), false);
+        CFErrorRef error = nullptr;
+        if (url && !CTFontManagerRegisterFontsForURL(url, kCTFontManagerScopeProcess, &error)) {
+            g_warning("Could not register the font %s", file.c_str());
+        }
+        if (error) {
+            CFRelease(error);
+        }
+        if (url) {
+            CFRelease(url);
+        }
+    }
+    // GTK on macOS counts 72 points per inch, Linux 96: without this every size in points (the CSS) is a quarter
+    // smaller
+    gdk_screen_set_resolution(gdk_screen_get_default(), 96.0);
 #endif
 }
 
