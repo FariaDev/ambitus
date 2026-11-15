@@ -20,6 +20,16 @@ GtkWidget* iconButton(const char* icon, const char* action, const char* tooltip)
 TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(EditorMode)> onMode):
         window(window), moreMenu([window] { return window; }), onMode(std::move(onMode)) {
     moreMenu.setFallbackAccels(menu);
+    // the tab menu (right button on a tab) closes through this action, with the index of the tab
+    if (G_IS_ACTION_MAP(window)) {
+        GSimpleAction* closeTab = g_simple_action_new("close-tab", G_VARIANT_TYPE_UINT64);
+        g_signal_connect(closeTab, "activate", G_CALLBACK(+[](GSimpleAction*, GVariant* p, TitleBar* self) {
+                             self->closeLater(static_cast<size_t>(g_variant_get_uint64(p)));
+                         }),
+                         this);
+        g_action_map_add_action(G_ACTION_MAP(window), G_ACTION(closeTab));
+        g_object_unref(closeTab);
+    }
     bar = gtk_header_bar_new();
     gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(bar), true);
     addClass(bar, "amb-titlebar");
@@ -70,6 +80,25 @@ TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(Edito
 
     gtk_widget_show_all(bar);
     rebuildTabs();
+}
+
+namespace {
+/// Whether the point (x, y) of `from` falls on `target`, a widget inside it
+bool overWidget(GtkWidget* from, GtkWidget* target, double x, double y) {
+    int tx = 0, ty = 0;
+    if (!gtk_widget_translate_coordinates(from, target, static_cast<int>(x), static_cast<int>(y), &tx, &ty)) {
+        return false;
+    }
+    GtkAllocation a;
+    gtk_widget_get_allocation(target, &a);
+    return tx >= 0 && ty >= 0 && tx < a.width && ty < a.height;
+}
+}  // namespace
+
+void TitleBar::openTabMenu(GtkWidget* tab, size_t index) {
+    GtkWidget* box = moreMenu.begin(tab, GTK_POS_BOTTOM, MENU_WIDTH);
+    moreMenu.addItem(box, "xopp-x", _("Close"), "close-tab", g_variant_new_uint64(index));
+    moreMenu.popup();
 }
 
 void TitleBar::openMenu() {
@@ -155,6 +184,12 @@ void TitleBar::rebuildTabs() {
     gtk_container_add(GTK_CONTAINER(libraryTab), lbox);
     gtk_actionable_set_action_name(GTK_ACTIONABLE(libraryTab), "win.library");
     addClass(libraryTab, "amb-tab");
+    // the right button of the header bar opens the window menu, whose "Close" closes the whole window
+    g_signal_connect(libraryTab, "button-press-event",
+                     G_CALLBACK(+[](GtkWidget*, GdkEventButton* e, gpointer) -> gboolean {
+                         return e->button == GDK_BUTTON_SECONDARY;
+                     }),
+                     nullptr);
     if (!editorShown) {
         addClass(libraryTab, "active");
     }
@@ -201,13 +236,9 @@ void TitleBar::rebuildTabs() {
             addClass(x, "amb-tab-close");
             gtk_widget_set_tooltip_text(x, _("Close"));
             gtk_widget_set_valign(x, GTK_ALIGN_CENTER);
-            g_object_set_data(G_OBJECT(x), "amb-index", GSIZE_TO_POINTER(i));
-            g_signal_connect(x, "clicked", G_CALLBACK(+[](GtkWidget* w, TitleBar* self) {
-                                 size_t i = GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(w), "amb-index"));
-                                 self->closeLater(i);
-                             }),
-                             this);
             gtk_container_add(GTK_CONTAINER(box), x);
+            // GtkButton puts its input window over its children: the x never gets the click, the tab does
+            g_object_set_data(G_OBJECT(tab), "amb-close", x);
         }
         gtk_container_add(GTK_CONTAINER(tab), box);
 
@@ -219,15 +250,33 @@ void TitleBar::rebuildTabs() {
                              }
                          }),
                          this);
-        // the middle button closes, as in a browser
+        // the middle button closes, as in a browser, and so does the left one on the x
         g_signal_connect(tab, "button-release-event",
                          G_CALLBACK(+[](GtkWidget* w, GdkEventButton* e, TitleBar* self) -> gboolean {
-                             if (e->button != GDK_BUTTON_MIDDLE || !self->onClose) {
+                             size_t i = GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(w), "amb-index"));
+                             if (!self->onClose || i >= self->items.size() || !self->items[i].closable) {
+                                 return false;
+                             }
+                             if (e->button == GDK_BUTTON_MIDDLE) {
+                                 self->closeLater(i);
+                                 return true;
+                             }
+                             auto* x = static_cast<GtkWidget*>(g_object_get_data(G_OBJECT(w), "amb-close"));
+                             if (e->button == GDK_BUTTON_PRIMARY && x && overWidget(w, x, e->x, e->y)) {
+                                 self->closeLater(i);  // the click still activates the tab, as closing does first
+                             }
+                             return false;
+                         }),
+                         this);
+        // the right button: the menu of the tab, not the one of the window
+        g_signal_connect(tab, "button-press-event",
+                         G_CALLBACK(+[](GtkWidget* w, GdkEventButton* e, TitleBar* self) -> gboolean {
+                             if (e->button != GDK_BUTTON_SECONDARY) {
                                  return false;
                              }
                              size_t i = GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(w), "amb-index"));
                              if (i < self->items.size() && self->items[i].closable) {
-                                 self->closeLater(i);
+                                 self->openTabMenu(w, i);
                              }
                              return true;
                          }),

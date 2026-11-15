@@ -61,6 +61,8 @@ private:
     static constexpr int MENU_WIDTH = 292;  ///< px of the column of the "⋯" menu (300 with the padding, as in the r6)
 
     void openMenu();
+    /// The menu of a document tab (right button): close it
+    void openTabMenu(GtkWidget* tab, size_t index);
     void rebuildTabs();
     void closeLater(size_t index);
 
