@@ -1722,3 +1722,11 @@ label.amb-setup-kbd {
 #mainWindow.darkMode .amb-setup label.amb-opt-sub { color: @amb_dk_text3; }
 #mainWindow.darkMode .amb-setup label.amb-opt-tag { color: #8957d0; }
 #mainWindow.darkMode label.amb-setup-kbd { border-color: @amb_dk_border; background-color: @amb_dk_layer; color: @amb_dk_text; }
+
+/* Bars being customized: a quiet dashed outline in the theme, not the orange of Xournal++ */
+#mainWindow toolbar.editing {
+    border: 1px dashed @amb_border_strong;
+    border-radius: 4px;
+    box-shadow: none;
+}
+#mainWindow.darkMode toolbar.editing { border-color: @amb_dk_border_strong; }

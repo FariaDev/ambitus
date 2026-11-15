@@ -1502,7 +1502,7 @@ msgstr "Não foi possível interpretar o arquivo toolbar.ini personalizado: {1}\
 
 #: ../src/core/gui/toolbarMenubar/ToolMenuHandler.cpp:280
 msgid "New Xournal"
-msgstr "Novo Xournal"
+msgstr "Novo caderno"
 
 #: ../src/core/gui/toolbarMenubar/ToolMenuHandler.cpp:283
 msgid "Export as PDF"

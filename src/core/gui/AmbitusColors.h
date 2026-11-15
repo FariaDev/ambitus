@@ -17,8 +17,9 @@ namespace ambitus {
 
 /// amb_accent / amb_dk_accent: the ring of the current page and its number
 constexpr Color accentColor(bool dark) { return dark ? Color{0xffe6e6e6U} : Color{0xff303030U}; }
-/// amb_border / amb_dk_border: the 1px outline of the colour swatches of the toolbar
-constexpr Color borderColor(bool dark) { return dark ? Color{0xff393939U} : Color{0xffe0e0e0U}; }
+/// amb_border / amb_dk_border_strong: the 1px outline of the colour swatches of the toolbar (the dark border alone
+/// is too faint for the black swatch on the dark bar)
+constexpr Color borderColor(bool dark) { return dark ? Color{0xff6f6f6fU} : Color{0xffe0e0e0U}; }
 /// amb_on_accent / amb_dk_on_accent: what is written over the accent
 constexpr Color onAccentColor(bool dark) { return dark ? Color{0xff161616U} : Color{0xffffffffU}; }
 
