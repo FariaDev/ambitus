@@ -33,6 +33,11 @@ TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(Edito
     bar = gtk_header_bar_new();
     gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(bar), true);
     addClass(bar, "amb-titlebar");
+#ifdef __APPLE__
+    // macOS: the window buttons on the left, in the order of the system, drawn as its three lights (ambitus.css)
+    gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(bar), "close,minimize,maximize:");
+    addClass(bar, "amb-mac");
+#endif
 
     // left: the tabs (no mark: the Library tab comes first, as in Summa)
     strip = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);

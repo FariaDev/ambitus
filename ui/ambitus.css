@@ -610,6 +610,24 @@ headerbar.amb-titlebar button {
 headerbar.amb-titlebar button:hover { background: @amb_hover; color: @amb_text; }
 headerbar.amb-titlebar button.amb-tb-icon { min-width: 28px; padding: 0 4px; }
 
+/* macOS: os três botões da janela à esquerda, como os do sistema (vermelho, amarelo, verde; o símbolo só no hover) */
+headerbar.amb-titlebar.amb-mac button.titlebutton {
+    min-width: 12px;
+    min-height: 12px;
+    padding: 0;
+    margin: 0 4px;
+    border-radius: 50%;
+    -gtk-icon-transform: scale(0.6);
+    color: transparent;
+}
+headerbar.amb-titlebar.amb-mac button.titlebutton.close { background: #ff5f57; }
+headerbar.amb-titlebar.amb-mac button.titlebutton.minimize { background: #febc2e; }
+headerbar.amb-titlebar.amb-mac button.titlebutton.maximize { background: #28c840; }
+headerbar.amb-titlebar.amb-mac:backdrop button.titlebutton { background: @amb_border; }
+headerbar.amb-titlebar.amb-mac box.left:hover button.titlebutton,
+headerbar.amb-titlebar.amb-mac button.titlebutton:hover { color: rgba(0, 0, 0, 0.6); }
+headerbar.amb-titlebar.amb-mac .amb-tabs { margin-left: 10px; }
+
 /* abas: a biblioteca e um documento por aba; a ativa em negrito com o traço embaixo */
 headerbar.amb-titlebar .amb-tabs { margin-left: 2px; }
 headerbar.amb-titlebar button.amb-tab {
