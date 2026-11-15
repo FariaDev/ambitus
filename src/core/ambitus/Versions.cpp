@@ -45,6 +45,43 @@ bool parseName(const std::string& name, Clock::time_point& out) {
     g_date_time_unref(dt);
     return true;
 }
+constexpr const char* ORIGIN_FILE = "origem.txt";
+constexpr const char* SAVED_FILE = "salvo.txt";
+
+/// SHA-1 of the content of a file, in hex; empty when it cannot be read
+std::string fileSha1(const fs::path& file) {
+    std::ifstream in(file, std::ios::binary);
+    if (!in) {
+        return {};
+    }
+    GChecksum* sum = g_checksum_new(G_CHECKSUM_SHA1);
+    char buf[64 * 1024];
+    while (in.read(buf, sizeof(buf)) || in.gcount() > 0) {
+        g_checksum_update(sum, reinterpret_cast<const guchar*>(buf), static_cast<gssize>(in.gcount()));
+    }
+    std::string out = g_checksum_get_string(sum);
+    g_checksum_free(sum);
+    return out;
+}
+
+/// The first line of a small text file, without the line end; empty when there is none
+std::string firstLine(const fs::path& file) {
+    std::ifstream in(file);
+    std::string line;
+    std::getline(in, line);
+    return line;
+}
+
+bool hasCopies(const fs::path& folder) {
+    std::error_code ec;
+    Clock::time_point t;
+    for (auto const& entry: fs::directory_iterator(folder, ec)) {
+        if (parseName(entry.path().filename().string(), t)) {
+            return true;
+        }
+    }
+    return false;
+}
 }  // namespace
 
 fs::path folderFor(const fs::path& root, const fs::path& notebook) {
@@ -101,6 +138,8 @@ bool followMove(const fs::path& root, const fs::path& from, const fs::path& to, 
             return false;
         }
     }
+    // the folder now belongs to the new path (a copied origem.txt would still name the old one)
+    std::ofstream(target / ORIGIN_FILE, std::ios::trunc) << char_cast(to.u8string()) << "\n";
     if (keepSource) {
         return true;
     }
@@ -156,12 +195,65 @@ bool keep(const fs::path& root, const fs::path& notebook, Clock::time_point now,
         return false;
     }
     // which notebook this folder is of, for whoever looks at it by hand
-    std::ofstream(folder / "origem.txt", std::ios::trunc) << char_cast(notebook.u8string()) << "\n";
+    std::ofstream(folder / ORIGIN_FILE, std::ios::trunc) << char_cast(notebook.u8string()) << "\n";
     existing = list(root, notebook);
     for (size_t i = keepCount; i < existing.size(); i++) {
         fs::remove(existing[i].file, ec);
     }
     return true;
+}
+
+void markSaved(const fs::path& root, const fs::path& notebook) {
+    const fs::path folder = folderFor(root, notebook);
+    std::error_code ec;
+    if (!fs::is_directory(folder, ec)) {
+        return;  // no copies: nothing to find again
+    }
+    const std::string sum = fileSha1(notebook);
+    if (!sum.empty()) {
+        std::ofstream(folder / SAVED_FILE, std::ios::trunc) << sum << "\n";
+    }
+}
+
+bool adoptOrphan(const fs::path& root, const fs::path& notebook) {
+    std::error_code ec;
+    const fs::path target = folderFor(root, notebook);
+    if (hasCopies(target) || !fs::is_regular_file(notebook, ec)) {
+        return false;
+    }
+    std::string sum;  // read only when there is a candidate
+    for (auto const& entry: fs::directory_iterator(root, ec)) {
+        const fs::path folder = entry.path();
+        if (folder == target || !entry.is_directory(ec)) {
+            continue;
+        }
+        const std::string saved = firstLine(folder / SAVED_FILE);
+        const std::string origin = firstLine(folder / ORIGIN_FILE);
+        std::error_code existsError;
+        if (saved.empty() || origin.empty() || fs::exists(fs::u8path(origin), existsError)) {
+            continue;  // no fingerprint, or its notebook is still there
+        }
+        if (sum.empty()) {
+            sum = fileSha1(notebook);
+            if (sum.empty()) {
+                return false;
+            }
+        }
+        if (saved != sum) {
+            continue;
+        }
+        std::error_code moveError;
+        fs::remove_all(target, moveError);  // an empty folder left by an earlier look
+        fs::rename(folder, target, moveError);
+        if (moveError) {
+            g_warning("Ambitus: the versions of %s were found but not taken: %s",
+                      char_cast(notebook.u8string().c_str()), moveError.message().c_str());
+            return false;
+        }
+        std::ofstream(target / ORIGIN_FILE, std::ios::trunc) << char_cast(notebook.u8string()) << "\n";
+        return true;
+    }
+    return false;
 }
 
 fs::path defaultRoot() {
@@ -171,6 +263,8 @@ fs::path defaultRoot() {
 
 void keepBeforeSave(const fs::path& notebook) {
     try {
+        // a notebook moved outside the program brings its copies back before the new one is made
+        adoptOrphan(defaultRoot(), notebook);
         keep(defaultRoot(), notebook, Clock::now(), std::chrono::minutes(10), 30);
     } catch (const std::exception& e) {
         g_warning("Ambitus: no version kept: %s", e.what());

@@ -176,5 +176,10 @@ auto SaveJob::save() -> bool {
         doc->setCreateBackupOnSave(true);
     }
 
+    // Ambitus: the fingerprint of the file as saved, so its versions are found again if it is moved outside
+    if (control->getSettings()->getAmbitusKeepVersions()) {
+        ambitus::versions::markSaved(ambitus::versions::defaultRoot(), target);
+    }
+
     return true;
 }

@@ -397,6 +397,10 @@ void VersionsPanel::refresh() {
     std::vector<versions::Version> now;
     if (!notebook.empty()) {
         now = versions::list(versions::defaultRoot(), notebook);
+        // none here: the notebook may have been moved outside the program, with its copies under the old name
+        if (now.empty() && versions::adoptOrphan(versions::defaultRoot(), notebook)) {
+            now = versions::list(versions::defaultRoot(), notebook);
+        }
     }
     const bool same = built && now.size() == copies.size() &&
                       std::equal(now.begin(), now.end(), copies.begin(),

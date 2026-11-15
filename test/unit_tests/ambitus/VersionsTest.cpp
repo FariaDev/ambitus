@@ -117,6 +117,55 @@ TEST(Versions, aSaveAsCopiesTheHistoryAndTheOldFileKeepsItsOwn) {
     EXPECT_EQ(read(list(root, copy)[0].file), "um");
 }
 
+TEST(Versions, aNotebookMovedOutsideFindsItsCopiesAgain) {
+    TempDir tmp;
+    const fs::path root = tmp.path / "v";
+    const fs::path before = tmp.path / "Cálculo.xopp";
+    write(before, "um");
+    ASSERT_TRUE(keep(root, before, T0, seconds(0), 30));
+    write(before, "dois");  // the save writes over the file
+    markSaved(root, before);
+
+    // the file manager moves it: the program never saw the move
+    const fs::path moved = tmp.path / "Matemática" / "Cálculo — aula 1.xopp";
+    fs::create_directories(moved.parent_path());
+    fs::rename(before, moved);
+    ASSERT_TRUE(list(root, moved).empty());
+
+    EXPECT_TRUE(adoptOrphan(root, moved));
+    auto v = list(root, moved);
+    ASSERT_EQ(v.size(), 1u);
+    EXPECT_EQ(read(v[0].file), "um");
+    EXPECT_FALSE(adoptOrphan(root, moved));  // it has its copies now
+}
+
+TEST(Versions, anOrphanIsNotTakenByAnotherNotebook) {
+    TempDir tmp;
+    const fs::path root = tmp.path / "v";
+    const fs::path a = tmp.path / "a.xopp";
+    write(a, "um");
+    ASSERT_TRUE(keep(root, a, T0, seconds(0), 30));
+    write(a, "dois");
+    markSaved(root, a);
+
+    // another file, with other content, where a was
+    const fs::path other = tmp.path / "b.xopp";
+    write(other, "outro");
+    fs::remove(a);
+    EXPECT_FALSE(adoptOrphan(root, other));
+    EXPECT_TRUE(list(root, other).empty());
+
+    // the notebook still there keeps its copies, even if a copy of it appears elsewhere
+    const fs::path c = tmp.path / "c.xopp";
+    write(c, "tres");
+    ASSERT_TRUE(keep(root, c, T0, seconds(0), 30));
+    markSaved(root, c);
+    const fs::path twin = tmp.path / "c (cópia).xopp";
+    fs::copy_file(c, twin);
+    EXPECT_FALSE(adoptOrphan(root, twin));
+    EXPECT_EQ(list(root, c).size(), 1u);
+}
+
 TEST(Versions, theDateSaysTodayOrYesterday) {
     const auto now = Clock::now();
     EXPECT_EQ(describe(now, now).rfind("today, ", 0), 0u);

@@ -39,6 +39,15 @@ fs::path folderFor(const fs::path& root, const fs::path& notebook);
 /// history).
 bool followMove(const fs::path& root, const fs::path& from, const fs::path& to, bool keepSource = false);
 
+/// After a save: when the notebook has copies, writes the fingerprint (SHA-1) of the file as saved in its folder, so
+/// the copies can be found again if the file is moved outside the program (adoptOrphan)
+void markSaved(const fs::path& root, const fs::path& notebook);
+
+/// A notebook without copies may have been moved or renamed outside the program: a folder whose notebook (origem.txt)
+/// no longer exists and whose last saved fingerprint is this file's content becomes the folder of this notebook. True
+/// when one was adopted. Nothing in the .xopp changes.
+bool adoptOrphan(const fs::path& root, const fs::path& notebook);
+
 /// Copies the notebook as it is on disk now, unless it does not exist or the newest copy is younger than gap
 /// (gap 0 always copies); then keeps only the newest keep. True when a copy was made.
 bool keep(const fs::path& root, const fs::path& notebook, Clock::time_point now, std::chrono::seconds gap,
