@@ -117,6 +117,12 @@ void LatexController::triggerImageUpdate(const string& texString) {
     if (isUpdating()) {
         return;
     }
+    if (!unavailable.empty()) {
+        texProcessOutput = unavailable;
+        isValidTex = false;
+        updateStatus();
+        return;
+    }
 
     Color textColor = control->getToolHandler()->getTool(TOOL_LATEX).getColor();
 
@@ -347,8 +353,14 @@ void LatexController::insertLatex(PageRef page, Control* ctrl, double x, double 
     auto self = std::make_unique<LatexController>(ctrl);
     auto depStatus = self->findTexDependencies();
     if (!depStatus.success) {
-        XojMsgBox::showErrorToUser(ctrl->getGtkWindow(), depStatus.errorMsg);
-        return;
+        // Ambitus: the card says it in its line under the field; a window only where there is no card
+        const bool card =
+                !self->settings.useExternalEditor && ctrl->getWindow() && ctrl->getWindow()->getWindowOverlay();
+        if (!card) {
+            XojMsgBox::showErrorToUser(ctrl->getGtkWindow(), depStatus.errorMsg);
+            return;
+        }
+        self->unavailable = depStatus.errorMsg;
     }
 
     self->page = page;

@@ -277,15 +277,15 @@ msgstr "Arquivo PDF criado com sucesso"
 
 #: ../src/core/control/LatexController.cpp:81
 msgid "Global template file does not exist. Please check your settings."
-msgstr "Arquivo de modelo global não existe. Por favor, verifique suas configurações."
+msgstr "O modelo do LaTeX não foi encontrado. Confira o caminho em Configurações."
 
 #: ../src/core/control/LatexController.cpp:86
 msgid "Failed to read global template file. Please check your settings."
-msgstr "Falha ao ler o arquivo de modelo global. Por favor, verifique suas configurações."
+msgstr "Não foi possível ler o modelo do LaTeX. Confira o caminho em Configurações."
 
 #: ../src/core/control/LatexController.cpp:92
 msgid "Global template file is not a regular file. Please check your settings. "
-msgstr "Arquivo de tema global não é um arquivo regular. Por favor, verifique suas configurações. "
+msgstr "O modelo do LaTeX não foi encontrado. Confira o caminho em Configurações. "
 
 #: ../src/core/control/LatexController.cpp:183
 msgid "Latex generation encountered an error: {1} (exit code: {2})"

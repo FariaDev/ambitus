@@ -165,6 +165,12 @@ private:
     bool isValidTex = false;
 
     /**
+     * Ambitus: why LaTeX cannot run at all (the template could not be read); the card opens anyway and says it in its
+     * line, and nothing is compiled
+     */
+    std::string unavailable;
+
+    /**
      * X-Position
      */
     double posx = 0;

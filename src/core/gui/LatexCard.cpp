@@ -181,6 +181,12 @@ LatexCard::LatexCard(GtkOverlay* overlay, GtkWindow* window, std::unique_ptr<Lat
         growPreviewFor(previewPdfPage.get());
     }
 
+    // LaTeX cannot run (the template could not be read): said at once, and nothing goes in
+    if (!texCtrl->unavailable.empty()) {
+        setProblem(texCtrl->unavailable);
+        gtk_widget_set_sensitive(GTK_WIDGET(btOk), false);
+    }
+
     // once faded out, the card is taken away
     g_signal_connect_swapped(revealer, "notify::child-revealed", G_CALLBACK(+[](LatexCard* self) {
                                  auto* r = GTK_REVEALER(self->revealer);
