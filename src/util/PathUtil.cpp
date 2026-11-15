@@ -38,10 +38,10 @@
 
 #ifdef GHC_FILESYSTEM
 // Fix of ghc::filesystem bug (path::operator/=() won't support string_views)
-constexpr auto const* CONFIG_FOLDER_NAME = "xournalpp";
+constexpr auto const* CONFIG_FOLDER_NAME = "ambitus";  // Ambitus: its own folders, apart from Xournal++
 #else
 using namespace std::string_view_literals;
-constexpr auto CONFIG_FOLDER_NAME = "xournalpp"sv;
+constexpr auto CONFIG_FOLDER_NAME = "ambitus"sv;  // Ambitus: its own folders, apart from Xournal++
 #endif
 
 #ifdef _WIN32

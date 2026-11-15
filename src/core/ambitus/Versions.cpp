@@ -258,7 +258,7 @@ bool adoptOrphan(const fs::path& root, const fs::path& notebook) {
 
 fs::path defaultRoot() {
     // like Util::getDataSubfolder("versions"), without its error dialog: keep() makes the folder, or skips quietly
-    return fs::path(g_get_user_data_dir()) / "xournalpp" / "versions";
+    return fs::path(g_get_user_data_dir()) / "ambitus" / "versions";
 }
 
 void keepBeforeSave(const fs::path& notebook) {

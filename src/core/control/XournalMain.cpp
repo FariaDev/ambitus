@@ -25,6 +25,7 @@
 #include <fontconfig/fontconfig.h>  // for FcConfigAppFontAddDir
 #endif
 
+#include "ambitus/Folders.h"                 // for adoptXournalppFolders
 #include "control/RecentManager.h"           // for RecentManager
 #include "control/jobs/ExportParameters.h"   // for ExportBackgroundType
 #include "control/jobs/XournalScheduler.h"   // for XournalScheduler
@@ -446,6 +447,7 @@ void on_open_files(GApplication* application, gpointer f, gint numFiles, gchar* 
 void on_startup(GApplication* application, XMPtr app_data) {
     XournalMain::initLocalisation();
     ensure_input_model_compatibility();
+    ambitus::folders::adoptXournalppFolders();  // before the upstream migration: it only runs with no config folder
     const MigrateResult migrateResult = migrateSettings();
 
     app_data->gladePath = std::make_unique<GladeSearchpath>();
