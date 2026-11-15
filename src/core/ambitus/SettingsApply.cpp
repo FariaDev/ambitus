@@ -68,14 +68,17 @@ bool summaInstalled() {
     return fs::exists(library::summaConfigPath(), ec);
 }
 
-GtkWidget* makeAccentDots() {
+GtkWidget* makeAccentDots(const std::string& accent) {
     GtkWidget* dots = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+    const bool chosenViolet = accent == "violet";
     for (bool violet: {false, true}) {
         GtkWidget* dot = gtk_drawing_area_new();
         gtk_widget_set_size_request(dot, 24, 24);
         g_object_set_data(G_OBJECT(dot), "amb-violet", GINT_TO_POINTER(violet ? 1 : 0));
+        g_object_set_data(G_OBJECT(dot), "amb-chosen", GINT_TO_POINTER(violet == chosenViolet ? 1 : 0));
         g_signal_connect(dot, "draw", G_CALLBACK(+[](GtkWidget* w, cairo_t* cr, gpointer) -> gboolean {
                              const bool v = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(w), "amb-violet")) != 0;
+                             const bool chosen = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(w), "amb-chosen")) != 0;
                              const double cx = gtk_widget_get_allocated_width(w) / 2.0;
                              const double cy = gtk_widget_get_allocated_height(w) / 2.0;
                              // the graphite of the Summa is light on the dark theme
@@ -91,7 +94,7 @@ GtkWidget* makeAccentDots() {
                              }
                              cairo_arc(cr, cx, cy, 8, 0, 2 * G_PI);
                              cairo_fill(cr);
-                             if (!v) {  // the one in use, with the ring 2 px apart
+                             if (chosen) {  // the one in use, with the ring 2 px apart
                                  cairo_arc(cr, cx, cy, 11, 0, 2 * G_PI);
                                  cairo_set_line_width(cr, 2);
                                  cairo_stroke(cr);

@@ -19,6 +19,7 @@
 #include "control/settings/Settings.h"
 #include "gui/AmbitusMotion.h"
 #include "gui/NewNotebookDialog.h"
+#include "library/SummaState.h"
 #include "util/StringUtils.h"
 #include "util/i18n.h"
 
@@ -242,9 +243,11 @@ SetupCard::SetupCard(Control* ctrl, GtkOverlay* overlay): ctrl(ctrl) {
     openCard = this;
     Settings* s = ctrl->getSettings();
 
-    // everything starts chosen: from what is saved, and from the system for the language
-    language = settingsapply::languageIndex(s->getPreferredLocale());
+    // everything starts chosen: from what is saved, and from Summa (else the system) for the language
+    const library::SummaState summa = library::loadSummaState();
+    language = settingsapply::languageIndex(summa.language.empty() ? s->getPreferredLocale() : summa.language);
     initialLanguage = language;
+    summaAccent = summa.accent;
     theme = initialTheme = settingsapply::themeIndex(ctrl);
     summaInstalled = settingsapply::summaInstalled();
     vault = settingsapply::summaVault();
@@ -390,9 +393,13 @@ void SetupCard::build(GtkOverlay* overlay) {
     gtk_box_pack_start(GTK_BOX(foot), next, false, false, 0);
     gtk_box_pack_end(GTK_BOX(pane), foot, false, false, 0);
 
-    // Enter on the card itself goes forward; Esc does not close it (it is not something to leave by a slip)
+    // Enter on the card itself goes forward; Esc skips, keeping the defaults and marking the setup as done
     g_signal_connect(card, "key-press-event",
                      G_CALLBACK(+[](GtkWidget* w, GdkEventKey* e, SetupCard* self) -> gboolean {
+                         if (e->keyval == GDK_KEY_Escape) {
+                             self->finish(false);
+                             return TRUE;
+                         }
                          GtkWidget* top = gtk_widget_get_toplevel(w);
                          if ((e->keyval == GDK_KEY_Return || e->keyval == GDK_KEY_KP_Enter) && GTK_IS_WINDOW(top) &&
                              gtk_window_get_focus(GTK_WINDOW(top)) == w) {
@@ -519,14 +526,13 @@ void SetupCard::buildWelcome() {
     gtk_widget_set_halign(themes, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(body), themes, false, false, 0);
 
-    // the accent of Summa lives in the state of that app, which Ambitus does not read: shown off, as in the Settings
+    // the accent of Summa lives in the state of that app: Ambitus shows the one chosen there, and has nowhere of its
+    // own to keep a choice yet
     gtk_box_pack_start(GTK_BOX(body), label(_("Accent color"), "amb-opt-label"), false, false, 0);
-    GtkWidget* dots = settingsapply::makeAccentDots();
+    GtkWidget* dots = settingsapply::makeAccentDots(summaAccent);
     gtk_widget_set_halign(dots, GTK_ALIGN_START);
-    addClass(dots, "amb-setup-off");
     gtk_box_pack_start(GTK_BOX(body), dots, false, false, 0);
-    gtk_box_pack_start(GTK_BOX(body),
-                       wrapped(_("the same as Summa, if it is open; not available yet"), "amb-setup-cap"), false, false,
+    gtk_box_pack_start(GTK_BOX(body), wrapped(_("the same as Summa; change it there"), "amb-setup-cap"), false, false,
                        0);
     gtk_box_pack_start(GTK_BOX(body), wrapped(_("All of this can be changed later, in Settings."), "amb-setup-cap"),
                        false, false, 0);

@@ -69,6 +69,7 @@ private:
     // the choices; they start from what is saved (and from the system)
     int language = -1;  ///< 0 Portuguese, 1 English, -1 another one that is left alone
     int initialLanguage = -1;
+    std::string summaAccent;  ///< the accent chosen in Summa ("graphite" or "violet"), empty when there is none
     int theme = 0;
     int initialTheme = 0;
     Folder folder = Folder::OWN;

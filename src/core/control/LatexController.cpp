@@ -192,7 +192,12 @@ void LatexController::onPdfRenderComplete(GObject* procObj, GAsyncResult* res, L
             // The error was not caused by invalid LaTeX.
             string message =
                     FS(_F("Latex generation encountered an error: {1} (exit code: {2})") % err->message % err->code);
-            XojMsgBox::showErrorToUser(self->control->getGtkWindow(), message);
+            if (dynamic_cast<ambitus::LatexCard*>(self->dlg)) {
+                // the card says it in its line under the field, not in a window over it
+                self->texProcessOutput = message;
+            } else {
+                XojMsgBox::showErrorToUser(self->control->getGtkWindow(), message);
+            }
         }
 
         self->isValidTex = false;
@@ -253,11 +258,22 @@ auto LatexController::loadRendered(string renderedTex) -> std::unique_ptr<TexIma
 
     if (err != nullptr) {
         string message = FS(_F("Could not load LaTeX PDF file: {1}") % err->message);
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), message);
+        this->isValidTex = false;
+        if (dynamic_cast<ambitus::LatexCard*>(this->dlg)) {
+            // the card says it in its line under the field, not in a window over it
+            this->texProcessOutput = message;
+        } else {
+            XojMsgBox::showErrorToUser(control->getGtkWindow(), message);
+        }
         g_error_free(err);
         return nullptr;
     } else if (!loaded || !img->getPdf()) {
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), FS(_F("Could not load LaTeX PDF file")));
+        this->isValidTex = false;
+        if (dynamic_cast<ambitus::LatexCard*>(this->dlg)) {
+            this->texProcessOutput = FS(_F("Could not load LaTeX PDF file"));
+        } else {
+            XojMsgBox::showErrorToUser(control->getGtkWindow(), FS(_F("Could not load LaTeX PDF file")));
+        }
         return nullptr;
     }
 

@@ -5637,6 +5637,9 @@ msgstr "Cor de acento"
 msgid "the same as Summa, if it is open; not available yet"
 msgstr "a mesma do Summa, se ele estiver aberto; ainda não disponível"
 
+msgid "the same as Summa; change it there"
+msgstr "a mesma do Summa; mude lá"
+
 msgid "applies the next time Ambitus opens"
 msgstr "vale na próxima vez que o Ambitus abrir"
 

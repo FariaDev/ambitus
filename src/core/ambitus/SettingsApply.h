@@ -32,9 +32,10 @@ std::string summaVault();
 /// Whether Summa has been set up on this computer (it has a config)
 bool summaInstalled();
 
-/// The two dots of the accent (graphite, violet), as the settings draw them. The accent of Summa lives in the state of
-/// that app, which Ambitus does not read, so the rows that hold them are shown off.
-GtkWidget* makeAccentDots();
+/// The two dots of the accent (graphite, violet), as the settings draw them, with a ring on `accent` ("graphite" or
+/// "violet"; anything else marks graphite, the default of Summa). The dots do not take clicks: the accent is read from
+/// the state of Summa, and Ambitus has nowhere of its own to keep a choice yet.
+GtkWidget* makeAccentDots(const std::string& accent = "graphite");
 
 void applyTheme(Control* ctrl, int index);
 /// Xournal++ keeps the locale and reads it when it starts: this applies the next time the program opens
