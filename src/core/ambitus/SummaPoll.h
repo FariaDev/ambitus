@@ -12,10 +12,14 @@
 
 #pragma once
 
+#include <cstddef>
 #include <memory>
+#include <optional>
+#include <string>
 #include <thread>
 
 class Control;
+class Document;
 
 namespace ambitus {
 
@@ -35,5 +39,9 @@ private:
     std::shared_ptr<Shared> shared;
     std::thread worker;
 };
+
+/// The PNG of a page (0-based), drawn from the document in memory (so unsaved ink is in it) at the resolution
+/// Summa's tutor reads pages at. UI thread; nothing when it could not be drawn.
+std::optional<std::string> renderCurrentPage(Document* doc, size_t page);
 
 }  // namespace ambitus

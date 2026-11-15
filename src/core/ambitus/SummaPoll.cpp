@@ -59,33 +59,6 @@ auto readFileText(const fs::path& file) -> std::optional<std::string> {
     return text;
 }
 
-/// The PNG of the page, drawn from the document in memory by the export of the program (what --create-img uses), at
-/// the resolution Summa's tutor reads pages at and without the ruling, as renderPagePng does for the file on disk.
-auto renderCurrentPage(Document* doc, size_t page) -> std::optional<std::string> {
-    gchar* dir = g_dir_make_tmp("ambitus-check-XXXXXX", nullptr);
-    if (!dir) {
-        return std::nullopt;
-    }
-    const fs::path tmp = Util::fromGFilename(dir);
-    g_free(dir);
-    const fs::path out = tmp / "page.png";
-    std::optional<std::string> png;
-    {
-        PageRangeVector range;
-        range.emplace_back(page, page);
-        DummyProgressListener progress;
-        ImageExport exporter(doc, out, EXPORT_GRAPHICS_PNG, EXPORT_BACKGROUND_UNRULED, range);
-        exporter.setQualityParameter(EXPORT_QUALITY_DPI, library::PAGE_DPI);
-        exporter.exportGraphics(&progress);
-        if (exporter.getLastErrorMsg().empty()) {
-            png = readFileText(out);
-        }
-    }
-    std::error_code ec;
-    fs::remove_all(tmp, ec);
-    return png;
-}
-
 /// UI thread. Nothing when no notebook is open in the window (the library, or the blank start) or the page could not
 /// be drawn.
 auto snapshotCurrentPage(Control* ctrl) -> std::optional<Snapshot> {
@@ -186,6 +159,33 @@ void run(const std::shared_ptr<SummaPoller::Shared>& shared) {
     }
 }
 }  // namespace
+
+/// The PNG of the page, drawn from the document in memory by the export of the program (what --create-img uses), at
+/// the resolution Summa's tutor reads pages at and without the ruling, as renderPagePng does for the file on disk.
+auto renderCurrentPage(Document* doc, size_t page) -> std::optional<std::string> {
+    gchar* dir = g_dir_make_tmp("ambitus-check-XXXXXX", nullptr);
+    if (!dir) {
+        return std::nullopt;
+    }
+    const fs::path tmp = Util::fromGFilename(dir);
+    g_free(dir);
+    const fs::path out = tmp / "page.png";
+    std::optional<std::string> png;
+    {
+        PageRangeVector range;
+        range.emplace_back(page, page);
+        DummyProgressListener progress;
+        ImageExport exporter(doc, out, EXPORT_GRAPHICS_PNG, EXPORT_BACKGROUND_UNRULED, range);
+        exporter.setQualityParameter(EXPORT_QUALITY_DPI, library::PAGE_DPI);
+        exporter.exportGraphics(&progress);
+        if (exporter.getLastErrorMsg().empty()) {
+            png = readFileText(out);
+        }
+    }
+    std::error_code ec;
+    fs::remove_all(tmp, ec);
+    return png;
+}
 
 SummaPoller::SummaPoller(Control* ctrl): shared(std::make_shared<Shared>()) {
     shared->ctrl = ctrl;

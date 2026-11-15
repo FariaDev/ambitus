@@ -171,6 +171,13 @@ TEST(InkReader, aPageGoesToTheSideChatByItsPath) {
     EXPECT_EQ(body, R"({"caminho":"/cadernos/Limites — aula 3.xopp","pagina":2,"nome":"Limites — aula 3"})");
 }
 
+TEST(InkReader, aSentPageCarriesThePngOnlyWhenThereIsOne) {
+    EXPECT_EQ(pageSendJson("/cadernos/Limites.xopp", 0, "Limites", std::string("\x89PNG", 4)),
+              R"({"caminho":"/cadernos/Limites.xopp","pagina":1,"nome":"Limites","png":"iVBORw=="})");
+    EXPECT_EQ(pageSendJson("/cadernos/Limites.xopp", 0, "Limites", ""),
+              R"({"caminho":"/cadernos/Limites.xopp","pagina":1,"nome":"Limites"})");
+}
+
 TEST(InkReader, theAnswerToTheLongPollSaysWhatSummaWants) {
     auto asked = parsePollReply(200, R"({"pedido": "a1b2c3d4e5f6"})");
     EXPECT_EQ(asked.kind, PollKind::Request);

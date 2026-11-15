@@ -110,9 +110,13 @@ enum class PageSend {
 };
 /// The answer of the bridge to /mandar-pagina
 PageSend parsePageReply(int status, const std::string& body);
-/// Sends a page (0-based) of a saved notebook to the side chat of Summa, where the tutor reads it again by the path
-/// (blocking, but Summa answers at once)
-PageSend sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t page, const std::string& name);
+/// The JSON of POST /mandar-pagina: the page is 0-based here and 1-based on the wire; the PNG (in base64) only when
+/// there is one
+std::string pageSendJson(const fs::path& notebook, size_t page, const std::string& name, const std::string& png);
+/// Sends a page (0-based) of a saved notebook to the side chat of Summa, with the PNG drawn from memory when given
+/// (the tutor sees it as an image and reads the notebook again by the path). Blocking, but Summa answers at once.
+PageSend sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t page, const std::string& name,
+                         const std::string& png = std::string());
 
 /// What a run of readInk did
 struct InkRun {

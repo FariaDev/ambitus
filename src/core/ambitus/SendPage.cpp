@@ -1,8 +1,10 @@
 #include "SendPage.h"
 
+#include <optional>
 #include <string>
 #include <thread>
 
+#include "ambitus/SummaPoll.h"  // for renderCurrentPage
 #include "control/Control.h"
 #include "control/settings/Settings.h"
 #include "gui/MainWindow.h"
@@ -44,10 +46,13 @@ void send(Control* ctrl) {
     }
     const size_t page = ctrl->getCurrentPageNo();
     const std::string name(char_cast(file.stem().u8string()));
+    // the page goes as an image too, drawn here from memory; without it Summa draws the file on disk
+    std::string png = renderCurrentPage(doc, page).value_or(std::string());
     // the bridge answers at once, but a socket never runs on the UI thread
-    std::thread([file, page, name, ctrl] {
+    std::thread([file, page, name, png = std::move(png), ctrl] {
         auto bridge = library::findSummaBridge();
-        const auto result = bridge ? library::sendPageToSumma(*bridge, file, page, name) : library::PageSend::NoSumma;
+        const auto result =
+                bridge ? library::sendPageToSumma(*bridge, file, page, name, png) : library::PageSend::NoSumma;
         if (result != library::PageSend::Sent) {
             Util::execInUiThread([ctrl, result] {
                 if (auto* win = ctrl->getWindow()) {

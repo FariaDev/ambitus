@@ -324,8 +324,8 @@ auto parsePageReply(int status, const std::string& body) -> PageSend {
     return PageSend::Failed;
 }
 
-auto sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t page, const std::string& name)
-        -> PageSend {
+auto pageSendJson(const fs::path& notebook, size_t page, const std::string& name, const std::string& png)
+        -> std::string {
     xoj::util::GObjectSPtr<JsonBuilder> builder(json_builder_new(), xoj::util::adopt);
     json_builder_begin_object(builder.get());
     json_builder_set_member_name(builder.get(), "caminho");
@@ -335,20 +335,29 @@ auto sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t
     json_builder_add_int_value(builder.get(), static_cast<gint64>(page + 1));
     json_builder_set_member_name(builder.get(), "nome");
     json_builder_add_string_value(builder.get(), name.c_str());
+    if (!png.empty()) {
+        json_builder_set_member_name(builder.get(), "png");
+        gchar* b64 = g_base64_encode(reinterpret_cast<const guchar*>(png.data()), png.size());
+        json_builder_add_string_value(builder.get(), b64);
+        g_free(b64);
+    }
     json_builder_end_object(builder.get());
-    xoj::util::GObjectSPtr<JsonGenerator> gen(json_generator_new(), xoj::util::adopt);
-    JsonNode* root = json_builder_get_root(builder.get());
-    json_generator_set_root(gen.get(), root);
-    gchar* text = json_generator_to_data(gen.get(), nullptr);
-    const std::string body = text;
-    g_free(text);
-    json_node_unref(root);
+    return jsonText(builder.get());
+}
 
-    auto answer = postBridge(bridge, "/mandar-pagina", "application/json", body, std::chrono::seconds(10));
+auto sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t page, const std::string& name,
+                     const std::string& png) -> PageSend {
+    auto answer = postBridge(bridge, "/mandar-pagina", "application/json", pageSendJson(notebook, page, name, png),
+                             std::chrono::seconds(10));
     if (!answer.connected) {
         return PageSend::NoSumma;
     }
-    return answer.body ? parsePageReply(answer.status, *answer.body) : PageSend::Failed;
+    auto result = answer.body ? parsePageReply(answer.status, *answer.body) : PageSend::Failed;
+    if (result == PageSend::Failed && !png.empty() && answer.status == 400) {
+        // a Summa from before the png field refuses the larger body: the path alone still works there
+        return sendPageToSumma(bridge, notebook, page, name, std::string());
+    }
+    return result;
 }
 
 auto renderPagePng(const fs::path& notebook, size_t page) -> std::optional<std::string> {
