@@ -103,6 +103,20 @@ TEST(Versions, theCopiesFollowTheNotebookWhenItIsMovedOrRenamed) {
     EXPECT_EQ(list(root, moved).size(), 2u);
 }
 
+TEST(Versions, aSaveAsCopiesTheHistoryAndTheOldFileKeepsItsOwn) {
+    TempDir tmp;
+    const fs::path root = tmp.path / "v";
+    const fs::path old = tmp.path / "Cálculo.xopp";
+    write(old, "um");
+    ASSERT_TRUE(keep(root, old, T0, seconds(0), 30));
+
+    const fs::path copy = tmp.path / "Cálculo (cópia).xopp";
+    EXPECT_TRUE(followMove(root, old, copy, true));
+    EXPECT_EQ(list(root, old).size(), 1u);
+    ASSERT_EQ(list(root, copy).size(), 1u);
+    EXPECT_EQ(read(list(root, copy)[0].file), "um");
+}
+
 TEST(Versions, theDateSaysTodayOrYesterday) {
     const auto now = Clock::now();
     EXPECT_EQ(describe(now, now).rfind("today, ", 0), 0u);

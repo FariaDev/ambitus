@@ -61,7 +61,7 @@ fs::path folderFor(const fs::path& root, const fs::path& notebook) {
     return root / id;
 }
 
-bool followMove(const fs::path& root, const fs::path& from, const fs::path& to) {
+bool followMove(const fs::path& root, const fs::path& from, const fs::path& to, bool keepSource) {
     const fs::path source = folderFor(root, from);
     const fs::path target = folderFor(root, to);
     std::error_code ec;
@@ -90,12 +90,19 @@ bool followMove(const fs::path& root, const fs::path& from, const fs::path& to) 
         if (fs::exists(dest, existsError)) {
             continue;
         }
-        fs::rename(entry, dest, ec);
+        if (keepSource) {
+            fs::copy_file(entry, dest, ec);
+        } else {
+            fs::rename(entry, dest, ec);
+        }
         if (ec) {
             g_warning("Ambitus: a version did not follow %s: %s", char_cast(to.u8string().c_str()),
                       ec.message().c_str());
             return false;
         }
+    }
+    if (keepSource) {
+        return true;
     }
     fs::remove_all(source, ec);
     return !ec;

@@ -2343,11 +2343,12 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
                                                           const fs::path before = ctrl->doc->getFilepath();
                                                           ctrl->doc->setFilepath(target);
                                                           ctrl->doc->unlock();
-                                                          // Ambitus: the earlier versions follow the notebook to its
-                                                          // new name, as the file does
+                                                          // Ambitus: the new file starts with the history of the old
+                                                          // one, which is still there and keeps its own
                                                           if (!before.empty() && before != target) {
                                                               ambitus::versions::followMove(
-                                                                      ambitus::versions::defaultRoot(), before, target);
+                                                                      ambitus::versions::defaultRoot(), before, target,
+                                                                      true);
                                                           }
                                                           doSave();
                                                       }
