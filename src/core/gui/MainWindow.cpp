@@ -38,6 +38,7 @@
 #include "gui/widgets/SpinPageAdapter.h"                // for SpinPageAdapter
 #include "gui/widgets/XournalWidget.h"                  // for gtk_xournal_get_l...
 #include "library/LibraryView.h"                        // for LibraryView
+#include "library/SummaState.h"                        // for loadSummaState
 #include "model/Document.h"                             // for Document
 #include "model/XojPage.h"                              // for XojPage
 #include "util/GListView.h"                             // for GListView, GListV...
@@ -97,6 +98,16 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     loadMainCSS(gladeSearchPath, "xournalpp.css");
     loadMainCSS(gladeSearchPath, "ambitus.css");
+    // the accent is Summa's (graphite in ambitus.css): violet redefines its colours above the stylesheet
+    if (ambitus::library::loadSummaState().accent == "violet") {
+        xoj::util::GObjectSPtr<GtkCssProvider> violet(gtk_css_provider_new(), xoj::util::adopt);
+        gtk_css_provider_load_from_data(violet.get(),
+                                        "@define-color amb_accent #8044ca; @define-color amb_on_accent #ffffff;"
+                                        "@define-color amb_dk_accent #8957d0; @define-color amb_dk_on_accent #ffffff;",
+                                        -1, nullptr);
+        gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(violet.get()),
+                                                  GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 1);
+    }
 
     GtkOverlay* overlay = GTK_OVERLAY(get("mainOverlay"));
 
