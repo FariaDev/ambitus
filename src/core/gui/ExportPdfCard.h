@@ -53,6 +53,7 @@ private:
     void setPaper(bool on);
     void refresh();  ///< the choice changed: the thumbnails, the count, the lines and "Export" follow it
     void exportNow();
+    void startExport(const fs::path& file);
     void advanced();
     void cancel();
     void chooseFolder();

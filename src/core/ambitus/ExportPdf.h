@@ -17,6 +17,8 @@
 #include "control/jobs/ExportParameters.h"
 #include "util/ElementRange.h"
 
+#include "filesystem.h"
+
 namespace ambitus::exportpdf {
 
 /// The first choice of the card
@@ -62,5 +64,12 @@ NameCheck checkName(const std::string& typed);
 
 /// The name of the file: the cleaned name and ".pdf"
 std::string fileNameOf(const std::string& typed);
+
+/// Where the place of the PDF came from: a GtkFileChooser asks by itself before writing over a file that is there
+/// (do-overwrite-confirmation), so the card must not ask a second time
+enum class PathChoice { TYPED, FROM_FILE_CHOOSER };
+
+/// Whether the export must ask before writing over the file: it is there and the path was typed in the card
+bool asksBeforeOverwrite(const fs::path& target, PathChoice choice);
 
 }  // namespace ambitus::exportpdf

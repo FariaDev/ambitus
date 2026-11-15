@@ -23,6 +23,7 @@
 #include "pdf/base/XojPdfPage.h"
 #include "util/PathUtil.h"
 #include "util/StringUtils.h"
+#include "util/XojMsgBox.h"
 #include "util/i18n.h"
 #include "view/DocumentView.h"
 #include "view/background/BackgroundFlags.h"
@@ -657,6 +658,19 @@ void ExportPdfCard::exportNow() {
         return;
     }
     const fs::path file = targetFile();
+    if (asksBeforeOverwrite(file, PathChoice::TYPED)) {
+        // the name was typed here, not picked in a file chooser that would have confirmed the overwrite by itself
+        XojMsgBox::replaceFileQuestion(GTK_WINDOW(gtk_widget_get_toplevel(card)), file,
+                                       [this, file](const fs::path&) { startExport(file); });
+        return;
+    }
+    startExport(file);
+}
+
+void ExportPdfCard::startExport(const fs::path& file) {
+    if (!isOpen()) {
+        return;
+    }
     const bool openAfter = gtk_switch_get_active(GTK_SWITCH(openSwitch));
     auto params = std::make_unique<ExportParameters>(parametersFor(selection, withPaper));
     Control* c = ctrl;

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <stdexcept>
+#include <system_error>
 
 #include "pdf/base/PdfExportBackend.h"
 
@@ -112,5 +113,10 @@ NameCheck checkName(const std::string& typed) {
 }
 
 std::string fileNameOf(const std::string& typed) { return cleanName(typed) + ".pdf"; }
+
+bool asksBeforeOverwrite(const fs::path& target, PathChoice choice) {
+    std::error_code ec;
+    return choice == PathChoice::TYPED && fs::exists(target, ec);
+}
 
 }  // namespace ambitus::exportpdf

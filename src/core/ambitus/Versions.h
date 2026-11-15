@@ -33,6 +33,11 @@ struct Version {
 /// The folder of the copies of a notebook under root: one per notebook path
 fs::path folderFor(const fs::path& root, const fs::path& notebook);
 
+/// The copies follow the notebook when the program moves or renames it: the folder of the copies goes from the key of
+/// `from` to the key of `to` (copies already under the new key stay, and are not replaced). True when there were copies
+/// and they are under the new key now.
+bool followMove(const fs::path& root, const fs::path& from, const fs::path& to);
+
 /// Copies the notebook as it is on disk now, unless it does not exist or the newest copy is younger than gap
 /// (gap 0 always copies); then keeps only the newest keep. True when a copy was made.
 bool keep(const fs::path& root, const fs::path& notebook, Clock::time_point now, std::chrono::seconds gap,

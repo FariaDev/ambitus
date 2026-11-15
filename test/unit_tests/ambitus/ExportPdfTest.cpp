@@ -1,9 +1,13 @@
+#include <fstream>
 #include <string>
 #include <vector>
 
+#include <glib.h>
 #include <gtest/gtest.h>
 
 #include "ambitus/ExportPdf.h"
+
+#include "filesystem.h"
 
 using namespace ambitus::exportpdf;
 
@@ -110,4 +114,18 @@ TEST(ExportPdf, aNameIsCheckedAsAFileName) {
     EXPECT_EQ(checkName("a/b"), NameCheck::INVALID);
     EXPECT_EQ(checkName("a\\b"), NameCheck::INVALID);
     EXPECT_EQ(checkName(".hidden"), NameCheck::INVALID);
+}
+
+TEST(ExportPdf, aTypedNameAsksBeforeOverwritingAFileThatIsThere) {
+    gchar* d = g_dir_make_tmp("ambitus-exportpdf-overwrite-XXXXXX", nullptr);
+    ASSERT_NE(d, nullptr);
+    const fs::path dir = d;
+    g_free(d);
+    const fs::path target = dir / "Cálculo — aula 1.pdf";
+    EXPECT_FALSE(asksBeforeOverwrite(target, PathChoice::TYPED));
+    std::ofstream(target) << "já existe";
+    EXPECT_TRUE(asksBeforeOverwrite(target, PathChoice::TYPED));
+    // a path picked in the file chooser of Xournal++ was already confirmed there: never ask twice
+    EXPECT_FALSE(asksBeforeOverwrite(target, PathChoice::FROM_FILE_CHOOSER));
+    fs::remove_all(dir);
 }

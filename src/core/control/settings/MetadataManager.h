@@ -44,6 +44,12 @@ public:
     static std::optional<MetadataEntry> getForFile(fs::path const& file);
 
     /**
+     * The path as metadata is keyed: weakly_canonical, so a notebook opened by a symlink and by its real path are the
+     * same entry
+     */
+    static fs::path normalizedPath(fs::path const& file);
+
+    /**
      * Store the current data into metadata
      */
     void storeMetadata(fs::path const& file, int page, double zoom);

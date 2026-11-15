@@ -151,7 +151,7 @@ auto MetadataManager::loadMetadataFile(fs::path const& path) -> std::optional<Me
     std::istringstream iss(line);
     std::string p;
     iss >> std::quoted(p);
-    entry.path = fs::path(xoj::util::utf8(p));
+    entry.path = normalizedPath(fs::path(xoj::util::utf8(p)));
 
     if (!getline(infile, line) || line.length() < 6 || line.substr(0, 5) != "page=") {
         // Not valid
@@ -172,14 +172,24 @@ auto MetadataManager::loadMetadataFile(fs::path const& path) -> std::optional<Me
 }
 
 /**
+ * The path as metadata is keyed
+ */
+auto MetadataManager::normalizedPath(fs::path const& file) -> fs::path {
+    std::error_code ec;
+    fs::path normalized = fs::weakly_canonical(file, ec);
+    return ec ? file : normalized;
+}
+
+/**
  * Get the metadata for a file
  */
 auto MetadataManager::getForFile(fs::path const& file) -> std::optional<MetadataEntry> {
     std::vector<MetadataEntry> files = loadList();
 
     std::optional<MetadataEntry> entry = std::nullopt;
+    const fs::path key = normalizedPath(file);
     for (const MetadataEntry& e: files) {
-        if (e.path == file) {
+        if (e.path == key) {
             entry = e;
             break;
         }
@@ -198,8 +208,9 @@ auto MetadataManager::getForFile(fs::path const& file) -> std::optional<Metadata
  */
 void MetadataManager::storeMetadata(const MetadataEntry& m) {
     std::vector<MetadataEntry> files = loadList();
+    const fs::path key = normalizedPath(m.path);
     for (const MetadataEntry& e: files) {
-        if (e.path == m.path) {
+        if (e.path == key) {
             // This is an old entry with the same path
             deleteMetadataFile(e.metadataFile);
         }
@@ -215,7 +226,7 @@ void MetadataManager::storeMetadata(const MetadataEntry& m) {
 void MetadataManager::writeMetadataToFile(const MetadataEntry& m, const fs::path& path) {
     auto out = serdes_stream<std::ofstream>(path);
     out << "XOJ-METADATA/1.0\n";
-    out << std::quoted(char_cast(m.path.u8string())) << "\n";
+    out << std::quoted(char_cast(normalizedPath(m.path).u8string())) << "\n";
     out << "page=" << m.page << "\n";
     out << "zoom=" << m.zoom << "\n";
     out.close();
@@ -234,7 +245,7 @@ void MetadataManager::storeMetadata(fs::path const& file, int page, double zoom)
         metadata = std::make_unique<MetadataEntry>();
     }
 
-    metadata->path = file;
+    metadata->path = normalizedPath(file);
     metadata->zoom = zoom;
     metadata->page = page;
     metadata->time = g_get_real_time();

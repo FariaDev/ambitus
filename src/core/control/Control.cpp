@@ -14,6 +14,7 @@
 #include "ambitus/Board.h"                                       // for pageTemplate
 #include "ambitus/BoardShift.h"                                  // for ShiftUndoAction
 #include "ambitus/SummaPoll.h"                                   // for SummaPoller
+#include "ambitus/Versions.h"                                    // for followMove
 #include "control/AudioController.h"                             // for Audi...
 #include "control/ClipboardHandler.h"                            // for Clip...
 #include "control/CompassController.h"                           // for Comp...
@@ -2336,10 +2337,18 @@ void Control::saveImpl(bool saveAs, std::function<void(bool)> callback) {
         xoj::SaveExportDialog::showSaveFileDialog(getGtkWindow(), settings, std::move(suggestedPath),
                                                   [doSave = std::move(doSave), ctrl = this](std::optional<fs::path> p) {
                                                       if (p && !p->empty()) {
-                                                          ctrl->settings->setLastSavePath(p->parent_path());
+                                                          const fs::path target = std::move(*p);
+                                                          ctrl->settings->setLastSavePath(target.parent_path());
                                                           ctrl->doc->lock();
-                                                          ctrl->doc->setFilepath(std::move(p.value()));
+                                                          const fs::path before = ctrl->doc->getFilepath();
+                                                          ctrl->doc->setFilepath(target);
                                                           ctrl->doc->unlock();
+                                                          // Ambitus: the earlier versions follow the notebook to its
+                                                          // new name, as the file does
+                                                          if (!before.empty() && before != target) {
+                                                              ambitus::versions::followMove(
+                                                                      ambitus::versions::defaultRoot(), before, target);
+                                                          }
                                                           doSave();
                                                       }
                                                   });

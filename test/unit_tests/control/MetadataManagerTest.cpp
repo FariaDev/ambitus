@@ -8,6 +8,9 @@
  *
  * @license GNU GPLv2 or later
  */
+#include <fstream>
+
+#include <glib.h>
 #include <gtest/gtest.h>
 
 #include "control/settings/MetadataManager.h"
@@ -57,4 +60,25 @@ TEST(Metadata, testWriteReadCycle) {
     EXPECT_EQ(entry->page, entry2->page);
     EXPECT_EQ(entry->zoom, entry2->zoom);
     fs::remove(tmp);
+}
+
+TEST(Metadata, aSymlinkAndTheRealPathAreTheSameKey) {
+    gchar* d = g_dir_make_tmp("ambitus-metadata-symlink-XXXXXX", nullptr);
+    ASSERT_NE(d, nullptr);
+    const fs::path dir = d;
+    g_free(d);
+
+    const fs::path real = dir / "caderno.xopp";
+    std::ofstream(real) << "as páginas";
+    const fs::path link = dir / "atalho.xopp";
+    std::error_code ec;
+    fs::create_symlink(real, link, ec);
+    if (ec) {
+        fs::remove_all(dir);
+        GTEST_SKIP() << "this system cannot make a symlink: " << ec.message();
+    }
+
+    EXPECT_EQ(MetadataManager::normalizedPath(link), MetadataManager::normalizedPath(real));
+    EXPECT_NE(MetadataManager::normalizedPath(link), link);
+    fs::remove_all(dir);
 }

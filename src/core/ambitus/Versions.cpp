@@ -61,6 +61,46 @@ fs::path folderFor(const fs::path& root, const fs::path& notebook) {
     return root / id;
 }
 
+bool followMove(const fs::path& root, const fs::path& from, const fs::path& to) {
+    const fs::path source = folderFor(root, from);
+    const fs::path target = folderFor(root, to);
+    std::error_code ec;
+    if (source == target || !fs::is_directory(source, ec)) {
+        return false;
+    }
+    fs::create_directories(target, ec);
+    if (ec) {
+        g_warning("Ambitus: the versions did not follow %s: %s", char_cast(to.u8string().c_str()),
+                  ec.message().c_str());
+        return false;
+    }
+    // the new name may already have copies (a file that was there before): both sets stay, the newer one on equal names
+    std::vector<fs::path> entries;
+    for (auto const& entry: fs::directory_iterator(source, ec)) {
+        entries.push_back(entry.path());
+    }
+    if (ec) {
+        g_warning("Ambitus: the versions did not follow %s: %s", char_cast(to.u8string().c_str()),
+                  ec.message().c_str());
+        return false;
+    }
+    for (auto const& entry: entries) {
+        const fs::path dest = target / entry.filename();
+        std::error_code existsError;
+        if (fs::exists(dest, existsError)) {
+            continue;
+        }
+        fs::rename(entry, dest, ec);
+        if (ec) {
+            g_warning("Ambitus: a version did not follow %s: %s", char_cast(to.u8string().c_str()),
+                      ec.message().c_str());
+            return false;
+        }
+    }
+    fs::remove_all(source, ec);
+    return !ec;
+}
+
 std::vector<Version> list(const fs::path& root, const fs::path& notebook) {
     std::vector<Version> out;
     std::error_code ec;

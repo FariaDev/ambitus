@@ -79,6 +79,30 @@ TEST(Versions, eachNotebookHasItsOwnFolder) {
     EXPECT_EQ(list(tmp.path / "v", tmp.path / "a.xopp").size(), 1u);
 }
 
+TEST(Versions, theCopiesFollowTheNotebookWhenItIsMovedOrRenamed) {
+    TempDir tmp;
+    const fs::path root = tmp.path / "v";
+    const fs::path before = tmp.path / "Cálculo.xopp";
+    write(before, "um");
+    ASSERT_TRUE(keep(root, before, T0, seconds(0), 30));
+
+    const fs::path moved = tmp.path / "Matemática" / "Cálculo — aula 1.xopp";
+    fs::create_directories(moved.parent_path());
+    fs::rename(before, moved);
+    EXPECT_TRUE(followMove(root, before, moved));
+
+    EXPECT_TRUE(list(root, before).empty());
+    auto v = list(root, moved);
+    ASSERT_EQ(v.size(), 1u);
+    EXPECT_EQ(read(v[0].file), "um");
+    EXPECT_EQ(v[0].when, T0);
+
+    // and the saves from now on keep the copies under the new name
+    write(moved, "dois");
+    EXPECT_TRUE(keep(root, moved, T0 + seconds(1), seconds(0), 30));
+    EXPECT_EQ(list(root, moved).size(), 2u);
+}
+
 TEST(Versions, theDateSaysTodayOrYesterday) {
     const auto now = Clock::now();
     EXPECT_EQ(describe(now, now).rfind("today, ", 0), 0u);
