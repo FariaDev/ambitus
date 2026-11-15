@@ -25,6 +25,7 @@
 #include "gui/XournalView.h"
 #include "gui/inputdevices/HandRecognition.h"
 #include "library/SummaCourses.h"
+#include "library/SummaState.h"
 #include "util/PathUtil.h"
 #include "util/StringUtils.h"
 #include "util/i18n.h"
@@ -563,9 +564,9 @@ void SettingsCard::buildAppearance() {
            makeSegmented({_("System"), _("Light"), _("Dark")}, settingsapply::themeIndex(ctrl),
                          [this](int i) { settingsapply::applyTheme(ctrl, i); }));
 
-    // the accent of Summa lives in the state of that app, which Ambitus does not read; the row is there, off
-    GtkWidget* dots = settingsapply::makeAccentDots();
-    addRow(APPEARANCE, _("Accent color"), _("the same as Summa, if it is open; not available yet"), dots, false);
+    // the accent of Summa lives in the state of that app: Ambitus shows the one chosen there (library/SummaState.h)
+    GtkWidget* dots = settingsapply::makeAccentDots(library::loadSummaState().accent);
+    addRow(APPEARANCE, _("Accent color"), _("the same as Summa; change it there"), dots);
 
     // the language: Xournal++ keeps the locale and reads it when it starts
     addRow(APPEARANCE, _("Language"), _("applies the next time Ambitus opens"),
