@@ -5,7 +5,7 @@ Ambitus é o Xournal++ modificado do Lucas, irmão do Summa (`FariaDev/summa`). 
 ## Origem e upstream
 
 - Este repositório tem o histórico inteiro de `xournalpp/xournalpp`. O remote `upstream` aponta para lá; para trazer correções e versões novas: `git fetch upstream && git merge upstream/master` numa branch própria.
-- Não é fork do GitHub porque fork de repositório público não pode ser privado. O repositório é privado.
+- Não é fork do GitHub; o repositório é próprio e público, com o ok do Lucas (novembro de 2026).
 - O GitHub Actions está desligado neste repositório (a cobrança da CI está bloqueada). Não o religue nem dispare workflow sem o ok do Lucas.
 
 ## Regras
