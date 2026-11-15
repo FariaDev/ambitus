@@ -24,11 +24,9 @@
 #if !defined(_WIN32) && !defined(__APPLE__)
 #include <fontconfig/fontconfig.h>  // for FcConfigAppFontAddDir
 #endif
-#ifdef __APPLE__
-#include <CoreText/CoreText.h>  // for CTFontManagerRegisterFontsForURL
-#endif
 
 #include "ambitus/Folders.h"                 // for adoptXournalppFolders
+#include "ambitus/MacFonts.h"                // for registerFont
 #include "control/RecentManager.h"           // for RecentManager
 #include "control/jobs/ExportParameters.h"   // for ExportBackgroundType
 #include "control/jobs/XournalScheduler.h"   // for XournalScheduler
@@ -384,17 +382,8 @@ void registerBundledFonts(GladeSearchpath* gladePath) {
             continue;
         }
         const std::string file = entry.path().string();
-        CFURLRef url = CFURLCreateFromFileSystemRepresentation(nullptr, reinterpret_cast<const UInt8*>(file.c_str()),
-                                                               static_cast<CFIndex>(file.size()), false);
-        CFErrorRef error = nullptr;
-        if (url && !CTFontManagerRegisterFontsForURL(url, kCTFontManagerScopeProcess, &error)) {
+        if (!ambitus::macfonts::registerFont(file)) {
             g_warning("Could not register the font %s", file.c_str());
-        }
-        if (error) {
-            CFRelease(error);
-        }
-        if (url) {
-            CFRelease(url);
         }
     }
     // GTK on macOS counts 72 points per inch, Linux 96: without this every size in points (the CSS) is a quarter
