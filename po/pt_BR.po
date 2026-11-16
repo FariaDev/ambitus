@@ -5808,6 +5808,15 @@ msgstr "endireita o traço em reta, círculo, seta…"
 msgid "Draft"
 msgstr "Rascunho"
 
+msgid "Saved on its own"
+msgstr "Salvo sozinho"
+
+msgid "Saving…"
+msgstr "Salvando…"
+
+msgid "Keep in a subject…"
+msgstr "Guardar numa matéria…"
+
 msgid "Drafts"
 msgstr "Rascunhos"
 
@@ -5843,6 +5852,3 @@ msgstr "Não foi possível criar o rascunho."
 
 msgid "Could not keep the draft."
 msgstr "Não foi possível guardar o rascunho."
-
-msgid "Draft · saved on its own"
-msgstr "Rascunho · salvo sozinho"

@@ -558,7 +558,15 @@ void MainWindow::newDraft() {
     showEditor();
     control->newFile(file, page);
     setEditorMode(ambitus::EditorMode::STUDIO);
-    control->save([this](bool ok) {
+    draftDirty = false;
+    draftPendingPath.clear();
+    updateDraftStatus();
+    control->save([this, file](bool ok) {
+        if (!ok) {
+            draftDirty = true;
+            draftPendingPath = file;
+        }
+        updateDraftStatus();
         if (ok && library) {
             library->refresh();
         }
@@ -578,22 +586,60 @@ void MainWindow::initDraftPill() {
     gtk_container_add(GTK_CONTAINER(draftPillRevealer), frame);
 
     draftPill = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    // the surface is the Studio palette's; the pill adds the room of 4 px and its own pieces
+    gtk_style_context_add_class(gtk_widget_get_style_context(draftPill), "amb-palette");
     gtk_style_context_add_class(gtk_widget_get_style_context(draftPill), "amb-draft-pill");
     gtk_widget_set_valign(draftPill, GTK_ALIGN_CENTER);
-    gtk_box_pack_start(GTK_BOX(draftPill), gtk_label_new(_("Draft · saved on its own")), false, false, 0);
 
-    GtkWidget* discard = gtk_button_new_with_label(_("Discard"));
-    gtk_style_context_add_class(gtk_widget_get_style_context(discard), "amb-dlg-ghost");
+    // the label: the icon, "Draft" and the dot of the save state; it tells nothing more than that
+    draftInfo = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    gtk_style_context_add_class(gtk_widget_get_style_context(draftInfo), "amb-draft-info");
+    GtkWidget* infoIcon = gtk_image_new_from_icon_name("xopp-file-plus", GTK_ICON_SIZE_MENU);
+    gtk_image_set_pixel_size(GTK_IMAGE(infoIcon), 15);
+    gtk_box_pack_start(GTK_BOX(draftInfo), infoIcon, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(draftInfo), gtk_label_new(_("Draft")), false, false, 0);
+    draftDot = gtk_drawing_area_new();
+    gtk_widget_set_size_request(draftDot, 6, 6);
+    gtk_widget_set_valign(draftDot, GTK_ALIGN_CENTER);
+    g_signal_connect(draftDot, "draw", G_CALLBACK(+[](GtkWidget* w, cairo_t* cr, gpointer) -> gboolean {
+                         GdkRGBA c;
+                         gtk_style_context_get_color(gtk_widget_get_style_context(w), gtk_widget_get_state_flags(w),
+                                                     &c);
+                         cairo_set_source_rgba(cr, c.red, c.green, c.blue, c.alpha);
+                         cairo_arc(cr, 3, 3, 3, 0, 2 * G_PI);
+                         cairo_fill(cr);
+                         return FALSE;
+                     }),
+                     nullptr);
+    g_signal_connect_swapped(draftDot, "style-updated", G_CALLBACK(gtk_widget_queue_draw), draftDot);
+    gtk_box_pack_start(GTK_BOX(draftInfo), draftDot, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(draftPill), draftInfo, false, false, 0);
+
+    GtkWidget* sep = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
+    gtk_style_context_add_class(gtk_widget_get_style_context(sep), "amb-draft-sep");
+    gtk_widget_set_size_request(sep, 1, 20);
+    gtk_widget_set_valign(sep, GTK_ALIGN_CENTER);
+    gtk_box_pack_start(GTK_BOX(draftPill), sep, false, false, 0);
+
+    GtkWidget* discard = gtk_button_new();
+    gtk_style_context_add_class(gtk_widget_get_style_context(discard), "amb-draft-ghost");
+    GtkWidget* discardRow = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    GtkWidget* trash = gtk_image_new_from_icon_name("xopp-trash", GTK_ICON_SIZE_MENU);
+    gtk_image_set_pixel_size(GTK_IMAGE(trash), 15);
+    gtk_box_pack_start(GTK_BOX(discardRow), trash, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(discardRow), gtk_label_new(_("Discard")), false, false, 0);
+    gtk_container_add(GTK_CONTAINER(discard), discardRow);
     g_signal_connect(discard, "clicked", G_CALLBACK(+[](GtkButton*, MainWindow* self) { self->discardActiveDraft(); }),
                      this);
     gtk_box_pack_start(GTK_BOX(draftPill), discard, false, false, 0);
 
-    GtkWidget* keep = gtk_button_new_with_label(_("Keep as notebook…"));
-    gtk_style_context_add_class(gtk_widget_get_style_context(keep), "amb-dlg-primary");
+    GtkWidget* keep = gtk_button_new_with_label(_("Keep in a subject…"));
+    gtk_style_context_add_class(gtk_widget_get_style_context(keep), "amb-draft-primary");
     g_signal_connect(keep, "clicked", G_CALLBACK(+[](GtkButton*, MainWindow* self) { self->openKeepDraftCard(); }),
                      this);
     gtk_box_pack_start(GTK_BOX(draftPill), keep, false, false, 0);
     gtk_container_add(GTK_CONTAINER(frame), draftPill);
+    updateDraftStatus();
 
     g_signal_connect_swapped(draftPillRevealer, "notify::child-revealed", G_CALLBACK(+[](MainWindow* self) {
                                  auto* r = GTK_REVEALER(self->draftPillRevealer);
@@ -634,10 +680,30 @@ gboolean MainWindow::draftPillPosition(GtkOverlay*, GtkWidget* w, GdkRectangle* 
     return true;
 }
 
+void MainWindow::updateDraftStatus() {
+    if (!draftInfo || !draftDot) {
+        return;
+    }
+    // the dot belongs to the draft on screen: another draft may have a save on the way and still show as saved
+    const bool pending =
+            draftDirty && !draftPendingPath.empty() && control->isDraftOpen() && activeFilePath() == draftPendingPath;
+    GtkStyleContext* ctx = gtk_widget_get_style_context(draftDot);
+    if (pending) {
+        gtk_style_context_remove_class(ctx, "amb-draft-dot-saved");
+        gtk_style_context_add_class(ctx, "amb-draft-dot-pending");
+    } else {
+        gtk_style_context_remove_class(ctx, "amb-draft-dot-pending");
+        gtk_style_context_add_class(ctx, "amb-draft-dot-saved");
+    }
+    gtk_widget_set_tooltip_text(draftInfo, pending ? _("Saving…") : _("Saved on its own"));
+    gtk_widget_queue_draw(draftDot);
+}
+
 void MainWindow::updateDraftPill() {
     if (!draftPillRevealer) {
         return;
     }
+    updateDraftStatus();
     const bool show = control->isDraftOpen() && !isLibraryShown();
     if (show == draftPillShown) {
         return;
@@ -660,7 +726,14 @@ void MainWindow::updateDraftPill() {
 void MainWindow::saveDraft() {
     draftSaveTimer = 0;
     if (control->isDraftOpen()) {
-        control->save([](bool) {});
+        const fs::path saving = activeFilePath();
+        control->save([this, saving](bool ok) {
+            if (ok && saving == draftPendingPath) {
+                draftDirty = false;
+                draftPendingPath.clear();
+            }
+            updateDraftStatus();
+        });
     }
 }
 
@@ -684,6 +757,9 @@ void MainWindow::scheduleDraftSave() {
                 return G_SOURCE_REMOVE;
             },
             this);
+    draftDirty = true;
+    draftPendingPath = activeFilePath();
+    updateDraftStatus();
 }
 
 void MainWindow::undoRedoChanged() { scheduleDraftSave(); }
@@ -824,6 +900,8 @@ void MainWindow::keepDraft(const fs::path& draft, const fs::path& folder, const 
             library->refresh();
         }
         control->updateWindowTitle();
+        draftDirty = false;
+        draftPendingPath.clear();
         updateDraftPill();
         if (after) {
             after(true);

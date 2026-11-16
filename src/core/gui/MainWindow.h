@@ -194,6 +194,7 @@ private:
     void initXournalWidget();
     void initDraftPill();
     void updateDraftPill();
+    void updateDraftStatus();
     static gboolean draftPillPosition(GtkOverlay* overlay, GtkWidget* w, GdkRectangle* alloc, MainWindow* self);
     void scheduleDraftSave();
     void saveDraft();
@@ -296,8 +297,12 @@ private:
     /// Ambitus: the pill over the page while a draft is open
     GtkWidget* draftPillRevealer = nullptr;
     GtkWidget* draftPill = nullptr;
+    GtkWidget* draftInfo = nullptr;
+    GtkWidget* draftDot = nullptr;
     gulong draftPillPositionId = 0;
     bool draftPillShown = false;
+    bool draftDirty = false;
+    fs::path draftPendingPath;  ///< the draft with a save on the way; another one shows as saved
     guint draftSaveTimer = 0;
     /// Ambitus: the pill asked to discard the draft; the closing does not ask again
     bool draftDiscardOnClose = false;
