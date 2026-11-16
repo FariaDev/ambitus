@@ -7,9 +7,12 @@
  */
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <fstream>
+#include <set>
 #include <string>
+#include <vector>
 
 #include <glib.h>
 #include <gtest/gtest.h>
@@ -188,6 +191,30 @@ auto pixel(cairo_surface_t* s, int x, int y) -> uint32_t {
     auto* row = cairo_image_surface_get_data(s) + y * cairo_image_surface_get_stride(s);
     return reinterpret_cast<uint32_t*>(row)[x];
 }
+
+auto allStyles() -> std::array<CoverStyle, 22> {
+    return {CoverStyle::Contour,    CoverStyle::Linen, CoverStyle::Page,      CoverStyle::Plain,
+            CoverStyle::Field,      CoverStyle::Waves, CoverStyle::Sunflower, CoverStyle::Truchet,
+            CoverStyle::Lissajous,  CoverStyle::Graph, CoverStyle::Mesh,      CoverStyle::Ford,
+            CoverStyle::Pascal,     CoverStyle::Ulam,  CoverStyle::Hilbert,   CoverStyle::Surface,
+            CoverStyle::Pythagoras, CoverStyle::Rose,  CoverStyle::Fibonacci, CoverStyle::Blocks,
+            CoverStyle::Relief,     CoverStyle::Julia};
+}
+
+/// Mean luminance of the first half of the cover (the title sits at the bottom).
+auto meanLuminance(cairo_surface_t* s, int y0, int y1) -> double {
+    const int w = cairo_image_surface_get_width(s);
+    double sum = 0;
+    int n = 0;
+    for (int y = y0; y < y1; y++) {
+        for (int x = 0; x < w; x++) {
+            const uint32_t p = pixel(s, x, y);
+            sum += ((p >> 16 & 0xff) * .2126 + (p >> 8 & 0xff) * .7152 + (p & 0xff) * .0722) / 255.0;
+            n++;
+        }
+    }
+    return sum / n;
+}
 }  // namespace
 
 TEST(LibraryCover, colourFallsBackToCourseThenDefault) {
@@ -217,7 +244,7 @@ TEST(LibraryCover, contourIsStableAndSeedChangesIt) {
 }
 
 TEST(LibraryCover, everyStyleDraws) {
-    for (auto style: {CoverStyle::Contour, CoverStyle::Linen, CoverStyle::Page, CoverStyle::Plain}) {
+    for (auto style: allStyles()) {
         CoverInput in{Cover{style, "#8a3b2e", 0, {}},
                       "Equações Diferenciais Ordinárias e Parciais",
                       true,
@@ -227,6 +254,122 @@ TEST(LibraryCover, everyStyleDraws) {
         for (int w: {152, 76}) {
             auto* s = renderCover(in, w, w * 200 / 152);
             EXPECT_EQ(pixel(s, w / 2, w * 100 / 152) >> 24, 255u) << coverStyleToString(style) << " " << w;
+            cairo_surface_destroy(s);
+        }
+    }
+}
+
+TEST(LibraryCover, everyNewStyleIsStableAndSeeded) {
+    const std::array<CoverStyle, 18> fresh = {CoverStyle::Field,      CoverStyle::Waves,     CoverStyle::Sunflower,
+                                              CoverStyle::Truchet,    CoverStyle::Lissajous, CoverStyle::Graph,
+                                              CoverStyle::Mesh,       CoverStyle::Ford,      CoverStyle::Pascal,
+                                              CoverStyle::Ulam,       CoverStyle::Hilbert,   CoverStyle::Surface,
+                                              CoverStyle::Pythagoras, CoverStyle::Rose,      CoverStyle::Fibonacci,
+                                              CoverStyle::Blocks,     CoverStyle::Relief,    CoverStyle::Julia};
+    for (auto style: fresh) {
+        CoverInput in{Cover{style, "#5b3f78", 0, {}}, "Cálculo I", true, "", nullptr, nullptr};
+        auto* a = renderCover(in);
+        auto* b = renderCover(in);
+        EXPECT_TRUE(samePixels(a, b)) << coverStyleToString(style) << " changes between renders";
+        // pascal, hilbert and fibonacci only draw two variants: some seeds land on the same one
+        bool seedChanges = false;
+        for (unsigned seed = 1; seed <= 12 && !seedChanges; seed++) {
+            CoverInput seeded = in;
+            seeded.cover.seed = seed;
+            auto* c = renderCover(seeded);
+            seedChanges = !samePixels(a, c);
+            cairo_surface_destroy(c);
+        }
+        EXPECT_TRUE(seedChanges) << coverStyleToString(style) << " ignores the seed";
+        CoverInput plainIn{Cover{CoverStyle::Plain, "#5b3f78", 0, {}}, "Cálculo I", true, "", nullptr, nullptr};
+        auto* p = renderCover(plainIn);
+        EXPECT_FALSE(samePixels(a, p)) << coverStyleToString(style) << " draws nothing";
+        for (auto* s: {a, b, p}) {
+            cairo_surface_destroy(s);
+        }
+    }
+}
+
+TEST(LibraryCover, newStylesDrawDarkInkOnLightCovers) {
+    CoverInput plainIn{Cover{CoverStyle::Plain, "#f2efe6", 0, {}},
+                       "Equações Diferenciais Ordinárias e Parciais",
+                       true,
+                       "",
+                       nullptr,
+                       nullptr};
+    auto* plain = renderCover(plainIn);
+    const double base = meanLuminance(plain, 0, 100);
+    for (auto style: allStyles()) {
+        if (style == CoverStyle::Contour || style == CoverStyle::Linen || style == CoverStyle::Page ||
+            style == CoverStyle::Plain) {
+            continue;
+        }
+        CoverInput in{Cover{style, "#f2efe6", 0, {}}, plainIn.title, true, "", nullptr, nullptr};
+        auto* s = renderCover(in);
+        EXPECT_LT(meanLuminance(s, 0, 100), base) << coverStyleToString(style);
+        cairo_surface_destroy(s);
+    }
+    cairo_surface_destroy(plain);
+}
+
+TEST(LibraryStoreTest, everyCoverStyleIdRoundTrips) {
+    for (auto style: allStyles()) {
+        EXPECT_EQ(coverStyleFromString(coverStyleToString(style)), style) << coverStyleToString(style);
+    }
+    EXPECT_EQ(coverStyleFromString("contorno"), std::nullopt);
+}
+
+TEST(LibraryStoreTest, roundTripWithNewStyle) {
+    TempDir d;
+    const auto file = d.path / "cfg" / "library.ini";
+    const fs::path notebook = u8"/cadernos/Análise complexa.xopp";
+    {
+        LibraryStore s(file);
+        s.setCover(notebook, Cover{CoverStyle::Julia, "#8a3b2e", 4, {}});
+        ASSERT_TRUE(s.save());
+    }
+    LibraryStore s(file);
+    EXPECT_EQ(s.cover(notebook), (Cover{CoverStyle::Julia, "#8a3b2e", 4, {}}));
+}
+
+TEST(LibraryCover, suggestedStyleIsStableAndGenerative) {
+    for (const char* name: {"Cálculo I", "Física II", "Química", "Álgebra Linear", "EDOs", "Topologia"}) {
+        const auto style = suggestedStyle(name);
+        EXPECT_EQ(style, suggestedStyle(name)) << name;
+        EXPECT_NE(style, CoverStyle::Linen) << name;
+        EXPECT_NE(style, CoverStyle::Page) << name;
+        EXPECT_NE(style, CoverStyle::Plain) << name;
+    }
+    std::set<CoverStyle> seen;
+    for (int i = 0; i < 60; i++) {
+        seen.insert(suggestedStyle("Caderno " + std::to_string(i)));
+    }
+    EXPECT_GE(seen.size(), 12u);
+}
+
+// Not a check: with AMBITUS_COVER_DUMP set, writes the 22 styles (seed 0) on a dark and a light cover, for a contact
+// sheet.
+TEST(LibraryCover, contactSheetDump) {
+    const char* dir = g_getenv("AMBITUS_COVER_DUMP");
+    if (!dir) {
+        GTEST_SKIP() << "set AMBITUS_COVER_DUMP to write the contact sheet";
+    }
+    for (const char* colour: {"#5b3f78", "#f2efe6"}) {
+        for (auto style: allStyles()) {
+            CoverInput in{Cover{style, colour, 0, {}},
+                          "Equações Diferenciais Ordinárias e Parciais",
+                          true,
+                          "",
+                          nullptr,
+                          nullptr};
+            cairo_surface_t* s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 152, 200);
+            cairo_t* cr = cairo_create(s);
+            drawCover(cr, 152, 200, in);
+            cairo_destroy(cr);
+            cairo_surface_flush(s);
+            const std::string name =
+                    std::string(dir) + "/sheet-" + (colour + 1) + "-" + coverStyleToString(style) + ".png";
+            cairo_surface_write_to_png(s, name.c_str());
             cairo_surface_destroy(s);
         }
     }

@@ -33,6 +33,13 @@ struct KeyFile {
         return s;
     }
 };
+
+constexpr CoverStyle ALL_STYLES[] = {
+        CoverStyle::Contour, CoverStyle::Linen,      CoverStyle::Page,    CoverStyle::Plain,     CoverStyle::Field,
+        CoverStyle::Waves,   CoverStyle::Sunflower,  CoverStyle::Truchet, CoverStyle::Lissajous, CoverStyle::Graph,
+        CoverStyle::Mesh,    CoverStyle::Ford,       CoverStyle::Pascal,  CoverStyle::Ulam,      CoverStyle::Hilbert,
+        CoverStyle::Surface, CoverStyle::Pythagoras, CoverStyle::Rose,    CoverStyle::Fibonacci, CoverStyle::Blocks,
+        CoverStyle::Relief,  CoverStyle::Julia};
 }  // namespace
 
 auto coverStyleToString(CoverStyle s) -> const char* {
@@ -45,12 +52,48 @@ auto coverStyleToString(CoverStyle s) -> const char* {
             return "page";
         case CoverStyle::Plain:
             return "plain";
+        case CoverStyle::Field:
+            return "field";
+        case CoverStyle::Waves:
+            return "waves";
+        case CoverStyle::Sunflower:
+            return "sunflower";
+        case CoverStyle::Truchet:
+            return "truchet";
+        case CoverStyle::Lissajous:
+            return "lissajous";
+        case CoverStyle::Graph:
+            return "graph";
+        case CoverStyle::Mesh:
+            return "mesh";
+        case CoverStyle::Ford:
+            return "ford";
+        case CoverStyle::Pascal:
+            return "pascal";
+        case CoverStyle::Ulam:
+            return "ulam";
+        case CoverStyle::Hilbert:
+            return "hilbert";
+        case CoverStyle::Surface:
+            return "surface";
+        case CoverStyle::Pythagoras:
+            return "pythagoras";
+        case CoverStyle::Rose:
+            return "rose";
+        case CoverStyle::Fibonacci:
+            return "fibonacci";
+        case CoverStyle::Blocks:
+            return "blocks";
+        case CoverStyle::Relief:
+            return "relief";
+        case CoverStyle::Julia:
+            return "julia";
     }
     return "contour";
 }
 
 auto coverStyleFromString(const std::string& s) -> std::optional<CoverStyle> {
-    for (auto style: {CoverStyle::Contour, CoverStyle::Linen, CoverStyle::Page, CoverStyle::Plain}) {
+    for (auto style: ALL_STYLES) {
         if (s == coverStyleToString(style)) {
             return style;
         }

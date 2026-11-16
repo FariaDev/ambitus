@@ -1,8 +1,8 @@
 /*
  * Ambitus
  *
- * Draws notebook covers with Cairo: the same four styles as the prototype in
- * docs/design/r1 (contour, linen, page, plain), plus an own image.
+ * Draws notebook covers with Cairo: the generative styles of the prototype,
+ * plus linen, page and an own image.
  *
  * @license GNU GPLv2 or later
  */
@@ -60,5 +60,8 @@ void drawBoardCover(cairo_t* cr, double width, double height, const CoverInput& 
 
 /// The colour actually used: the notebook's, else the course's, else DEFAULT_COVER_COLOR.
 std::string effectiveColor(const CoverInput& in);
+
+/// A generative style picked from the notebook name: always the same for a name, never linen, page or plain.
+CoverStyle suggestedStyle(const std::string& notebookName);
 
 }  // namespace ambitus::library

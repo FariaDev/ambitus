@@ -19,7 +19,30 @@
 
 namespace ambitus::library {
 
-enum class CoverStyle { Contour, Linen, Page, Plain };
+enum class CoverStyle {
+    Contour,
+    Linen,
+    Page,
+    Plain,
+    Field,
+    Waves,
+    Sunflower,
+    Truchet,
+    Lissajous,
+    Graph,
+    Mesh,
+    Ford,
+    Pascal,
+    Ulam,
+    Hilbert,
+    Surface,
+    Pythagoras,
+    Rose,
+    Fibonacci,
+    Blocks,
+    Relief,
+    Julia
+};
 
 const char* coverStyleToString(CoverStyle s);
 std::optional<CoverStyle> coverStyleFromString(const std::string& s);

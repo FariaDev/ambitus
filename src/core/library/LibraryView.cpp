@@ -1271,17 +1271,38 @@ void LibraryView::openCoverPopover(GtkWidget* tile, const Entry& e) {
     };
 
     gtk_container_add(GTK_CONTAINER(box), label(_("Style"), "amb-pop-label"));
-    GtkWidget* styles = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    gtk_box_set_homogeneous(GTK_BOX(styles), true);
+    GtkWidget* styles = gtk_grid_new();
+    gtk_grid_set_column_spacing(GTK_GRID(styles), 6);
+    gtk_grid_set_row_spacing(GTK_GRID(styles), 6);
     const std::pair<CoverStyle, const char*> styleNames[] = {{CoverStyle::Contour, _("Contour")},
                                                              {CoverStyle::Linen, _("Linen")},
                                                              {CoverStyle::Page, _("Page")},
-                                                             {CoverStyle::Plain, C_("cover style", "Plain")}};
+                                                             {CoverStyle::Plain, C_("cover style", "Plain")},
+                                                             {CoverStyle::Field, _("Direction field")},
+                                                             {CoverStyle::Waves, C_("cover style", "Waves")},
+                                                             {CoverStyle::Sunflower, _("Sunflower")},
+                                                             {CoverStyle::Truchet, _("Truchet")},
+                                                             {CoverStyle::Lissajous, _("Lissajous")},
+                                                             {CoverStyle::Graph, C_("cover style", "Graph")},
+                                                             {CoverStyle::Mesh, _("Curved mesh")},
+                                                             {CoverStyle::Ford, _("Ford circles")},
+                                                             {CoverStyle::Pascal, C_("cover style", "Pascal")},
+                                                             {CoverStyle::Ulam, _("Ulam spiral")},
+                                                             {CoverStyle::Hilbert, _("Hilbert curve")},
+                                                             {CoverStyle::Surface, C_("cover style", "Surface")},
+                                                             {CoverStyle::Pythagoras, _("Pythagoras tree")},
+                                                             {CoverStyle::Rose, C_("cover style", "Rose")},
+                                                             {CoverStyle::Fibonacci, _("Fibonacci")},
+                                                             {CoverStyle::Blocks, C_("cover style", "Blocks")},
+                                                             {CoverStyle::Relief, C_("cover style", "Relief")},
+                                                             {CoverStyle::Julia, _("Julia set")}};
+    GtkWidget* chosen = label("", "amb-pop-name");
+    int slot = 0;
     for (auto& [style, text]: styleNames) {
         GtkWidget* b = gtk_button_new();
         gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
         addClass(b, "amb-style");
-        GtkWidget* v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_widget_set_tooltip_text(b, text);
         const CoverStyle st = style;
         GtkWidget* mini = coverArea(MINI_W, MINI_H, [this, entry, st] {
             CoverInput in = coverInput(entry);
@@ -1294,9 +1315,8 @@ void LibraryView::openCoverPopover(GtkWidget* tile, const Entry& e) {
             return in;
         });
         gtk_widget_set_halign(mini, GTK_ALIGN_CENTER);
-        gtk_container_add(GTK_CONTAINER(v), mini);
-        gtk_container_add(GTK_CONTAINER(v), gtk_label_new(text));
-        gtk_container_add(GTK_CONTAINER(b), v);
+        gtk_widget_set_valign(mini, GTK_ALIGN_CENTER);
+        gtk_container_add(GTK_CONTAINER(b), mini);
         auto mark = [b, st, this, path] {
             auto* ctx = gtk_widget_get_style_context(b);
             if (store.cover(path).style == st && store.cover(path).image.empty()) {
@@ -1308,7 +1328,7 @@ void LibraryView::openCoverPopover(GtkWidget* tile, const Entry& e) {
         mark();
         g_object_set_data_full(G_OBJECT(b), "amb-mark", new std::function<void()>(mark),
                                [](gpointer p) { delete static_cast<std::function<void()>*>(p); });
-        onClicked(b, [apply, st, styles] {
+        onClicked(b, [apply, st, styles, chosen, name = std::string(text)] {
             apply([st](Cover& c) {
                 c.style = st;
                 c.image.clear();
@@ -1319,10 +1339,18 @@ void LibraryView::openCoverPopover(GtkWidget* tile, const Entry& e) {
                         (*static_cast<std::function<void()>*>(g_object_get_data(G_OBJECT(w), "amb-mark")))();
                     },
                     nullptr);
+            gtk_label_set_text(GTK_LABEL(chosen), name.c_str());
         });
-        gtk_container_add(GTK_CONTAINER(styles), b);
+        gtk_grid_attach(GTK_GRID(styles), b, slot % 6, slot / 6, 1, 1);
+        slot++;
+    }
+    for (auto& [style, text]: styleNames) {
+        if (store.cover(path).style == style) {
+            gtk_label_set_text(GTK_LABEL(chosen), text);
+        }
     }
     gtk_container_add(GTK_CONTAINER(box), styles);
+    gtk_container_add(GTK_CONTAINER(box), chosen);
 
     gtk_container_add(GTK_CONTAINER(box), label(_("Colour"), "amb-pop-label"));
     // five per row; the last cell is "another colour"

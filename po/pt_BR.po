@@ -4867,7 +4867,7 @@ msgid "Style"
 msgstr "Estilo"
 
 msgid "Contour"
-msgstr "Contorno"
+msgstr "Curvas de nível"
 
 msgid "Linen"
 msgstr "Linho"
@@ -4908,6 +4908,67 @@ msgstr "Biblioteca"
 msgctxt "cover style"
 msgid "Plain"
 msgstr "Lisa"
+
+msgid "Direction field"
+msgstr "Campo de direções"
+
+msgctxt "cover style"
+msgid "Waves"
+msgstr "Ondas"
+
+msgid "Sunflower"
+msgstr "Girassol"
+
+msgid "Truchet"
+msgstr "Truchet"
+
+msgid "Lissajous"
+msgstr "Lissajous"
+
+msgctxt "cover style"
+msgid "Graph"
+msgstr "Grafo"
+
+msgid "Curved mesh"
+msgstr "Malha curva"
+
+msgid "Ford circles"
+msgstr "Círculos de Ford"
+
+msgctxt "cover style"
+msgid "Pascal"
+msgstr "Pascal"
+
+msgid "Ulam spiral"
+msgstr "Espiral de Ulam"
+
+msgid "Hilbert curve"
+msgstr "Curva de Hilbert"
+
+msgctxt "cover style"
+msgid "Surface"
+msgstr "Superfície"
+
+msgid "Pythagoras tree"
+msgstr "Árvore de Pitágoras"
+
+msgctxt "cover style"
+msgid "Rose"
+msgstr "Rosácea"
+
+msgid "Fibonacci"
+msgstr "Fibonacci"
+
+msgctxt "cover style"
+msgid "Blocks"
+msgstr "Blocos"
+
+msgctxt "cover style"
+msgid "Relief"
+msgstr "Relevo"
+
+msgid "Julia set"
+msgstr "Conjunto de Julia"
 
 msgid "Search notebooks"
 msgstr "Buscar nos cadernos"
