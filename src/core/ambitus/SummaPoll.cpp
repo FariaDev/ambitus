@@ -161,7 +161,7 @@ void run(const std::shared_ptr<SummaPoller::Shared>& shared) {
 }  // namespace
 
 /// The PNG of the page, drawn from the document in memory by the export of the program (what --create-img uses), at
-/// the resolution Summa's tutor reads pages at and without the ruling, as renderPagePng does for the file on disk.
+/// the resolution Summa's tutor reads pages at, with the paper and its ruling as the person sees them: opaque.
 auto renderCurrentPage(Document* doc, size_t page) -> std::optional<std::string> {
     gchar* dir = g_dir_make_tmp("ambitus-check-XXXXXX", nullptr);
     if (!dir) {
@@ -175,7 +175,7 @@ auto renderCurrentPage(Document* doc, size_t page) -> std::optional<std::string>
         PageRangeVector range;
         range.emplace_back(page, page);
         DummyProgressListener progress;
-        ImageExport exporter(doc, out, EXPORT_GRAPHICS_PNG, EXPORT_BACKGROUND_UNRULED, range);
+        ImageExport exporter(doc, out, EXPORT_GRAPHICS_PNG, EXPORT_BACKGROUND_ALL, range);
         exporter.setQualityParameter(EXPORT_QUALITY_DPI, library::PAGE_DPI);
         exporter.exportGraphics(&progress);
         if (exporter.getLastErrorMsg().empty()) {

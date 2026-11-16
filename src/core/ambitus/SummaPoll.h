@@ -41,7 +41,8 @@ private:
 };
 
 /// The PNG of a page (0-based), drawn from the document in memory (so unsaved ink is in it) at the resolution
-/// Summa's tutor reads pages at. UI thread; nothing when it could not be drawn.
+/// Summa's tutor reads pages at, opaque, with the paper colour and the ruling. UI thread; nothing when it could not
+/// be drawn.
 std::optional<std::string> renderCurrentPage(Document* doc, size_t page);
 
 }  // namespace ambitus

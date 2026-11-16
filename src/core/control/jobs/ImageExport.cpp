@@ -201,6 +201,11 @@ void ImageExport::exportImagePage(size_t pageId, size_t id, double zoomRatio, Ex
                                                                    xoj::view::SHOW_IMAGE_BACKGROUND;
     flags.showRuling = exportBackground <= EXPORT_BACKGROUND_UNRULED ? xoj::view::HIDE_RULING_BACKGROUND :
                                                                        xoj::view::SHOW_RULING_BACKGROUND;
+    // Ambitus: without the ruling the paper colour is still painted, so the image is opaque (a reader that drops the
+    // alpha, like Summa's tutor, would otherwise see the ink on black)
+    if (exportBackground == EXPORT_BACKGROUND_UNRULED) {
+        flags.forceBackgroundColor = xoj::view::FORCE_AT_LEAST_BACKGROUND_COLOR;
+    }
 
     if (layerRange) {
         view.drawLayersOfPage(*layerRange, page, this->cr, true /* dont render eraseable */, flags);
