@@ -5832,8 +5832,11 @@ msgstr "Dê um nome ao rascunho."
 msgid "There is no subject in the library yet."
 msgstr "Ainda não há matéria na biblioteca."
 
-msgid "What should happen to this draft?"
-msgstr "O que fazer com este rascunho?"
+msgid "Keep this draft?"
+msgstr "Guardar este rascunho?"
+
+msgid "It is saved in Drafts until you decide."
+msgstr "Ele fica em Rascunhos até você decidir."
 
 msgid "Could not create the draft."
 msgstr "Não foi possível criar o rascunho."

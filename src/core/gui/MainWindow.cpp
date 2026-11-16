@@ -49,7 +49,6 @@
 #include "util/PathUtil.h"                              // for getConfigFile
 #include "util/StringUtils.h"                           // for char_cast
 #include "util/Util.h"                                  // for execInUiThread, npos
-#include "util/XojMsgBox.h"                             // for XojMsgBox
 #include "util/glib_casts.h"                            // for wrap_for_once_v
 #include "util/gtk4_helper.h"                           // for gtk_widget_get_width
 #include "util/i18n.h"                                  // for FS, _F
@@ -738,29 +737,37 @@ void MainWindow::handleDraftClose(std::function<void(bool)> done) {
         return;
     }
 
-    enum { DISCARD = 1, KEEP_IN_DRAFTS, KEEP_AS_NOTEBOOK };
-    std::vector<XojMsgBox::Button> buttons = {
-            {_("Discard"), DISCARD}, {_("Keep in drafts"), KEEP_IN_DRAFTS}, {_("Keep as notebook…"), KEEP_AS_NOTEBOOK}};
-    XojMsgBox::askQuestion(GTK_WINDOW(this->window), _("What should happen to this draft?"), std::string(),
-                           std::move(buttons), [this, draft, done = std::move(done)](int response) mutable {
-                               auto finish = std::move(done);
-                               if (response == DISCARD) {
-                                   ambitus::drafts::discard(draft);
-                                   library->refresh();
-                                   finish(true);
-                               } else if (response == KEEP_IN_DRAFTS) {
-                                   control->save([this, finish = std::move(finish)](bool saved) mutable {
-                                       if (saved && library) {
-                                           library->refresh();
-                                       }
-                                       finish(saved);
-                                   });
-                               } else if (response == KEEP_AS_NOTEBOOK) {
-                                   openKeepDraftCard(std::move(finish));
-                               } else {
-                                   finish(false);
-                               }
-                           });
+    if (!keepDraftCard) {
+        done(false);
+        return;
+    }
+    keepDraftCard->openClose(
+            [this, draft, done](ambitus::KeepDraftCard::CloseChoice choice) {
+                using Choice = ambitus::KeepDraftCard::CloseChoice;
+                if (choice == Choice::DISCARD) {
+                    ambitus::drafts::discard(draft);
+                    library->refresh();
+                    if (done) {
+                        done(true);
+                    }
+                } else if (choice == Choice::KEEP_IN_DRAFTS) {
+                    control->save([this, done](bool saved) {
+                        if (saved && library) {
+                            library->refresh();
+                        }
+                        if (done) {
+                            done(saved);
+                        }
+                    });
+                } else {
+                    openKeepDraftCard(done);
+                }
+            },
+            [done] {
+                if (done) {
+                    done(false);
+                }
+            });
 }
 
 void MainWindow::openKeepDraftCard(std::function<void(bool)> after) {

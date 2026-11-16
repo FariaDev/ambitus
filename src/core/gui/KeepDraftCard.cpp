@@ -78,7 +78,13 @@ KeepDraftCard::KeepDraftCard(GtkOverlay* overlay, GtkWindow* window): window(win
     GtkWidget* clicks = gtk_event_box_new();
     gtk_event_box_set_visible_window(GTK_EVENT_BOX(clicks), false);
     g_signal_connect(clicks, "button-press-event",
-                     G_CALLBACK(+[](GtkWidget*, GdkEventButton*, gpointer) -> gboolean { return TRUE; }), nullptr);
+                     G_CALLBACK(+[](GtkWidget*, GdkEventButton*, KeepDraftCard* self) -> gboolean {
+                         if (self->mode == Mode::CLOSE) {
+                             self->close();
+                         }
+                         return TRUE;
+                     }),
+                     this);
     GtkWidget* veil = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     addClass(veil, "amb-cmd-veil");
     gtk_container_add(GTK_CONTAINER(clicks), veil);
@@ -93,30 +99,33 @@ KeepDraftCard::KeepDraftCard(GtkOverlay* overlay, GtkWindow* window): window(win
     gtk_widget_set_size_request(card, CARD_WIDTH, -1);
     gtk_container_add(GTK_CONTAINER(veil), card);
 
-    gtk_box_pack_start(GTK_BOX(card), label(_("Keep draft"), "amb-dlg-title"), false, false, 0);
+    keepPage = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_pack_start(GTK_BOX(card), keepPage, false, false, 0);
+
+    gtk_box_pack_start(GTK_BOX(keepPage), label(_("Keep draft"), "amb-dlg-title"), false, false, 0);
     GtkWidget* note = label(_("It becomes a normal notebook, which Summa reads too."), "amb-dlg-problem");
     addClass(note, "amb-dlg-note");
     gtk_label_set_line_wrap(GTK_LABEL(note), true);
-    gtk_box_pack_start(GTK_BOX(card), note, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(keepPage), note, false, false, 0);
 
-    gtk_box_pack_start(GTK_BOX(card), label(_("Name"), "amb-opt-label"), false, false, 0);
+    gtk_box_pack_start(GTK_BOX(keepPage), label(_("Name"), "amb-opt-label"), false, false, 0);
     entry = gtk_entry_new();
     addClass(entry, "amb-cmd-entry");
     gtk_entry_set_placeholder_text(GTK_ENTRY(entry), _("Name"));
     gtk_entry_set_activates_default(GTK_ENTRY(entry), false);
-    gtk_box_pack_start(GTK_BOX(card), entry, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(keepPage), entry, false, false, 0);
     problem = label("", "amb-dlg-problem");
     gtk_label_set_ellipsize(GTK_LABEL(problem), PANGO_ELLIPSIZE_END);
-    gtk_box_pack_start(GTK_BOX(card), problem, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(keepPage), problem, false, false, 0);
 
-    gtk_box_pack_start(GTK_BOX(card), label(_("Subject"), "amb-opt-label"), false, false, 0);
+    gtk_box_pack_start(GTK_BOX(keepPage), label(_("Subject"), "amb-opt-label"), false, false, 0);
     subjectsBox = gtk_flow_box_new();
     addClass(subjectsBox, "amb-dlg-chips");
     gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(subjectsBox), GTK_SELECTION_NONE);
     gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(subjectsBox), 6);
     gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(subjectsBox), 6);
     gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(subjectsBox), 3);
-    gtk_box_pack_start(GTK_BOX(card), subjectsBox, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(keepPage), subjectsBox, false, false, 0);
 
     GtkWidget* foot = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
     addClass(foot, "amb-dlg-foot");
@@ -128,12 +137,40 @@ KeepDraftCard::KeepDraftCard(GtkOverlay* overlay, GtkWindow* window): window(win
     addClass(cancelButton, "amb-dlg-ghost");
     clickOf(cancelButton, [this] { close(); });
     gtk_box_pack_end(GTK_BOX(foot), cancelButton, false, false, 0);
-    gtk_box_pack_start(GTK_BOX(card), foot, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(keepPage), foot, false, false, 0);
+
+    closePage = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_pack_start(GTK_BOX(card), closePage, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(closePage), label(_("Keep this draft?"), "amb-dlg-title"), false, false, 0);
+    GtkWidget* saved = label(_("It is saved in Drafts until you decide."), "amb-dlg-problem");
+    addClass(saved, "amb-dlg-note");
+    gtk_label_set_line_wrap(GTK_LABEL(saved), true);
+    gtk_box_pack_start(GTK_BOX(closePage), saved, false, false, 0);
+
+    GtkWidget* closeFoot = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    addClass(closeFoot, "amb-dlg-foot");
+    closeNotebook = gtk_button_new_with_label(_("Keep as notebook…"));
+    addClass(closeNotebook, "amb-dlg-primary");
+    clickOf(closeNotebook, [this] { chooseClose(CloseChoice::KEEP_AS_NOTEBOOK); });
+    gtk_box_pack_end(GTK_BOX(closeFoot), closeNotebook, false, false, 0);
+    closeDrafts = gtk_button_new_with_label(_("Keep in drafts"));
+    addClass(closeDrafts, "amb-dlg-secondary");
+    clickOf(closeDrafts, [this] { chooseClose(CloseChoice::KEEP_IN_DRAFTS); });
+    gtk_box_pack_end(GTK_BOX(closeFoot), closeDrafts, false, false, 0);
+    closeDiscard = gtk_button_new_with_label(_("Discard"));
+    addClass(closeDiscard, "amb-dlg-ghost");
+    clickOf(closeDiscard, [this] { chooseClose(CloseChoice::DISCARD); });
+    gtk_box_pack_end(GTK_BOX(closeFoot), closeDiscard, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(closePage), closeFoot, false, false, 0);
+    gtk_widget_set_no_show_all(closePage, true);
 
     g_signal_connect(entry, "changed", G_CALLBACK(+[](GtkEditable*, KeepDraftCard* self) { self->refresh(); }), this);
     watchKeys(entry);
     watchKeys(cancelButton);
     watchKeys(keepButton);
+    watchKeys(closeDiscard);
+    watchKeys(closeDrafts);
+    watchKeys(closeNotebook);
 
     g_signal_connect_swapped(revealer, "notify::child-revealed", G_CALLBACK(+[](KeepDraftCard* self) {
                                  auto* r = GTK_REVEALER(self->revealer);
@@ -173,7 +210,7 @@ bool KeepDraftCard::onKey(GtkWidget* from, GdkEventKey* e) {
             return true;
         case GDK_KEY_Return:
         case GDK_KEY_KP_Enter:
-            if (from == cancelButton || from == keepButton) {
+            if (mode == Mode::CLOSE || from == cancelButton || from == keepButton) {
                 return false;
             }
             keep();
@@ -194,8 +231,10 @@ fs::path KeepDraftCard::folderOfSubject() const {
 
 void KeepDraftCard::open(std::vector<library::Subject> list, std::function<void(const Request&)> callback,
                          std::function<void()> cancel) {
+    mode = Mode::KEEP;
     subjects = std::move(list);
     onKeep = std::move(callback);
+    onCloseChoice = nullptr;
     onCancel = std::move(cancel);
     subject = 0;
     if (!subjects.empty() && !lastSubject.empty()) {
@@ -209,7 +248,23 @@ void KeepDraftCard::open(std::vector<library::Subject> list, std::function<void(
     chooseSubject(subject);
     gtk_entry_set_text(GTK_ENTRY(entry), "");
     refresh();
+    gtk_widget_hide(closePage);
+    gtk_widget_show_all(keepPage);
+    reveal(entry);
+}
 
+void KeepDraftCard::openClose(std::function<void(CloseChoice)> onChoice, std::function<void()> cancel) {
+    mode = Mode::CLOSE;
+    onKeep = nullptr;
+    onCloseChoice = std::move(onChoice);
+    onCancel = std::move(cancel);
+    gtk_widget_hide(keepPage);
+    gtk_widget_set_no_show_all(closePage, false);
+    gtk_widget_show_all(closePage);
+    reveal(closeDrafts);
+}
+
+void KeepDraftCard::reveal(GtkWidget* focus) {
     if (focusBack) {
         g_object_remove_weak_pointer(G_OBJECT(focusBack), reinterpret_cast<gpointer*>(&focusBack));
         focusBack = nullptr;
@@ -222,8 +277,22 @@ void KeepDraftCard::open(std::vector<library::Subject> list, std::function<void(
     gtk_revealer_set_transition_duration(GTK_REVEALER(revealer), animationsOn(revealer) ? FADE_IN_MS : 0);
     gtk_widget_show(revealer);
     gtk_revealer_set_reveal_child(GTK_REVEALER(revealer), true);
-    gtk_widget_realize(entry);
-    gtk_widget_grab_focus(entry);
+    gtk_widget_realize(focus);
+    gtk_widget_grab_focus(focus);
+}
+
+void KeepDraftCard::chooseClose(CloseChoice choice) {
+    if (!isOpen() || mode != Mode::CLOSE) {
+        return;
+    }
+    auto done = std::move(onCloseChoice);
+    onCloseChoice = nullptr;
+    onKeep = nullptr;
+    onCancel = nullptr;
+    close(false);
+    if (done) {
+        done(choice);
+    }
 }
 
 void KeepDraftCard::close() {
@@ -231,6 +300,7 @@ void KeepDraftCard::close() {
     auto cancel = std::move(onCancel);
     onCancel = nullptr;
     onKeep = nullptr;
+    onCloseChoice = nullptr;
     if (cancel) {
         cancel();
     }
@@ -251,7 +321,7 @@ void KeepDraftCard::close(bool restoreFocus) {
 }
 
 void KeepDraftCard::keep() {
-    if (!isOpen() || !valid) {
+    if (!isOpen() || mode != Mode::KEEP || !valid) {
         return;
     }
     Request r;
@@ -264,6 +334,7 @@ void KeepDraftCard::keep() {
     auto done = std::move(onKeep);
     onKeep = nullptr;
     onCancel = nullptr;
+    onCloseChoice = nullptr;
     close(false);
     if (done) {
         done(r);

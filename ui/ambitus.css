@@ -916,6 +916,7 @@ popover.amb-dlg-pop { padding: 4px; }
 
 .amb-dlg .amb-dlg-foot { margin-top: 16px; }
 .amb-dlg button.amb-dlg-primary,
+.amb-dlg button.amb-dlg-secondary,
 .amb-dlg button.amb-dlg-ghost,
 .amb-draft-pill button.amb-dlg-primary,
 .amb-draft-pill button.amb-dlg-ghost {
@@ -933,6 +934,8 @@ popover.amb-dlg-pop { padding: 4px; }
 .amb-draft-pill button.amb-dlg-primary:hover { background: shade(@amb_accent, 1.25); }
 .amb-dlg button.amb-dlg-primary:disabled,
 .amb-draft-pill button.amb-dlg-primary:disabled { opacity: 0.45; }
+.amb-dlg button.amb-dlg-secondary { background: @amb_layer; color: @amb_text; }
+.amb-dlg button.amb-dlg-secondary:hover { background: @amb_hover; }
 .amb-dlg button.amb-dlg-ghost,
 .amb-draft-pill button.amb-dlg-ghost { background: transparent; color: @amb_text2; padding: 0 12px; }
 .amb-dlg button.amb-dlg-ghost:hover,
@@ -954,6 +957,8 @@ popover.amb-dlg-pop { padding: 4px; }
 #mainWindow.darkMode .amb-draft-pill button.amb-dlg-primary { background: @amb_dk_accent; color: @amb_dk_on_accent; }
 #mainWindow.darkMode .amb-dlg button.amb-dlg-primary:hover,
 #mainWindow.darkMode .amb-draft-pill button.amb-dlg-primary:hover { background: shade(@amb_dk_accent, 0.9); }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-secondary { background: @amb_dk_layer; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-secondary:hover { background: @amb_dk_hover; }
 #mainWindow.darkMode .amb-dlg button.amb-dlg-ghost,
 #mainWindow.darkMode .amb-draft-pill button.amb-dlg-ghost { color: @amb_dk_text2; }
 #mainWindow.darkMode .amb-dlg button.amb-dlg-ghost:hover,
@@ -1702,6 +1707,7 @@ popover.amb-selpop button.amb-selpop-item,
 .amb-board-pill button,
 .amb-dlg button.amb-dlg-field,
 .amb-dlg button.amb-dlg-primary,
+.amb-dlg button.amb-dlg-secondary,
 .amb-dlg button.amb-dlg-ghost,
 .amb-draft-pill button.amb-dlg-primary,
 .amb-draft-pill button.amb-dlg-ghost,
