@@ -11,6 +11,7 @@
 #include "ambitus/Drafts.h"
 #include "ambitus/NewNotebook.h"
 #include "ambitus/SettingsRows.h"
+#include "ambitus/Versions.h"
 #include "control/AudioController.h"                    // for AudioController
 #include "control/Control.h"                            // for Control
 #include "control/DeviceListHelper.h"                   // for getSourceMapping
@@ -41,7 +42,7 @@
 #include "gui/widgets/SpinPageAdapter.h"                // for SpinPageAdapter
 #include "gui/widgets/XournalWidget.h"                  // for gtk_xournal_get_l...
 #include "library/LibraryView.h"                        // for LibraryView
-#include "library/SummaState.h"                        // for loadSummaState
+#include "library/SummaState.h"                         // for loadSummaState
 #include "model/Document.h"                             // for Document
 #include "model/XojPage.h"                              // for XojPage
 #include "util/GListView.h"                             // for GListView, GListV...
@@ -56,13 +57,13 @@
 
 #include "BoardNavigator.h"  // for BoardNavigator
 #include "CommandPalette.h"
-#include "GladeSearchpath.h"     // for GladeSearchpath
+#include "GladeSearchpath.h"  // for GladeSearchpath
 #include "KeepDraftCard.h"
 #include "NewNotebookDialog.h"
-#include "PageGrowHandle.h"      // for PageGrowHandle
-#include "PageMenu.h"            // for PageMenu
-#include "RadialMenu.h"          // for RadialMenu
-#include "SelectionBar.h"        // for SelectionBar
+#include "PageGrowHandle.h"  // for PageGrowHandle
+#include "PageMenu.h"        // for PageMenu
+#include "RadialMenu.h"      // for RadialMenu
+#include "SelectionBar.h"    // for SelectionBar
 #include "SettingsCard.h"
 #include "SetupCard.h"
 #include "StudioPalette.h"       // for StudioPalette
@@ -71,9 +72,9 @@
 #include "ToolbarDefinitions.h"  // for TOOLBAR_DEFINITIO...
 #include "ToolbarPalette.h"      // for paletteFileForToolbar
 #include "VersionsPanel.h"
-#include "XournalView.h"         // for XournalView
-#include "config-dev.h"          // for TOOLBAR_CONFIG
-#include "filesystem.h"          // for path, exists
+#include "XournalView.h"  // for XournalView
+#include "config-dev.h"   // for TOOLBAR_CONFIG
+#include "filesystem.h"   // for path, exists
 
 #ifdef __APPLE__
 // the following header file contains a definition of struct Point that conflicts with model/Point.h
@@ -814,6 +815,7 @@ void MainWindow::keepDraft(const fs::path& draft, const fs::path& folder, const 
             }
             return;
         }
+        ambitus::versions::followMove(ambitus::versions::defaultRoot(), draft, *target);
         Document* doc = control->getDocument();
         doc->lock();
         doc->setFilepath(*target);
