@@ -13,6 +13,7 @@
 #include "util/i18n.h"
 
 #include "NewNotebookDialog.h"
+#include "SubjectPicker.h"
 
 namespace ambitus {
 
@@ -38,35 +39,6 @@ void clickOf(GtkWidget* w, std::function<void()> f) {
 }
 
 bool animationsOn(GtkWidget* w) { return !motion::reducedMotion(w); }
-
-/// The square of the colour of the subject, as the library draws it beside a course
-GtkWidget* dotFor(const std::string& color) {
-    GtkWidget* area = gtk_drawing_area_new();
-    gtk_widget_set_size_request(area, 8, 8);
-    gtk_widget_set_valign(area, GTK_ALIGN_CENTER);
-    g_object_set_data_full(G_OBJECT(area), "amb-color", g_strdup(color.c_str()), g_free);
-    g_signal_connect(area, "draw", G_CALLBACK(+[](GtkWidget* a, cairo_t* cr, gpointer) -> gboolean {
-                         GdkRGBA c;
-                         auto* hex = static_cast<const char*>(g_object_get_data(G_OBJECT(a), "amb-color"));
-                         if (!hex || !*hex || !gdk_rgba_parse(&c, hex)) {
-                             gdk_rgba_parse(&c, "#8d8d8d");
-                         }
-                         const double w = gtk_widget_get_allocated_width(a);
-                         const double h = gtk_widget_get_allocated_height(a);
-                         const double r = 2;
-                         cairo_new_sub_path(cr);
-                         cairo_arc(cr, w - r, r, r, -G_PI / 2, 0);
-                         cairo_arc(cr, w - r, h - r, r, 0, G_PI / 2);
-                         cairo_arc(cr, r, h - r, r, G_PI / 2, G_PI);
-                         cairo_arc(cr, r, r, r, G_PI, 3 * G_PI / 2);
-                         cairo_close_path(cr);
-                         gdk_cairo_set_source_rgba(cr, &c);
-                         cairo_fill(cr);
-                         return FALSE;
-                     }),
-                     nullptr);
-    return area;
-}
 
 /// The last subject the user kept a draft in, so the card starts there next time
 fs::path lastSubject;
@@ -119,13 +91,9 @@ KeepDraftCard::KeepDraftCard(GtkOverlay* overlay, GtkWindow* window): window(win
     gtk_box_pack_start(GTK_BOX(keepPage), problem, false, false, 0);
 
     gtk_box_pack_start(GTK_BOX(keepPage), label(_("Subject"), "amb-opt-label"), false, false, 0);
-    subjectsBox = gtk_flow_box_new();
-    addClass(subjectsBox, "amb-dlg-chips");
-    gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(subjectsBox), GTK_SELECTION_NONE);
-    gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(subjectsBox), 6);
-    gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(subjectsBox), 6);
-    gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(subjectsBox), 3);
-    gtk_box_pack_start(GTK_BOX(keepPage), subjectsBox, false, false, 0);
+    subjectPicker = std::make_unique<SubjectPicker>();
+    subjectPicker->setOnChanged([this] { refresh(); });
+    gtk_box_pack_start(GTK_BOX(keepPage), subjectPicker->field(), false, false, 0);
 
     GtkWidget* foot = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
     addClass(foot, "amb-dlg-foot");
@@ -166,6 +134,7 @@ KeepDraftCard::KeepDraftCard(GtkOverlay* overlay, GtkWindow* window): window(win
 
     g_signal_connect(entry, "changed", G_CALLBACK(+[](GtkEditable*, KeepDraftCard* self) { self->refresh(); }), this);
     watchKeys(entry);
+    watchKeys(subjectPicker->field());
     watchKeys(cancelButton);
     watchKeys(keepButton);
     watchKeys(closeDiscard);
@@ -215,6 +184,20 @@ bool KeepDraftCard::onKey(GtkWidget* from, GdkEventKey* e) {
             }
             keep();
             return true;
+        case GDK_KEY_Up:
+        case GDK_KEY_Down:
+            // on the subject, the arrows go through the list without opening it
+            if (from == subjectPicker->field() && !subjectPicker->empty()) {
+                const bool down = e->keyval == GDK_KEY_Down;
+                const size_t subject = subjectPicker->selected();
+                if (down && subject + 1 < subjectPicker->list().size()) {
+                    subjectPicker->choose(subject + 1);
+                } else if (!down && subject > 0) {
+                    subjectPicker->choose(subject - 1);
+                }
+                return true;
+            }
+            return false;
         default:
             return false;
     }
@@ -223,29 +206,29 @@ bool KeepDraftCard::onKey(GtkWidget* from, GdkEventKey* e) {
 std::string KeepDraftCard::typedName() const { return gtk_entry_get_text(GTK_ENTRY(entry)); }
 
 fs::path KeepDraftCard::folderOfSubject() const {
-    if (subjects.empty()) {
+    if (subjectPicker->empty()) {
         return {};
     }
-    return subjects[subject].path;
+    return subjectPicker->list()[subjectPicker->selected()].path;
 }
 
 void KeepDraftCard::open(std::vector<library::Subject> list, std::function<void(const Request&)> callback,
                          std::function<void()> cancel) {
     mode = Mode::KEEP;
-    subjects = std::move(list);
     onKeep = std::move(callback);
     onCloseChoice = nullptr;
     onCancel = std::move(cancel);
-    subject = 0;
-    if (!subjects.empty() && !lastSubject.empty()) {
+    subjectPicker->setSubjects(std::move(list));
+    size_t subject = 0;
+    if (!lastSubject.empty()) {
+        const auto& subjects = subjectPicker->list();
         auto it = std::find_if(subjects.begin(), subjects.end(),
                                [](const library::Subject& s) { return s.path == lastSubject; });
         if (it != subjects.end()) {
             subject = static_cast<size_t>(std::distance(subjects.begin(), it));
         }
     }
-    fillSubjects();
-    chooseSubject(subject);
+    subjectPicker->choose(subject);
     gtk_entry_set_text(GTK_ENTRY(entry), "");
     refresh();
     gtk_widget_hide(closePage);
@@ -310,6 +293,7 @@ void KeepDraftCard::close(bool restoreFocus) {
     if (!isOpen()) {
         return;
     }
+    subjectPicker->popdown();
     gtk_revealer_set_transition_duration(GTK_REVEALER(revealer), animationsOn(revealer) ? FADE_OUT_MS : 0);
     gtk_revealer_set_reveal_child(GTK_REVEALER(revealer), false);
     if (!animationsOn(revealer)) {
@@ -341,55 +325,6 @@ void KeepDraftCard::keep() {
     }
 }
 
-void KeepDraftCard::fillSubjects() {
-    gtk_container_foreach(GTK_CONTAINER(subjectsBox), [](GtkWidget* w, gpointer) { gtk_widget_destroy(w); }, nullptr);
-    subjectButtons.clear();
-    GSList* group = nullptr;
-    for (size_t i = 0; i < subjects.size(); i++) {
-        GtkWidget* b = gtk_radio_button_new(group);
-        group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(b));
-        gtk_toggle_button_set_mode(GTK_TOGGLE_BUTTON(b), false);
-        addClass(b, "amb-dlg-chip");
-        GtkWidget* row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-        if (!subjects[i].color.empty()) {
-            gtk_box_pack_start(GTK_BOX(row), dotFor(subjects[i].color), false, false, 0);
-        }
-        gtk_box_pack_start(GTK_BOX(row), gtk_label_new(subjects[i].name.c_str()), false, false, 0);
-        gtk_container_add(GTK_CONTAINER(b), row);
-        g_signal_connect(b, "toggled", G_CALLBACK(+[](GtkToggleButton* t, KeepDraftCard* self) {
-                             if (!gtk_toggle_button_get_active(t)) {
-                                 return;
-                             }
-                             for (size_t i = 0; i < self->subjectButtons.size(); i++) {
-                                 if (self->subjectButtons[i] == GTK_WIDGET(t)) {
-                                     self->chooseSubject(i);
-                                     return;
-                                 }
-                             }
-                         }),
-                         this);
-        gtk_flow_box_insert(GTK_FLOW_BOX(subjectsBox), b, -1);
-        subjectButtons.push_back(b);
-        watchKeys(b);
-    }
-    gtk_widget_show_all(subjectsBox);
-}
-
-void KeepDraftCard::chooseSubject(size_t index) {
-    if (!subjects.empty()) {
-        subject = std::min(index, subjects.size() - 1);
-        for (size_t i = 0; i < subjectButtons.size(); i++) {
-            auto* ctx = gtk_widget_get_style_context(subjectButtons[i]);
-            if (i == subject) {
-                gtk_style_context_add_class(ctx, "on");
-            } else {
-                gtk_style_context_remove_class(ctx, "on");
-            }
-        }
-    }
-    refresh();
-}
-
 void KeepDraftCard::refresh() {
     const fs::path dir = folderOfSubject();
     auto exists = [&dir](const std::string& n) {
@@ -397,9 +332,9 @@ void KeepDraftCard::refresh() {
         return !dir.empty() && fs::exists(dir / (n + ".xopp"), ec);
     };
     const NameCheck check = checkName(typedName(), exists);
-    valid = check == NameCheck::OK && !subjects.empty();
+    valid = check == NameCheck::OK && !subjectPicker->empty();
     const char* text = "";
-    if (subjects.empty()) {
+    if (subjectPicker->empty()) {
         text = _("There is no subject in the library yet.");
     } else {
         switch (check) {

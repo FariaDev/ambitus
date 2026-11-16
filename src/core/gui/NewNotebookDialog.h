@@ -12,6 +12,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,8 @@ namespace newnotebook {
 constexpr int FADE_IN_MS = 180;
 constexpr int FADE_OUT_MS = 120;
 }  // namespace newnotebook
+
+class SubjectPicker;
 
 class NewNotebookDialog {
 public:
@@ -68,12 +71,10 @@ public:
 private:
     void close(bool restoreFocus);
     void create();
-    void chooseSubject(size_t index);
     void choosePaper(newnotebook::Paper paper);
     void chooseSize(newnotebook::PageSize size);
     void suggest();  ///< puts the suggested name in the field, while the user has not typed one
     void refresh();  ///< the sentence under the name and "Create"
-    void fillSubjects();
     fs::path folderOfSubject() const;  ///< where the file goes, "Boards" included; empty with no subject
     std::string typedName() const;
     bool onKey(GtkWidget* from, GdkEventKey* e);
@@ -84,18 +85,13 @@ private:
     GtkWidget* card = nullptr;
     GtkWidget* entry = nullptr;
     GtkWidget* problem = nullptr;
-    GtkWidget* subjectField = nullptr;
-    GtkWidget* subjectDot = nullptr;
-    GtkWidget* subjectName = nullptr;
-    GtkWidget* subjectPop = nullptr;
+    std::unique_ptr<SubjectPicker> subjectPicker;
     GtkWidget* papersBox = nullptr;
     std::vector<GtkWidget*> paperButtons;
     std::vector<GtkWidget*> sizeButtons;
     GtkWidget* cancelButton = nullptr;
     GtkWidget* createButton = nullptr;
 
-    std::vector<library::Subject> subjects;
-    size_t subject = 0;
     newnotebook::Paper startPaper = newnotebook::DEFAULT_PAPER;
     newnotebook::Paper paper = newnotebook::DEFAULT_PAPER;
     newnotebook::PageSize startSize = newnotebook::DEFAULT_SIZE;

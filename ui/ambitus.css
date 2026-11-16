@@ -845,38 +845,6 @@ headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_
 .amb-dlg button.amb-dlg-field image { color: @amb_text3; }
 popover.amb-dlg-pop { padding: 4px; }
 
-/* os chips das matérias: a pílula da camada, com o quadradinho da cor; a escolhida no acento */
-.amb-dlg flowbox.amb-dlg-chips { background: transparent; }
-.amb-dlg button.amb-dlg-chip {
-    min-height: 0;
-    padding: 3px 10px;
-    border: 1px solid @amb_border;
-    border-radius: 14px;
-    box-shadow: none;
-    background-image: none;
-    background-color: @amb_bg;
-    color: @amb_text2;
-    font-size: 13px;
-}
-.amb-dlg button.amb-dlg-chip:hover { background-color: @amb_hover; color: @amb_text; }
-.amb-dlg button.amb-dlg-chip.on {
-    background-color: @amb_accent;
-    border-color: @amb_accent;
-    color: @amb_on_accent;
-    font-weight: 600;
-}
-
-#mainWindow.darkMode .amb-dlg button.amb-dlg-chip {
-    background-color: @amb_dk_bg;
-    border-color: @amb_dk_border;
-    color: @amb_dk_text2;
-}
-#mainWindow.darkMode .amb-dlg button.amb-dlg-chip:hover { background-color: @amb_dk_hover; color: @amb_dk_text; }
-#mainWindow.darkMode .amb-dlg button.amb-dlg-chip.on {
-    background-color: @amb_dk_accent;
-    border-color: @amb_dk_accent;
-    color: @amb_dk_on_accent;
-}
 /* a barra do rascunho, irmã da paleta: o fundo, o fio e o raio de 8px são os de .amb-palette (o seletor com as
    duas classes ganha do padding 4px 6px dela). O rótulo é só informativo, o separador tem 20px, o Descartar é chapado
    como os botões da paleta e o primário é o único com fundo. Some quando o documento vira caderno. */
@@ -1442,6 +1410,9 @@ popover.amb-selpop .amb-selpop-sep { margin: 4px 0; background: @amb_border; min
 #mainWindow.darkMode popover.amb-selpop button.amb-selpop-item:hover,
 #mainWindow.darkMode popover.amb-selpop button.amb-selpop-item.amb-selpop-active { background: @amb_dk_hover; }
 #mainWindow.darkMode popover.amb-selpop .amb-selpop-sep { background: @amb_dk_border; }
+/* o seletor de matéria dos cartões (SubjectPicker.cpp): a escolhida usa o fundo suave do item ativo e um ✓ */
+popover.amb-selpop button.amb-selpop-item .amb-selpop-check { color: @amb_text3; }
+#mainWindow.darkMode popover.amb-selpop button.amb-selpop-item .amb-selpop-check { color: @amb_dk_text3; }
 
 /* o botão direito na página (PageMenu.cpp) e o ⋯ da barra (TitleBar.cpp), os dois feitos por PopupMenu.cpp: o .menu do
    protótipo r6, em cima do mesmo popover. .amb-selpop-active é o item em que o teclado (ou o ponteiro) está */

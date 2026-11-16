@@ -14,6 +14,8 @@
 #include "util/PathUtil.h"
 #include "util/i18n.h"
 
+#include "SubjectPicker.h"
+
 namespace ambitus {
 
 using namespace newnotebook;
@@ -115,40 +117,6 @@ const char* sizeName(PageSize s) {
 
 constexpr PageSize SIZES[] = {PageSize::A4, PageSize::LETTER, PageSize::INFINITE};
 
-/// The square of the colour of the subject, as the library draws it beside a course
-GtkWidget* dotFor(const std::string& color) {
-    GtkWidget* area = gtk_drawing_area_new();
-    gtk_widget_set_size_request(area, 10, 10);
-    gtk_widget_set_valign(area, GTK_ALIGN_CENTER);
-    g_object_set_data_full(G_OBJECT(area), "amb-color", g_strdup(color.c_str()), g_free);
-    g_signal_connect(area, "draw", G_CALLBACK(+[](GtkWidget* a, cairo_t* cr, gpointer) -> gboolean {
-                         GdkRGBA c;
-                         auto* hex = static_cast<const char*>(g_object_get_data(G_OBJECT(a), "amb-color"));
-                         if (!hex || !*hex || !gdk_rgba_parse(&c, hex)) {
-                             gdk_rgba_parse(&c, "#8d8d8d");
-                         }
-                         const double w = gtk_widget_get_allocated_width(a);
-                         const double h = gtk_widget_get_allocated_height(a);
-                         const double r = 2;
-                         cairo_new_sub_path(cr);
-                         cairo_arc(cr, w - r, r, r, -G_PI / 2, 0);
-                         cairo_arc(cr, w - r, h - r, r, 0, G_PI / 2);
-                         cairo_arc(cr, r, h - r, r, G_PI / 2, G_PI);
-                         cairo_arc(cr, r, r, r, G_PI, 3 * G_PI / 2);
-                         cairo_close_path(cr);
-                         gdk_cairo_set_source_rgba(cr, &c);
-                         cairo_fill(cr);
-                         return FALSE;
-                     }),
-                     nullptr);
-    return area;
-}
-
-void setDot(GtkWidget* area, const std::string& color) {
-    g_object_set_data_full(G_OBJECT(area), "amb-color", g_strdup(color.c_str()), g_free);
-    gtk_widget_queue_draw(area);
-}
-
 void clickOf(GtkWidget* w, std::function<void()> f) {
     auto* fn = new std::function<void()>(std::move(f));
     g_signal_connect_data(
@@ -197,27 +165,12 @@ NewNotebookDialog::NewNotebookDialog(GtkOverlay* overlay, GtkWindow* window): wi
     gtk_label_set_ellipsize(GTK_LABEL(problem), PANGO_ELLIPSIZE_END);
     gtk_box_pack_start(GTK_BOX(card), problem, false, false, 0);
 
-    // subject
+    // subject: the field is the one of the "Keep draft" card (SubjectPicker)
     gtk_box_pack_start(GTK_BOX(card), label(_("Subject"), "amb-opt-label"), false, false, 0);
-    subjectField = gtk_button_new();
-    addClass(subjectField, "amb-dlg-field");
-    GtkWidget* fieldRow = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    subjectDot = dotFor("");
-    gtk_box_pack_start(GTK_BOX(fieldRow), subjectDot, false, false, 0);
-    subjectName = label("", "amb-dlg-field-name");
-    gtk_label_set_ellipsize(GTK_LABEL(subjectName), PANGO_ELLIPSIZE_END);
-    gtk_box_pack_start(GTK_BOX(fieldRow), subjectName, true, true, 0);
-    GtkWidget* chevron = gtk_image_new_from_icon_name("pan-down-symbolic", GTK_ICON_SIZE_BUTTON);
-    gtk_image_set_pixel_size(GTK_IMAGE(chevron), 16);
-    gtk_box_pack_end(GTK_BOX(fieldRow), chevron, false, false, 0);
-    gtk_container_add(GTK_CONTAINER(subjectField), fieldRow);
-    clickOf(subjectField, [this] {
-        if (subjectPop) {
-            gtk_widget_set_size_request(subjectPop, -1, -1);
-            gtk_popover_popup(GTK_POPOVER(subjectPop));
-        }
-    });
-    gtk_box_pack_start(GTK_BOX(card), subjectField, false, false, 0);
+    subjectPicker = std::make_unique<SubjectPicker>();
+    subjectPicker->setOnChanged([this] { suggest(); });
+    subjectPicker->setOnPicked([this] { gtk_widget_grab_focus(entry); });
+    gtk_box_pack_start(GTK_BOX(card), subjectPicker->field(), false, false, 0);
 
     // paper
     gtk_box_pack_start(GTK_BOX(card), label(_("Paper"), "amb-opt-label"), false, false, 0);
@@ -307,7 +260,7 @@ NewNotebookDialog::NewNotebookDialog(GtkOverlay* overlay, GtkWindow* window): wi
                      }),
                      this);
     watchKeys(entry);
-    watchKeys(subjectField);
+    watchKeys(subjectPicker->field());
     watchKeys(cancelButton);
     watchKeys(createButton);
 
@@ -359,12 +312,13 @@ bool NewNotebookDialog::onKey(GtkWidget* from, GdkEventKey* e) {
         case GDK_KEY_Up:
         case GDK_KEY_Down:
             // on the subject, the arrows go through the list without opening it
-            if (from == subjectField && !subjects.empty()) {
+            if (from == subjectPicker->field() && !subjectPicker->empty()) {
                 const bool down = e->keyval == GDK_KEY_Down;
-                if (down && subject + 1 < subjects.size()) {
-                    chooseSubject(subject + 1);
+                const size_t subject = subjectPicker->selected();
+                if (down && subject + 1 < subjectPicker->list().size()) {
+                    subjectPicker->choose(subject + 1);
                 } else if (!down && subject > 0) {
-                    chooseSubject(subject - 1);
+                    subjectPicker->choose(subject - 1);
                 }
                 return true;
             }
@@ -377,29 +331,29 @@ bool NewNotebookDialog::onKey(GtkWidget* from, GdkEventKey* e) {
 std::string NewNotebookDialog::typedName() const { return gtk_entry_get_text(GTK_ENTRY(entry)); }
 
 fs::path NewNotebookDialog::folderOfSubject() const {
-    if (subjects.empty()) {
+    if (subjectPicker->empty()) {
         return {};
     }
-    fs::path dir = subjects[subject].path;
+    fs::path dir = subjectPicker->list()[subjectPicker->selected()].path;
     // as "New board" does: boards go in their own section of the folder
     return size == PageSize::INFINITE ? dir / _("Boards") : dir;
 }
 
 void NewNotebookDialog::open(std::vector<library::Subject> list, const fs::path& near,
                              std::function<void(const Request&)> create) {
-    subjects = std::move(list);
     onCreate = std::move(create);
     paper = startPaper;
     size = startSize;
     nameEdited = false;
 
     // the subject that holds `near`; the deepest when they are nested
-    subject = 0;
+    subjectPicker->setSubjects(std::move(list));
+    size_t subject = 0;
     if (!near.empty()) {
         size_t bestLen = 0;
-        for (size_t i = 0; i < subjects.size(); i++) {
-            if (Util::isChildOrEquivalent(near, subjects[i].path)) {
-                const size_t len = subjects[i].path.native().size();
+        for (size_t i = 0; i < subjectPicker->list().size(); i++) {
+            if (Util::isChildOrEquivalent(near, subjectPicker->list()[i].path)) {
+                const size_t len = subjectPicker->list()[i].path.native().size();
                 if (len >= bestLen) {
                     bestLen = len;
                     subject = i;
@@ -407,10 +361,9 @@ void NewNotebookDialog::open(std::vector<library::Subject> list, const fs::path&
             }
         }
     }
-    fillSubjects();
+    subjectPicker->choose(subject);  // and the name to start with
     choosePaper(paper);
     chooseSize(size);
-    chooseSubject(subject);  // and the name to start with
 
     if (focusBack) {
         g_object_remove_weak_pointer(G_OBJECT(focusBack), reinterpret_cast<gpointer*>(&focusBack));
@@ -435,9 +388,7 @@ void NewNotebookDialog::close(bool restoreFocus) {
     if (!isOpen()) {
         return;
     }
-    if (subjectPop) {
-        gtk_popover_popdown(GTK_POPOVER(subjectPop));
-    }
+    subjectPicker->popdown();
     gtk_revealer_set_transition_duration(GTK_REVEALER(revealer), animationsOn(revealer) ? FADE_OUT_MS : 0);
     gtk_revealer_set_reveal_child(GTK_REVEALER(revealer), false);
     // without a transition, child-revealed does not change after the revealer is off: hide it here
@@ -467,58 +418,6 @@ void NewNotebookDialog::create() {
     if (done) {
         done(r);
     }
-}
-
-void NewNotebookDialog::fillSubjects() {
-    if (subjectPop) {
-        gtk_widget_destroy(subjectPop);
-        subjectPop = nullptr;
-    }
-    gtk_widget_set_sensitive(subjectField, !subjects.empty());
-    if (subjects.empty()) {
-        return;
-    }
-    subjectPop = gtk_popover_new(subjectField);
-    gtk_popover_set_position(GTK_POPOVER(subjectPop), GTK_POS_BOTTOM);
-    addClass(subjectPop, "amb-selpop");
-    addClass(subjectPop, "amb-dlg-pop");
-    GtkWidget* scroll = gtk_scrolled_window_new(nullptr, nullptr);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_propagate_natural_height(GTK_SCROLLED_WINDOW(scroll), true);
-    gtk_scrolled_window_set_max_content_height(GTK_SCROLLED_WINDOW(scroll), 240);
-    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    for (size_t i = 0; i < subjects.size(); i++) {
-        GtkWidget* b = gtk_button_new();
-        gtk_widget_set_can_focus(b, false);
-        addClass(b, "amb-selpop-item");
-        GtkWidget* row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-        gtk_box_pack_start(GTK_BOX(row), dotFor(subjects[i].color), false, false, 0);
-        GtkWidget* l = gtk_label_new(subjects[i].name.c_str());
-        gtk_label_set_xalign(GTK_LABEL(l), 0);
-        gtk_box_pack_start(GTK_BOX(row), l, true, true, 0);
-        gtk_container_add(GTK_CONTAINER(b), row);
-        clickOf(b, [this, i] {
-            gtk_popover_popdown(GTK_POPOVER(subjectPop));
-            chooseSubject(i);
-            gtk_widget_grab_focus(entry);
-        });
-        gtk_box_pack_start(GTK_BOX(box), b, false, false, 0);
-    }
-    gtk_container_add(GTK_CONTAINER(scroll), box);
-    gtk_container_add(GTK_CONTAINER(subjectPop), scroll);
-    gtk_widget_show_all(scroll);
-}
-
-void NewNotebookDialog::chooseSubject(size_t index) {
-    if (!subjects.empty()) {
-        subject = std::min(index, subjects.size() - 1);
-        gtk_label_set_text(GTK_LABEL(subjectName), subjects[subject].name.c_str());
-        setDot(subjectDot, subjects[subject].color);
-    } else {
-        gtk_label_set_text(GTK_LABEL(subjectName), _("No subject"));
-        setDot(subjectDot, "");
-    }
-    suggest();
 }
 
 void NewNotebookDialog::choosePaper(Paper p) {
@@ -558,7 +457,9 @@ void NewNotebookDialog::suggest() {
             return !dir.empty() && fs::exists(dir / (n + ".xopp"), ec);
         };
         const bool board = size == PageSize::INFINITE;
-        const std::string newest = board || subjects.empty() ? std::string() : subjects[subject].newest;
+        const std::string newest = board || subjectPicker->empty() ?
+                                           std::string() :
+                                           subjectPicker->list()[subjectPicker->selected()].newest;
         const std::string name = suggestName(newest, board ? _("Untitled board") : _("Untitled notebook"), exists);
         settingName = true;
         gtk_entry_set_text(GTK_ENTRY(entry), name.c_str());

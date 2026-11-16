@@ -11,6 +11,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -21,6 +22,8 @@
 #include "filesystem.h"
 
 namespace ambitus {
+
+class SubjectPicker;
 
 class KeepDraftCard {
 public:
@@ -54,8 +57,6 @@ private:
     void reveal(GtkWidget* focus);
     void keep();
     void chooseClose(CloseChoice choice);
-    void chooseSubject(size_t index);
-    void fillSubjects();
     void refresh();
     std::string typedName() const;
     fs::path folderOfSubject() const;
@@ -69,16 +70,13 @@ private:
     GtkWidget* closePage = nullptr;
     GtkWidget* entry = nullptr;
     GtkWidget* problem = nullptr;
-    GtkWidget* subjectsBox = nullptr;
+    std::unique_ptr<SubjectPicker> subjectPicker;
     GtkWidget* cancelButton = nullptr;
     GtkWidget* keepButton = nullptr;
     GtkWidget* closeDiscard = nullptr;
     GtkWidget* closeDrafts = nullptr;
     GtkWidget* closeNotebook = nullptr;
 
-    std::vector<library::Subject> subjects;
-    std::vector<GtkWidget*> subjectButtons;
-    size_t subject = 0;
     bool valid = false;
     Mode mode = Mode::KEEP;
     GtkWidget* focusBack = nullptr;  ///< what had the focus before; weak
