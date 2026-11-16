@@ -263,6 +263,9 @@ void LibraryView::refresh() {
         folderBooks.push_back(scanNotebooks(f.path));
     }
     draftBooks = scanNotebooks(ambitus::drafts::folder());
+    for (auto& nb: draftBooks) {
+        nb.name = ambitus::drafts::displayName(nb.name);
+    }
     // a course or folder that disappeared falls back to Recent
     if ((current.kind == SourceKind::Course && current.index >= courses.size()) ||
         (current.kind == SourceKind::Folder && current.index >= store.folders().size()) ||
@@ -516,7 +519,7 @@ void LibraryView::fillSide() {
     addRow({SourceKind::Recent}, _("Recent"), "document-open-recent-symbolic", "", 0);
     addRow({SourceKind::All}, _("All"), "view-grid-symbolic", "", entriesFor({SourceKind::All}).size());
     if (!draftBooks.empty()) {
-        addRow({SourceKind::Drafts}, _("Drafts"), "folder-symbolic", "", draftBooks.size());
+        addRow({SourceKind::Drafts}, _("Drafts"), "xopp-file-plus", "", draftBooks.size());
     }
 
     if (!courses.empty()) {
@@ -636,12 +639,14 @@ auto LibraryView::recentEntries() const -> std::vector<Entry> {
         if (it != all.end()) {
             out.push_back(*it);
         } else {
-            Notebook nb{p, utf8(p.stem()), "", 0};
+            const bool draft = ambitus::drafts::isDraft(p);
+            const std::string stem = utf8(p.stem());
+            Notebook nb{p, draft ? ambitus::drafts::displayName(stem) : stem, "", 0};
             if (struct stat st{}; g_stat(Util::toGFilename(p).c_str(), &st) == 0) {
                 nb.modified = st.st_mtime;
             }
             // outside what the scan lists (too deep, say) it is still in the folder of its course
-            out.push_back({nb, colorOf(p), utf8(p.parent_path().filename())});
+            out.push_back({nb, colorOf(p), draft ? _("Drafts") : utf8(p.parent_path().filename())});
         }
         out.back().seen = t;
     }

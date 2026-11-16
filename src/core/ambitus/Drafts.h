@@ -34,6 +34,10 @@ std::string newName(std::tm now, const std::function<bool(const std::string&)>& 
 /// The label of a draft tab: "Draft · 14:32", from the name of its file
 std::string tabLabel(const std::string& fileName);
 
+/// The name a draft shows in the library and in the window title: "Draft · 15 Nov, 14:32", with the month abbreviated
+/// by the locale; the name of the file does not change
+std::string displayName(const std::string& stem);
+
 /// Moves the draft to subjectFolder/name.xopp (with the backup and autosave files that are beside it). Refuses when
 /// the destination exists; copies and removes when the rename crosses disks. The new path, or nothing.
 std::optional<fs::path> keep(const fs::path& draft, const fs::path& subjectFolder, const std::string& name);

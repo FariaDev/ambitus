@@ -87,6 +87,23 @@ TEST_F(DraftsTest, theTabSaysDraftAndTheTime) {
     EXPECT_EQ(tabLabel("Draft 2026-11-15 14-32.xopp"), tabLabel("Draft 2026-11-15 14-32"));
 }
 
+TEST_F(DraftsTest, theDisplayNameSaysTheDayAndTheTime) {
+    const std::string draft = _("Draft");
+    GDateTime* when = g_date_time_new_local(2026, 11, 15, 21, 12, 0);
+    gchar* formatted = g_date_time_format(when, "%e %b");
+    std::string dayMonth = formatted ? formatted : "";
+    g_free(formatted);
+    g_date_time_unref(when);
+    const size_t first = dayMonth.find_first_not_of(' ');
+    if (first != std::string::npos && first > 0) {
+        dayMonth.erase(0, first);
+    }
+
+    EXPECT_EQ(displayName("Draft 2026-11-15 21-12"), draft + " · " + dayMonth + ", 21:12");
+    EXPECT_EQ(displayName("Rascunho 2026-11-15 09-05 2"), draft + " · " + dayMonth + ", 09:05");
+    EXPECT_EQ(displayName("sem data"), draft);
+}
+
 TEST_F(DraftsTest, onlyFilesInsideTheDraftsFolderAreDrafts) {
     EXPECT_TRUE(isDraft(drafts / "Draft 2026-11-15 14-32.xopp"));
     EXPECT_TRUE(isDraft(fs::path(drafts) / "outra pasta" / "algo.xopp"));

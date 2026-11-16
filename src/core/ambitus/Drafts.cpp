@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <system_error>
 #include <vector>
 
@@ -55,6 +56,40 @@ bool isDate(const std::string& s) {
 }
 
 bool isTime(const std::string& s) { return s.size() == 5 && isDigits(s, 0, 2) && s[2] == '-' && isDigits(s, 3, 2); }
+
+/// The date and time tokens of a draft name ("Draft 2026-11-15 14-32 2"): the first date, and the time after it
+bool stampOf(const std::string& stem, std::string& date, std::string& time) {
+    size_t begin = 0;
+    while (begin <= stem.size()) {
+        size_t end = stem.find(' ', begin);
+        if (end == std::string::npos) {
+            end = stem.size();
+        }
+        const std::string token = stem.substr(begin, end - begin);
+        if (isDate(token)) {
+            date = token;
+            const size_t next = end + 1;
+            if (next >= stem.size()) {
+                return false;
+            }
+            size_t nextEnd = stem.find(' ', next);
+            if (nextEnd == std::string::npos) {
+                nextEnd = stem.size();
+            }
+            const std::string t = stem.substr(next, nextEnd - next);
+            if (!isTime(t)) {
+                return false;
+            }
+            time = t;
+            return true;
+        }
+        if (end == stem.size()) {
+            return false;
+        }
+        begin = end + 1;
+    }
+    return false;
+}
 
 /// The ".xopp.bak" and autosave files Xournal++ leaves beside a notebook
 std::vector<fs::path> sideFiles(const fs::path& file) {
@@ -127,34 +162,41 @@ std::string newName(std::tm now, const std::function<bool(const std::string&)>& 
 }
 
 std::string tabLabel(const std::string& fileName) {
-    const std::string stem = fs::path(fileName).stem().string();
-    size_t begin = 0;
-    while (begin <= stem.size()) {
-        size_t end = stem.find(' ', begin);
-        if (end == std::string::npos) {
-            end = stem.size();
-        }
-        const std::string token = stem.substr(begin, end - begin);
-        if (isDate(token)) {
-            const size_t next = end + 1;
-            if (next < stem.size()) {
-                size_t nextEnd = stem.find(' ', next);
-                if (nextEnd == std::string::npos) {
-                    nextEnd = stem.size();
-                }
-                const std::string time = stem.substr(next, nextEnd - next);
-                if (isTime(time)) {
-                    return std::string(_("Draft")) + " · " + time.substr(0, 2) + ":" + time.substr(3, 2);
-                }
-            }
-            break;
-        }
-        if (end == stem.size()) {
-            break;
-        }
-        begin = end + 1;
+    std::string date;
+    std::string time;
+    if (!stampOf(fs::path(fileName).stem().string(), date, time)) {
+        return std::string(_("Draft"));
     }
-    return std::string(_("Draft"));
+    return std::string(_("Draft")) + " · " + time.substr(0, 2) + ":" + time.substr(3, 2);
+}
+
+std::string displayName(const std::string& stem) {
+    const std::string draft = _("Draft");
+    std::string date;
+    std::string time;
+    if (!stampOf(stem, date, time)) {
+        return draft;
+    }
+    int year = 0, month = 0, day = 0, hour = 0, minute = 0;
+    if (std::sscanf(date.c_str(), "%4d-%2d-%2d", &year, &month, &day) != 3 ||
+        std::sscanf(time.c_str(), "%2d-%2d", &hour, &minute) != 2) {
+        return draft;
+    }
+    GDateTime* when = g_date_time_new_local(year, month, day, hour, minute, 0);
+    if (!when) {
+        return draft;
+    }
+    gchar* text = g_date_time_format(when, "%e %b");
+    g_date_time_unref(when);
+    std::string dayMonth = text ? text : "";
+    g_free(text);
+    const size_t first = dayMonth.find_first_not_of(' ');
+    if (first == std::string::npos) {
+        dayMonth.clear();
+    } else if (first > 0) {
+        dayMonth.erase(0, first);
+    }
+    return draft + " · " + dayMonth + ", " + time.substr(0, 2) + ":" + time.substr(3, 2);
 }
 
 std::optional<fs::path> keep(const fs::path& draft, const fs::path& subjectFolder, const std::string& name) {

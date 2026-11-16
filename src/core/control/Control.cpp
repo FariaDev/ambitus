@@ -2215,7 +2215,11 @@ void Control::updateWindowTitle() {
         if (settings->isFilepathInTitlebarShown()) {
             title += std::string("[") + char_cast(refPath.parent_path().u8string().c_str()) + "] - ";
         }
-        title += char_cast(refPath.filename().u8string());
+        if (ambitus::drafts::isDraft(refPath)) {
+            title += ambitus::drafts::displayName(std::string(char_cast(refPath.stem().u8string())));
+        } else {
+            title += char_cast(refPath.filename().u8string());
+        }
     }
     this->doc->unlock_shared();
 
