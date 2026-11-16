@@ -71,6 +71,8 @@ public:
 
     void fireUpdateUndoRedoButtons(const std::vector<PageRef>& pages);
     void addUndoRedoListener(UndoRedoListener* listener);
+    /// Ambitus: stops calling a listener that is going away
+    void removeUndoRedoListener(UndoRedoListener* listener);
 
     bool isChanged();
     bool isChangedAutosave();

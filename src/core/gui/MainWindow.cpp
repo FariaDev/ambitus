@@ -428,7 +428,13 @@ void MainWindow::boardContentChanged() {
 
 GMenuModel* MainWindow::getMenuModel() const { return menubar->getModel(); }
 
-MainWindow::~MainWindow() { cancelDraftSave(); }
+MainWindow::~MainWindow() {
+    cancelDraftSave();
+    // Ambitus: the window is gone before the Control, and the handler must not call it again
+    if (control && control->getUndoRedoHandler()) {
+        control->getUndoRedoHandler()->removeUndoRedoListener(this);
+    }
+}
 
 void MainWindow::showToast(const std::string& text, bool busy) {
     if (toast) {
