@@ -5841,5 +5841,5 @@ msgstr "Não foi possível criar o rascunho."
 msgid "Could not keep the draft."
 msgstr "Não foi possível guardar o rascunho."
 
-msgid "Draft · Saved on its own. Keep it in a subject when you want."
-msgstr "Rascunho · Salvo sozinho. Guarde numa matéria quando quiser."
+msgid "Draft · saved on its own"
+msgstr "Rascunho · salvo sozinho"

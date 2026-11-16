@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include <algorithm>
 #include <regex>
 
 #include <gdk-pixbuf/gdk-pixbuf.h>  // for gdk_pixbuf_new_fr...
@@ -341,7 +342,7 @@ void MainWindow::tabsChanged() {
     if (versionsPanel) {
         versionsPanel->tabsChanged();
     }
-    updateDraftStrip();
+    updateDraftPill();
 }
 
 void MainWindow::setEditorMode(ambitus::EditorMode mode) {
@@ -559,37 +560,95 @@ void MainWindow::newDraft() {
     tabsChanged();
 }
 
-void MainWindow::initDraftStrip(GtkWidget* box) {
-    draftStrip = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    gtk_style_context_add_class(gtk_widget_get_style_context(draftStrip), "amb-draft-strip");
+void MainWindow::initDraftPill() {
+    draftPillRevealer = gtk_revealer_new();
+    gtk_revealer_set_transition_type(GTK_REVEALER(draftPillRevealer), GTK_REVEALER_TRANSITION_TYPE_CROSSFADE);
 
-    GtkWidget* text = gtk_label_new(_("Draft · Saved on its own. Keep it in a subject when you want."));
-    gtk_label_set_xalign(GTK_LABEL(text), 0);
-    gtk_widget_set_hexpand(text, true);
-    gtk_box_pack_start(GTK_BOX(draftStrip), text, true, true, 0);
+    GtkWidget* frame = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_margin_start(frame, 32);
+    gtk_widget_set_margin_end(frame, 32);
+    gtk_widget_set_margin_top(frame, 32);
+    gtk_widget_set_margin_bottom(frame, 32);
+    gtk_container_add(GTK_CONTAINER(draftPillRevealer), frame);
 
-    GtkWidget* keep = gtk_button_new_with_label(_("Keep as notebook…"));
-    gtk_style_context_add_class(gtk_widget_get_style_context(keep), "amb-draft-primary");
-    g_signal_connect(keep, "clicked", G_CALLBACK(+[](GtkButton*, MainWindow* self) { self->openKeepDraftCard(); }),
-                     this);
-    gtk_box_pack_end(GTK_BOX(draftStrip), keep, false, false, 0);
+    draftPill = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_style_context_add_class(gtk_widget_get_style_context(draftPill), "amb-draft-pill");
+    gtk_widget_set_valign(draftPill, GTK_ALIGN_CENTER);
+    gtk_box_pack_start(GTK_BOX(draftPill), gtk_label_new(_("Draft · saved on its own")), false, false, 0);
 
     GtkWidget* discard = gtk_button_new_with_label(_("Discard"));
-    gtk_style_context_add_class(gtk_widget_get_style_context(discard), "amb-draft-ghost");
+    gtk_style_context_add_class(gtk_widget_get_style_context(discard), "amb-dlg-ghost");
     g_signal_connect(discard, "clicked", G_CALLBACK(+[](GtkButton*, MainWindow* self) { self->discardActiveDraft(); }),
                      this);
-    gtk_box_pack_end(GTK_BOX(draftStrip), discard, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(draftPill), discard, false, false, 0);
 
-    gtk_widget_show_all(draftStrip);
-    gtk_widget_hide(draftStrip);
-    gtk_box_pack_start(GTK_BOX(box), draftStrip, false, false, 0);
+    GtkWidget* keep = gtk_button_new_with_label(_("Keep as notebook…"));
+    gtk_style_context_add_class(gtk_widget_get_style_context(keep), "amb-dlg-primary");
+    g_signal_connect(keep, "clicked", G_CALLBACK(+[](GtkButton*, MainWindow* self) { self->openKeepDraftCard(); }),
+                     this);
+    gtk_box_pack_start(GTK_BOX(draftPill), keep, false, false, 0);
+    gtk_container_add(GTK_CONTAINER(frame), draftPill);
+
+    g_signal_connect_swapped(draftPillRevealer, "notify::child-revealed", G_CALLBACK(+[](MainWindow* self) {
+                                 auto* r = GTK_REVEALER(self->draftPillRevealer);
+                                 if (!gtk_revealer_get_child_revealed(r) && !gtk_revealer_get_reveal_child(r)) {
+                                     gtk_widget_hide(self->draftPillRevealer);
+                                 }
+                             }),
+                             this);
+
+    gtk_widget_show_all(draftPillRevealer);
+    gtk_widget_set_no_show_all(draftPillRevealer, true);
+    gtk_widget_hide(draftPillRevealer);
+    GtkOverlay* target = GTK_OVERLAY(get("mainOverlay"));
+    gtk_overlay_add_overlay(target, draftPillRevealer);
+    draftPillPositionId = g_signal_connect(target, "get-child-position", G_CALLBACK(draftPillPosition), this);
 }
 
-void MainWindow::updateDraftStrip() {
-    if (!draftStrip) {
+gboolean MainWindow::draftPillPosition(GtkOverlay*, GtkWidget* w, GdkRectangle* alloc, MainWindow* self) {
+    if (w != self->draftPillRevealer || !self->winXournal) {
+        return false;
+    }
+    GtkWidget* host = gtk_widget_get_parent(GTK_WIDGET(w));
+    if (!host || !GTK_IS_OVERLAY(host)) {
+        return false;
+    }
+    int x = 0, y = 0;
+    const int areaW = gtk_widget_get_allocated_width(self->winXournal);
+    const int areaH = gtk_widget_get_allocated_height(self->winXournal);
+    if (areaW <= 0 || !gtk_widget_translate_coordinates(self->winXournal, host, 0, 0, &x, &y)) {
+        return false;
+    }
+    GtkRequisition natural;
+    gtk_widget_get_preferred_size(w, nullptr, &natural);
+    alloc->width = std::min(natural.width, areaW);
+    alloc->height = natural.height;
+    alloc->x = x + (areaW - alloc->width) / 2;
+    alloc->y = y + areaH - alloc->height;
+    return true;
+}
+
+void MainWindow::updateDraftPill() {
+    if (!draftPillRevealer) {
         return;
     }
-    gtk_widget_set_visible(draftStrip, control->isDraftOpen() && !isLibraryShown());
+    const bool show = control->isDraftOpen() && !isLibraryShown();
+    if (show == draftPillShown) {
+        return;
+    }
+    draftPillShown = show;
+    gboolean animations = true;
+    g_object_get(gtk_widget_get_settings(draftPillRevealer), "gtk-enable-animations", &animations, nullptr);
+    gtk_revealer_set_transition_duration(
+            GTK_REVEALER(draftPillRevealer),
+            animations ? (show ? ambitus::toast::FADE_IN_MS : ambitus::toast::FADE_OUT_MS) : 0);
+    if (show) {
+        gtk_widget_show(draftPillRevealer);
+    }
+    gtk_revealer_set_reveal_child(GTK_REVEALER(draftPillRevealer), show);
+    if (!show && !animations) {
+        gtk_widget_hide(draftPillRevealer);
+    }
 }
 
 void MainWindow::saveDraft() {
@@ -750,7 +809,7 @@ void MainWindow::keepDraft(const fs::path& draft, const fs::path& folder, const 
             library->refresh();
         }
         control->updateWindowTitle();
-        updateDraftStrip();
+        updateDraftPill();
         if (after) {
             after(true);
         }
@@ -967,7 +1026,7 @@ void MainWindow::initXournalWidget() {
     setGtkTouchscreenScrollingForDeviceMapping();
 
     GtkWidget* content = get("boxContents");
-    initDraftStrip(content);
+    initDraftPill();
 
     // Ambitus: the pages, and at their right the panel of versions (added once the window is built)
     GtkWidget* pageRow = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);

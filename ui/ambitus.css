@@ -866,35 +866,22 @@ popover.amb-dlg-pop { padding: 4px; }
     font-weight: 600;
 }
 
-/* a faixa do rascunho, no alto da página: some quando o documento vira caderno */
-.amb-draft-strip {
-    background: @amb_layer;
+/* a pílula do rascunho, flutuando embaixo sobre a página: some quando o documento vira caderno */
+.amb-draft-pill {
+    background: @amb_bg;
     color: @amb_text2;
-    border-bottom: 1px solid @amb_border;
-    padding: 6px 14px;
+    border: 1px solid @amb_border;
+    border-radius: 22px;
+    padding: 5px 7px 5px 16px;
     font-size: 13px;
+    box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.25);
 }
-.amb-draft-strip label { color: @amb_text2; }
-.amb-draft-strip button {
-    min-height: 0;
-    border: none;
-    border-radius: 4px;
-    box-shadow: none;
-    background-image: none;
-    font-size: 13px;
+#mainWindow.darkMode .amb-draft-pill {
+    background: @amb_dk_bg;
+    color: @amb_dk_text2;
+    border-color: @amb_dk_border;
+    box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.8);
 }
-.amb-draft-strip button.amb-draft-ghost { background: transparent; color: @amb_text2; padding: 3px 8px; }
-.amb-draft-strip button.amb-draft-ghost:hover { background: @amb_hover; color: @amb_text; }
-.amb-draft-strip button.amb-draft-ghost:active { background: @amb_active; color: @amb_text; }
-.amb-draft-strip button.amb-draft-primary {
-    background: @amb_accent;
-    color: @amb_on_accent;
-    font-weight: 600;
-    padding: 0 14px;
-    min-height: 28px;
-}
-.amb-draft-strip button.amb-draft-primary:hover { background: shade(@amb_accent, 1.25); }
-.amb-draft-strip button.amb-draft-primary:active { background: shade(@amb_accent, 1.5); }
 
 #mainWindow.darkMode .amb-dlg button.amb-dlg-chip {
     background-color: @amb_dk_bg;
@@ -907,21 +894,6 @@ popover.amb-dlg-pop { padding: 4px; }
     border-color: @amb_dk_accent;
     color: @amb_dk_on_accent;
 }
-#mainWindow.darkMode .amb-draft-strip {
-    background: @amb_dk_layer;
-    color: @amb_dk_text2;
-    border-bottom-color: @amb_dk_border;
-}
-#mainWindow.darkMode .amb-draft-strip label { color: @amb_dk_text2; }
-#mainWindow.darkMode .amb-draft-strip button.amb-draft-ghost { color: @amb_dk_text2; }
-#mainWindow.darkMode .amb-draft-strip button.amb-draft-ghost:hover { background: @amb_dk_hover; color: @amb_dk_text; }
-#mainWindow.darkMode .amb-draft-strip button.amb-draft-ghost:active { background: @amb_dk_active; color: @amb_dk_text; }
-#mainWindow.darkMode .amb-draft-strip button.amb-draft-primary {
-    background: @amb_dk_accent;
-    color: @amb_dk_on_accent;
-}
-#mainWindow.darkMode .amb-draft-strip button.amb-draft-primary:hover { background: shade(@amb_dk_accent, 0.9); }
-#mainWindow.darkMode .amb-draft-strip button.amb-draft-primary:active { background: shade(@amb_dk_accent, 0.8); }
 
 /* os cartões de papel: a miniatura é desenhada no código; o anel do escolhido também (cor = color) */
 .amb-dlg button.amb-paper {
@@ -944,7 +916,9 @@ popover.amb-dlg-pop { padding: 4px; }
 
 .amb-dlg .amb-dlg-foot { margin-top: 16px; }
 .amb-dlg button.amb-dlg-primary,
-.amb-dlg button.amb-dlg-ghost {
+.amb-dlg button.amb-dlg-ghost,
+.amb-draft-pill button.amb-dlg-primary,
+.amb-draft-pill button.amb-dlg-ghost {
     min-height: 32px;
     padding: 0 14px;
     border: none;
@@ -953,13 +927,20 @@ popover.amb-dlg-pop { padding: 4px; }
     background-image: none;
     font-size: 13px;
 }
-.amb-dlg button.amb-dlg-primary { background: @amb_accent; color: @amb_on_accent; font-weight: 600; }
-.amb-dlg button.amb-dlg-primary:hover { background: shade(@amb_accent, 1.25); }
-.amb-dlg button.amb-dlg-primary:disabled { opacity: 0.45; }
-.amb-dlg button.amb-dlg-ghost { background: transparent; color: @amb_text2; padding: 0 12px; }
-.amb-dlg button.amb-dlg-ghost:hover { background: @amb_hover; color: @amb_text; }
+.amb-dlg button.amb-dlg-primary,
+.amb-draft-pill button.amb-dlg-primary { background: @amb_accent; color: @amb_on_accent; font-weight: 600; }
+.amb-dlg button.amb-dlg-primary:hover,
+.amb-draft-pill button.amb-dlg-primary:hover { background: shade(@amb_accent, 1.25); }
+.amb-dlg button.amb-dlg-primary:disabled,
+.amb-draft-pill button.amb-dlg-primary:disabled { opacity: 0.45; }
+.amb-dlg button.amb-dlg-ghost,
+.amb-draft-pill button.amb-dlg-ghost { background: transparent; color: @amb_text2; padding: 0 12px; }
+.amb-dlg button.amb-dlg-ghost:hover,
+.amb-draft-pill button.amb-dlg-ghost:hover { background: @amb_hover; color: @amb_text; }
 .amb-dlg button.amb-dlg-primary:focus,
-.amb-dlg button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_bg, 0 0 0 4px @amb_text; }
+.amb-dlg button.amb-dlg-ghost:focus,
+.amb-draft-pill button.amb-dlg-primary:focus,
+.amb-draft-pill button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_bg, 0 0 0 4px @amb_text; }
 
 #mainWindow.darkMode .amb-dlg entry.amb-cmd-entry.amb-dlg-bad { border-color: @amb_danger; }
 #mainWindow.darkMode .amb-dlg button.amb-dlg-field { background-color: @amb_dk_layer; color: @amb_dk_text; }
@@ -969,12 +950,18 @@ popover.amb-dlg-pop { padding: 4px; }
 #mainWindow.darkMode .amb-dlg button.amb-paper { color: @amb_dk_text2; }
 #mainWindow.darkMode .amb-dlg button.amb-paper.on { color: @amb_dk_text; }
 #mainWindow.darkMode .amb-dlg .amb-paper-pg { color: @amb_dk_text; }
-#mainWindow.darkMode .amb-dlg button.amb-dlg-primary { background: @amb_dk_accent; color: @amb_dk_on_accent; }
-#mainWindow.darkMode .amb-dlg button.amb-dlg-primary:hover { background: shade(@amb_dk_accent, 0.9); }
-#mainWindow.darkMode .amb-dlg button.amb-dlg-ghost { color: @amb_dk_text2; }
-#mainWindow.darkMode .amb-dlg button.amb-dlg-ghost:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-primary,
+#mainWindow.darkMode .amb-draft-pill button.amb-dlg-primary { background: @amb_dk_accent; color: @amb_dk_on_accent; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-primary:hover,
+#mainWindow.darkMode .amb-draft-pill button.amb-dlg-primary:hover { background: shade(@amb_dk_accent, 0.9); }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-ghost,
+#mainWindow.darkMode .amb-draft-pill button.amb-dlg-ghost { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-ghost:hover,
+#mainWindow.darkMode .amb-draft-pill button.amb-dlg-ghost:hover { background: @amb_dk_hover; color: @amb_dk_text; }
 #mainWindow.darkMode .amb-dlg button.amb-dlg-primary:focus,
-#mainWindow.darkMode .amb-dlg button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_dk_bg, 0 0 0 4px @amb_dk_text; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-ghost:focus,
+#mainWindow.darkMode .amb-draft-pill button.amb-dlg-primary:focus,
+#mainWindow.darkMode .amb-draft-pill button.amb-dlg-ghost:focus { box-shadow: 0 0 0 2px @amb_dk_bg, 0 0 0 4px @amb_dk_text; }
 
 /* ---------- personalizar barras de ferramentas (ToolbarCustomizeDialog) ----------
    A janela é própria, e por isso o .darkMode da mainWindow não a alcança: os tokens do tema entram direto e o
@@ -1716,6 +1703,8 @@ popover.amb-selpop button.amb-selpop-item,
 .amb-dlg button.amb-dlg-field,
 .amb-dlg button.amb-dlg-primary,
 .amb-dlg button.amb-dlg-ghost,
+.amb-draft-pill button.amb-dlg-primary,
+.amb-draft-pill button.amb-dlg-ghost,
 .amb-dlg .amb-seg button,
 menu menuitem,
 .menu menuitem {

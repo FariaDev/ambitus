@@ -192,8 +192,9 @@ public:
 
 private:
     void initXournalWidget();
-    void initDraftStrip(GtkWidget* box);
-    void updateDraftStrip();
+    void initDraftPill();
+    void updateDraftPill();
+    static gboolean draftPillPosition(GtkOverlay* overlay, GtkWidget* w, GdkRectangle* alloc, MainWindow* self);
     void scheduleDraftSave();
     void saveDraft();
     void cancelDraftSave();
@@ -292,11 +293,13 @@ private:
     std::unique_ptr<ambitus::NewNotebookDialog> newNotebookDialog;
     /// Ambitus: the "Keep draft" card (see ambitus::KeepDraftCard)
     std::unique_ptr<ambitus::KeepDraftCard> keepDraftCard;
-    /// Ambitus: the strip over the page while a draft is open
-    GtkWidget* draftStrip = nullptr;
-    GtkWidget* draftStripBox = nullptr;
+    /// Ambitus: the pill over the page while a draft is open
+    GtkWidget* draftPillRevealer = nullptr;
+    GtkWidget* draftPill = nullptr;
+    gulong draftPillPositionId = 0;
+    bool draftPillShown = false;
     guint draftSaveTimer = 0;
-    /// Ambitus: the strip asked to discard the draft; the closing does not ask again
+    /// Ambitus: the pill asked to discard the draft; the closing does not ask again
     bool draftDiscardOnClose = false;
     /// Ambitus: the versions of the notebook, at the right of the page, and the preview of one over it
     std::unique_ptr<ambitus::VersionsPanel> versionsPanel;
