@@ -5808,6 +5808,9 @@ msgstr "endireita o traço em reta, círculo, seta…"
 msgid "Draft"
 msgstr "Rascunho"
 
+msgid "Drafts"
+msgstr "Rascunhos"
+
 msgid "Keep draft"
 msgstr "Guardar rascunho"
 

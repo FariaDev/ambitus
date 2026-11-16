@@ -8,6 +8,7 @@
 
 #include <glib/gstdio.h>  // for g_stat
 
+#include "ambitus/Drafts.h"                    // for folder, isDraft
 #include "control/settings/MetadataManager.h"  // for MetadataManager
 #include "util/PathUtil.h"                     // for fromGFilename, toGFilename
 #include "util/StringUtils.h"          // for char_cast, StringUtils
@@ -261,9 +262,11 @@ void LibraryView::refresh() {
     for (auto& f: store.folders()) {
         folderBooks.push_back(scanNotebooks(f.path));
     }
+    draftBooks = scanNotebooks(ambitus::drafts::folder());
     // a course or folder that disappeared falls back to Recent
     if ((current.kind == SourceKind::Course && current.index >= courses.size()) ||
-        (current.kind == SourceKind::Folder && current.index >= store.folders().size())) {
+        (current.kind == SourceKind::Folder && current.index >= store.folders().size()) ||
+        (current.kind == SourceKind::Drafts && draftBooks.empty())) {
         current = {SourceKind::Recent};
     }
     fillSide();
@@ -512,6 +515,9 @@ void LibraryView::fillSide() {
 
     addRow({SourceKind::Recent}, _("Recent"), "document-open-recent-symbolic", "", 0);
     addRow({SourceKind::All}, _("All"), "view-grid-symbolic", "", entriesFor({SourceKind::All}).size());
+    if (!draftBooks.empty()) {
+        addRow({SourceKind::Drafts}, _("Drafts"), "folder-symbolic", "", draftBooks.size());
+    }
 
     if (!courses.empty()) {
         addGroup(_("Courses"), (std::string("· ") + _("from Summa")).c_str());
@@ -575,6 +581,8 @@ auto LibraryView::sourceTitle(Source s) const -> std::string {
             return _("Recent");
         case SourceKind::All:
             return _("All notebooks");
+        case SourceKind::Drafts:
+            return _("Drafts");
         case SourceKind::Course:
             return courses[s.index].name;
         case SourceKind::Folder:
@@ -589,6 +597,8 @@ auto LibraryView::sourceFolder(Source s) const -> fs::path {
             return courses[s.index].path;
         case SourceKind::Folder:
             return store.folders()[s.index].path;
+        case SourceKind::Drafts:
+            return {};  // a notebook created here would not be a draft
         default:
             return {};
     }
@@ -643,6 +653,11 @@ auto LibraryView::entriesFor(Source s) const -> std::vector<Entry> {
     switch (s.kind) {
         case SourceKind::Recent:
             return recentEntries();
+        case SourceKind::Drafts:
+            for (auto& nb: draftBooks) {
+                out.push_back({nb, "", _("Drafts")});
+            }
+            return out;
         case SourceKind::Course:
             for (auto& nb: courseBooks[s.index]) {
                 out.push_back({nb, courses[s.index].color, courses[s.index].name});

@@ -96,7 +96,7 @@ public:
     bool setFolder(const fs::path& folder, const fs::path& replacing = {});
 
 private:
-    enum class SourceKind { Recent, All, Course, Folder };
+    enum class SourceKind { Recent, All, Drafts, Course, Folder };
     struct Source {
         SourceKind kind = SourceKind::Recent;
         size_t index = 0;
@@ -157,6 +157,7 @@ private:
     std::vector<Course> courses;
     std::vector<std::vector<Notebook>> courseBooks;
     std::vector<std::vector<Notebook>> folderBooks;
+    std::vector<Notebook> draftBooks;  ///< the quick drafts (see ambitus::drafts)
     Source current{SourceKind::Recent};
     std::string filter;
 
