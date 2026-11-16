@@ -5808,8 +5808,35 @@ msgstr "endireita o traço em reta, círculo, seta…"
 msgid "Draft"
 msgstr "Rascunho"
 
+msgid "Keep draft"
+msgstr "Guardar rascunho"
+
+msgid "It becomes a normal notebook, which Summa reads too."
+msgstr "Vira um caderno normal, que o Summa também lê."
+
+msgid "Keep"
+msgstr "Guardar"
+
+msgid "Keep in drafts"
+msgstr "Manter em rascunhos"
+
 msgid "Keep as notebook…"
 msgstr "Guardar como caderno…"
+
+msgid "Give the draft a name."
+msgstr "Dê um nome ao rascunho."
+
+msgid "There is no subject in the library yet."
+msgstr "Ainda não há matéria na biblioteca."
+
+msgid "What should happen to this draft?"
+msgstr "O que fazer com este rascunho?"
+
+msgid "Could not create the draft."
+msgstr "Não foi possível criar o rascunho."
+
+msgid "Could not keep the draft."
+msgstr "Não foi possível guardar o rascunho."
 
 msgid "Draft · Saved on its own. Keep it in a subject when you want."
 msgstr "Rascunho · Salvo sozinho. Guarde numa matéria quando quiser."

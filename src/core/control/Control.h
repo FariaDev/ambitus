@@ -12,6 +12,7 @@
 #pragma once
 
 #include <cstddef>   // for size_t
+#include <functional>  // for function
 #include <memory>    // for unique_ptr
 #include <optional>  // for optional
 #include <string>    // for string, allocator
@@ -112,6 +113,12 @@ public:
     /// Asks to save when needed, like closing a file
     void closeTab(size_t index);
     std::vector<ambitus::TabInfo> getTabs() const;
+
+    /// Ambitus: the open document is a draft (see ambitus/Drafts.h)
+    bool isDraftOpen() const;
+    /// Ambitus: called in place of the "save changes?" dialog when a draft closes. The window asks what to do (it may
+    /// answer later) and calls the callback with whether the draft may be closed.
+    void setDraftCloseHandler(std::function<void(std::function<void(bool)>)> handler);
 
     /// @brief Shows an open file dialog and opens the selected file after closing the previously opened file
     void askToOpenFile();
@@ -510,6 +517,8 @@ private:
 
     UndoRedoHandler* undoRedo = nullptr;
     ZoomControl* zoom = nullptr;
+    /// Ambitus: what the window does when a draft closes (see setDraftCloseHandler)
+    std::function<void(std::function<void(bool)>)> draftCloseHandler;
 
     Settings* settings = nullptr;
     std::unique_ptr<Palette> palette;

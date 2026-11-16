@@ -57,6 +57,7 @@
 #include "BoardNavigator.h"  // for BoardNavigator
 #include "CommandPalette.h"
 #include "GladeSearchpath.h"     // for GladeSearchpath
+#include "KeepDraftCard.h"
 #include "NewNotebookDialog.h"
 #include "PageGrowHandle.h"      // for PageGrowHandle
 #include "PageMenu.h"            // for PageMenu
@@ -192,6 +193,8 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     this->newNotebookDialog =
             std::make_unique<ambitus::NewNotebookDialog>(GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
+    this->keepDraftCard =
+            std::make_unique<ambitus::KeepDraftCard>(GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
 
     // the first time the program opens: the setup, over the whole window
     ambitus::SetupCard::openIfFirstTime(control, GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
@@ -262,6 +265,8 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
 
     updateColorscheme();
 
+    // Ambitus: a draft closes through the window; an empty one goes quietly, the others ask what to do
+    control->setDraftCloseHandler([this](std::function<void(bool)> done) { handleDraftClose(std::move(done)); });
     control->getUndoRedoHandler()->addUndoRedoListener(this);
 
     // Ambitus: Ctrl+Shift+N opens a quick draft, from the library and from the editor alike
@@ -565,10 +570,14 @@ void MainWindow::initDraftStrip(GtkWidget* box) {
 
     GtkWidget* keep = gtk_button_new_with_label(_("Keep as notebook…"));
     gtk_style_context_add_class(gtk_widget_get_style_context(keep), "amb-draft-primary");
+    g_signal_connect(keep, "clicked", G_CALLBACK(+[](GtkButton*, MainWindow* self) { self->openKeepDraftCard(); }),
+                     this);
     gtk_box_pack_end(GTK_BOX(draftStrip), keep, false, false, 0);
 
     GtkWidget* discard = gtk_button_new_with_label(_("Discard"));
     gtk_style_context_add_class(gtk_widget_get_style_context(discard), "amb-draft-ghost");
+    g_signal_connect(discard, "clicked", G_CALLBACK(+[](GtkButton*, MainWindow* self) { self->discardActiveDraft(); }),
+                     this);
     gtk_box_pack_end(GTK_BOX(draftStrip), discard, false, false, 0);
 
     gtk_widget_show_all(draftStrip);
@@ -615,6 +624,138 @@ void MainWindow::scheduleDraftSave() {
 void MainWindow::undoRedoChanged() { scheduleDraftSave(); }
 
 void MainWindow::undoRedoPageChanged(PageRef page) { (void)page; }
+
+fs::path MainWindow::activeFilePath() const {
+    Document* doc = control->getDocument();
+    doc->lock_shared();
+    fs::path path = doc->getFilepath();
+    doc->unlock_shared();
+    return path;
+}
+
+bool MainWindow::draftHasContent() const {
+    Document* doc = control->getDocument();
+    doc->lock_shared();
+    bool content = false;
+    for (size_t i = 0; i < doc->getPageCount() && !content; i++) {
+        PageRef page = doc->getPage(i);
+        content = page && page->isAnnotated();
+    }
+    doc->unlock_shared();
+    return content;
+}
+
+size_t MainWindow::activeTabIndex() const {
+    const auto tabs = control->getTabs();
+    for (size_t i = 0; i < tabs.size(); i++) {
+        if (tabs[i].active) {
+            return i;
+        }
+    }
+    return static_cast<size_t>(-1);
+}
+
+void MainWindow::discardActiveDraft() {
+    const size_t index = activeTabIndex();
+    if (index == static_cast<size_t>(-1)) {
+        return;
+    }
+    draftDiscardOnClose = true;
+    control->closeTab(index);
+}
+
+void MainWindow::handleDraftClose(std::function<void(bool)> done) {
+    cancelDraftSave();
+    const fs::path draft = activeFilePath();
+    if (!ambitus::drafts::isDraft(draft)) {
+        done(false);
+        return;
+    }
+    const bool discardNow = std::exchange(draftDiscardOnClose, false);
+    if (discardNow || !draftHasContent()) {
+        ambitus::drafts::discard(draft);
+        library->refresh();
+        done(true);
+        return;
+    }
+
+    enum { DISCARD = 1, KEEP_IN_DRAFTS, KEEP_AS_NOTEBOOK };
+    std::vector<XojMsgBox::Button> buttons = {
+            {_("Discard"), DISCARD}, {_("Keep in drafts"), KEEP_IN_DRAFTS}, {_("Keep as notebook…"), KEEP_AS_NOTEBOOK}};
+    XojMsgBox::askQuestion(GTK_WINDOW(this->window), _("What should happen to this draft?"), std::string(),
+                           std::move(buttons), [this, draft, done = std::move(done)](int response) mutable {
+                               auto finish = std::move(done);
+                               if (response == DISCARD) {
+                                   ambitus::drafts::discard(draft);
+                                   library->refresh();
+                                   finish(true);
+                               } else if (response == KEEP_IN_DRAFTS) {
+                                   control->save([this, finish = std::move(finish)](bool saved) mutable {
+                                       if (saved && library) {
+                                           library->refresh();
+                                       }
+                                       finish(saved);
+                                   });
+                               } else if (response == KEEP_AS_NOTEBOOK) {
+                                   openKeepDraftCard(std::move(finish));
+                               } else {
+                                   finish(false);
+                               }
+                           });
+}
+
+void MainWindow::openKeepDraftCard(std::function<void(bool)> after) {
+    if (!keepDraftCard || keepDraftCard->isOpen() || !control->isDraftOpen()) {
+        if (after) {
+            after(false);
+        }
+        return;
+    }
+    const fs::path draft = activeFilePath();
+    auto cancel = after;
+    keepDraftCard->open(
+            library->subjects(),
+            [this, draft, after = std::move(after)](const ambitus::KeepDraftCard::Request& r) {
+                keepDraft(draft, r.file.parent_path(), r.name, std::move(after));
+            },
+            [cancel = std::move(cancel)] {
+                if (cancel) {
+                    cancel(false);
+                }
+            });
+}
+
+void MainWindow::keepDraft(const fs::path& draft, const fs::path& folder, const std::string& name,
+                           std::function<void(bool)> after) {
+    control->save([this, draft, folder, name, after = std::move(after)](bool saved) mutable {
+        if (!saved) {
+            if (after) {
+                after(false);
+            }
+            return;
+        }
+        auto target = ambitus::drafts::keep(draft, folder, name);
+        if (!target) {
+            showToastError(_("Could not keep the draft."), std::string());
+            if (after) {
+                after(false);
+            }
+            return;
+        }
+        Document* doc = control->getDocument();
+        doc->lock();
+        doc->setFilepath(*target);
+        doc->unlock();
+        if (library) {
+            library->refresh();
+        }
+        control->updateWindowTitle();
+        updateDraftStrip();
+        if (after) {
+            after(true);
+        }
+    });
+}
 
 void MainWindow::showSettingsCard() {
     ambitus::SettingsCard::open(control, GTK_OVERLAY(windowOverlay), GTK_WINDOW(window));

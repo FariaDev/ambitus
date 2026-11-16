@@ -13,6 +13,7 @@
 
 #include "ambitus/Board.h"                                       // for pageTemplate
 #include "ambitus/BoardShift.h"                                  // for ShiftUndoAction
+#include "ambitus/Drafts.h"                                      // for isDraft
 #include "ambitus/SummaPoll.h"                                   // for SummaPoller
 #include "ambitus/Versions.h"                                    // for followMove
 #include "control/AudioController.h"                             // for Audi...
@@ -2369,9 +2370,9 @@ void Control::resetSavedStatus() {
 }
 
 void Control::quit(bool allowCancel) {
-    // Ambitus: tabs with changes, kept aside, are asked about first, one at a time
+    // Ambitus: tabs with changes, and the drafts, kept aside, are asked about first, one at a time
     for (size_t i = 0; i < tabs.size(); i++) {
-        if (i != activeTab && tabs[i].undo.isChanged()) {
+        if (i != activeTab && (tabs[i].undo.isChanged() || ambitus::drafts::isDraft(tabs[i].path))) {
             activateTab(i);
             this->close(
                     [this, allowCancel](bool closed) {
@@ -2419,6 +2420,20 @@ void Control::quit(bool allowCancel) {
     this->close(std::move(afterClosed), true, allowCancel);
 }
 
+bool Control::isDraftOpen() const {
+    if (!doc) {
+        return false;
+    }
+    doc->lock_shared();
+    const fs::path file = doc->getFilepath();
+    doc->unlock_shared();
+    return ambitus::drafts::isDraft(file);
+}
+
+void Control::setDraftCloseHandler(std::function<void(std::function<void(bool)>)> handler) {
+    draftCloseHandler = std::move(handler);
+}
+
 void Control::close(std::function<void(bool)> callback, const bool allowDestroy, const bool allowCancel,
                     const bool forceClose) {
     clearSelectionEndText();
@@ -2430,6 +2445,18 @@ void Control::close(std::function<void(bool)> callback, const bool allowDestroy,
     metadata->documentChanged();
 
     resetGeometryTool();
+
+    // Ambitus: a draft has a closing of its own: an empty one goes quietly, the others ask Discard/Keep in drafts/Keep
+    // as notebook. The "save changes?" dialog of a notebook never shows for it.
+    if (!forceClose && draftCloseHandler && isDraftOpen()) {
+        draftCloseHandler([ctrl = this, cb = std::move(callback), allowDestroy](bool close) {
+            if (close && allowDestroy) {
+                ctrl->closeDocument();
+            }
+            cb(close);
+        });
+        return;
+    }
 
     bool safeToClose = forceClose || !undoRedo->isChanged();
     if (!safeToClose) {

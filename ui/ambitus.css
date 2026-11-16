@@ -845,6 +845,27 @@ headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_
 .amb-dlg button.amb-dlg-field image { color: @amb_text3; }
 popover.amb-dlg-pop { padding: 4px; }
 
+/* os chips das matérias: a pílula da camada, com o quadradinho da cor; a escolhida no acento */
+.amb-dlg flowbox.amb-dlg-chips { background: transparent; }
+.amb-dlg button.amb-dlg-chip {
+    min-height: 0;
+    padding: 3px 10px;
+    border: 1px solid @amb_border;
+    border-radius: 14px;
+    box-shadow: none;
+    background-image: none;
+    background-color: @amb_bg;
+    color: @amb_text2;
+    font-size: 13px;
+}
+.amb-dlg button.amb-dlg-chip:hover { background-color: @amb_hover; color: @amb_text; }
+.amb-dlg button.amb-dlg-chip.on {
+    background-color: @amb_accent;
+    border-color: @amb_accent;
+    color: @amb_on_accent;
+    font-weight: 600;
+}
+
 /* a faixa do rascunho, no alto da página: some quando o documento vira caderno */
 .amb-draft-strip {
     background: @amb_layer;
@@ -875,6 +896,17 @@ popover.amb-dlg-pop { padding: 4px; }
 .amb-draft-strip button.amb-draft-primary:hover { background: shade(@amb_accent, 1.25); }
 .amb-draft-strip button.amb-draft-primary:active { background: shade(@amb_accent, 1.5); }
 
+#mainWindow.darkMode .amb-dlg button.amb-dlg-chip {
+    background-color: @amb_dk_bg;
+    border-color: @amb_dk_border;
+    color: @amb_dk_text2;
+}
+#mainWindow.darkMode .amb-dlg button.amb-dlg-chip:hover { background-color: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-dlg button.amb-dlg-chip.on {
+    background-color: @amb_dk_accent;
+    border-color: @amb_dk_accent;
+    color: @amb_dk_on_accent;
+}
 #mainWindow.darkMode .amb-draft-strip {
     background: @amb_dk_layer;
     color: @amb_dk_text2;

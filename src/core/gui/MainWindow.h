@@ -57,6 +57,7 @@ class BoardNavigator;
 class Toast;
 class CommandPalette;
 class NewNotebookDialog;
+class KeepDraftCard;
 class VersionsPanel;
 enum class EditorMode;
 }
@@ -196,6 +197,15 @@ private:
     void scheduleDraftSave();
     void saveDraft();
     void cancelDraftSave();
+    bool draftHasContent() const;
+    fs::path activeFilePath() const;
+    size_t activeTabIndex() const;
+    /// Asks what to do with the draft being closed, then calls done with whether it may close
+    void handleDraftClose(std::function<void(bool)> done);
+    void discardActiveDraft();
+    void openKeepDraftCard(std::function<void(bool)> after = {});
+    void keepDraft(const fs::path& draft, const fs::path& folder, const std::string& name,
+                   std::function<void(bool)> after);
 
     void createToolbar();
 
@@ -280,10 +290,14 @@ private:
     std::unique_ptr<ambitus::Toast> toast;
     std::unique_ptr<ambitus::CommandPalette> commandPalette;
     std::unique_ptr<ambitus::NewNotebookDialog> newNotebookDialog;
+    /// Ambitus: the "Keep draft" card (see ambitus::KeepDraftCard)
+    std::unique_ptr<ambitus::KeepDraftCard> keepDraftCard;
     /// Ambitus: the strip over the page while a draft is open
     GtkWidget* draftStrip = nullptr;
     GtkWidget* draftStripBox = nullptr;
     guint draftSaveTimer = 0;
+    /// Ambitus: the strip asked to discard the draft; the closing does not ask again
+    bool draftDiscardOnClose = false;
     /// Ambitus: the versions of the notebook, at the right of the page, and the preview of one over it
     std::unique_ptr<ambitus::VersionsPanel> versionsPanel;
     /// Ambitus: minimap and zoom of a board
