@@ -7,6 +7,8 @@
 #include <gio/gio.h>                // for g_cancellable_is_...
 #include <gtk/gtkcssprovider.h>     // for gtk_css_provider_...
 
+#include "ambitus/Drafts.h"
+#include "ambitus/NewNotebook.h"
 #include "ambitus/SettingsRows.h"
 #include "control/AudioController.h"                    // for AudioController
 #include "control/Control.h"                            // for Control
@@ -130,6 +132,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
             return s->getAmbitusSummaBridge() && s->getAmbitusSearchInk();
         };
         actions.newNotebook = [this](const fs::path& folder) { showNewNotebook(folder); };
+        actions.newDraft = [this] { newDraft(); };
         actions.newBoard = [this, control](const fs::path& folder) {
             fs::path file;
             if (!folder.empty()) {
@@ -258,6 +261,17 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
                      G_CALLBACK(themeCallback), this);
 
     updateColorscheme();
+
+    control->getUndoRedoHandler()->addUndoRedoListener(this);
+
+    // Ambitus: Ctrl+Shift+N opens a quick draft, from the library and from the editor alike
+    GSimpleAction* newDraftAction = g_simple_action_new("new-draft", nullptr);
+    g_signal_connect(newDraftAction, "activate",
+                     G_CALLBACK(+[](GSimpleAction*, GVariant*, MainWindow* self) { self->newDraft(); }), this);
+    g_action_map_add_action(G_ACTION_MAP(this->window), G_ACTION(newDraftAction));
+    g_object_unref(newDraftAction);
+    const char* newDraftAccels[] = {"<Ctrl><Shift>N", nullptr};
+    gtk_application_set_accels_for_action(GTK_APPLICATION(parent), "win.new-draft", newDraftAccels);
 }
 
 void MainWindow::populate(GladeSearchpath* gladeSearchPath) {
@@ -298,7 +312,12 @@ void MainWindow::tabsChanged() {
     bool anyActive = false;
     for (auto& t: control->getTabs()) {
         ambitus::TabItem it;
-        it.title = t.path.empty() ? _("Untitled") : std::string(char_cast(t.path.stem().u8string()));
+        if (t.path.empty()) {
+            it.title = _("Untitled");
+        } else {
+            const std::string stem = std::string(char_cast(t.path.stem().u8string()));
+            it.title = ambitus::drafts::isDraft(t.path) ? ambitus::drafts::tabLabel(stem) : stem;
+        }
         it.color = library ? library->colorOf(t.path) : "";
         it.active = t.active;
         it.modified = t.modified;
@@ -317,6 +336,7 @@ void MainWindow::tabsChanged() {
     if (versionsPanel) {
         versionsPanel->tabsChanged();
     }
+    updateDraftStrip();
 }
 
 void MainWindow::setEditorMode(ambitus::EditorMode mode) {
@@ -403,7 +423,7 @@ void MainWindow::boardContentChanged() {
 
 GMenuModel* MainWindow::getMenuModel() const { return menubar->getModel(); }
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow() { cancelDraftSave(); }
 
 void MainWindow::showToast(const std::string& text, bool busy) {
     if (toast) {
@@ -489,6 +509,112 @@ void MainWindow::showNewNotebook(const fs::path& folder) {
         }
     });
 }
+
+void MainWindow::newDraft() {
+    const fs::path dir = ambitus::drafts::folder();
+    std::error_code ec;
+    fs::create_directories(dir, ec);
+    if (ec) {
+        showToastError(_("Could not create the draft."), ec.message());
+        return;
+    }
+
+    GDateTime* now = g_date_time_new_now_local();
+    std::tm t{};
+    t.tm_year = g_date_time_get_year(now) - 1900;
+    t.tm_mon = g_date_time_get_month(now) - 1;
+    t.tm_mday = g_date_time_get_day_of_month(now);
+    t.tm_hour = g_date_time_get_hour(now);
+    t.tm_min = g_date_time_get_minute(now);
+    g_date_time_unref(now);
+
+    const std::string name = ambitus::drafts::newName(t, [&dir](const std::string& n) {
+        std::error_code e;
+        return fs::exists(dir / (n + ".xopp"), e);
+    });
+    const fs::path file = dir / (name + ".xopp");
+
+    using namespace ambitus::newnotebook;
+    PageTemplateSettings page = control->getSettings()->getPageTemplateSettings();
+    const Dimensions d = pageDimensions(PageSize::A4);
+    page.setPageWidth(d.width);
+    page.setPageHeight(d.height);
+    page.setBackgroundType(paperType(
+            ambitus::settingsrows::paperFromId(control->getSettings()->getAmbitusNewPaper()).value_or(DEFAULT_PAPER)));
+    page.setBackgroundColor(Colors::white);
+
+    showEditor();
+    control->newFile(file, page);
+    setEditorMode(ambitus::EditorMode::STUDIO);
+    control->save([this](bool ok) {
+        if (ok && library) {
+            library->refresh();
+        }
+    });
+    tabsChanged();
+}
+
+void MainWindow::initDraftStrip(GtkWidget* box) {
+    draftStrip = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    gtk_style_context_add_class(gtk_widget_get_style_context(draftStrip), "amb-draft-strip");
+
+    GtkWidget* text = gtk_label_new(_("Draft · Saved on its own. Keep it in a subject when you want."));
+    gtk_label_set_xalign(GTK_LABEL(text), 0);
+    gtk_widget_set_hexpand(text, true);
+    gtk_box_pack_start(GTK_BOX(draftStrip), text, true, true, 0);
+
+    GtkWidget* keep = gtk_button_new_with_label(_("Keep as notebook…"));
+    gtk_style_context_add_class(gtk_widget_get_style_context(keep), "amb-draft-primary");
+    gtk_box_pack_end(GTK_BOX(draftStrip), keep, false, false, 0);
+
+    GtkWidget* discard = gtk_button_new_with_label(_("Discard"));
+    gtk_style_context_add_class(gtk_widget_get_style_context(discard), "amb-draft-ghost");
+    gtk_box_pack_end(GTK_BOX(draftStrip), discard, false, false, 0);
+
+    gtk_widget_show_all(draftStrip);
+    gtk_widget_hide(draftStrip);
+    gtk_box_pack_start(GTK_BOX(box), draftStrip, false, false, 0);
+}
+
+void MainWindow::updateDraftStrip() {
+    if (!draftStrip) {
+        return;
+    }
+    gtk_widget_set_visible(draftStrip, control->isDraftOpen() && !isLibraryShown());
+}
+
+void MainWindow::saveDraft() {
+    draftSaveTimer = 0;
+    if (control->isDraftOpen()) {
+        control->save([](bool) {});
+    }
+}
+
+void MainWindow::cancelDraftSave() {
+    if (draftSaveTimer) {
+        g_source_remove(draftSaveTimer);
+        draftSaveTimer = 0;
+    }
+}
+
+void MainWindow::scheduleDraftSave() {
+    if (!control->isDraftOpen()) {
+        cancelDraftSave();
+        return;
+    }
+    cancelDraftSave();
+    draftSaveTimer = g_timeout_add(
+            2 * 1000,
+            +[](gpointer data) -> gboolean {
+                static_cast<MainWindow*>(data)->saveDraft();
+                return G_SOURCE_REMOVE;
+            },
+            this);
+}
+
+void MainWindow::undoRedoChanged() { scheduleDraftSave(); }
+
+void MainWindow::undoRedoPageChanged(PageRef page) { (void)page; }
 
 void MainWindow::showSettingsCard() {
     ambitus::SettingsCard::open(control, GTK_OVERLAY(windowOverlay), GTK_WINDOW(window));
@@ -699,12 +825,15 @@ void MainWindow::initXournalWidget() {
 
     setGtkTouchscreenScrollingForDeviceMapping();
 
+    GtkWidget* content = get("boxContents");
+    initDraftStrip(content);
+
     // Ambitus: the pages, and at their right the panel of versions (added once the window is built)
     GtkWidget* pageRow = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_hexpand(winXournal, true);
     gtk_widget_set_vexpand(winXournal, true);
     gtk_box_pack_start(GTK_BOX(pageRow), winXournal, true, true, 0);
-    gtk_box_pack_start(GTK_BOX(get("boxContents")), pageRow, true, true, 0);
+    gtk_box_pack_start(GTK_BOX(content), pageRow, true, true, 0);
     gtk_widget_show(pageRow);
 
     scrollHandling = std::make_unique<ScrollHandling>(GTK_SCROLLED_WINDOW(winXournal));

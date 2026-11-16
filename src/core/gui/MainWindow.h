@@ -24,6 +24,8 @@
 #include <glib.h>         // for gpointer, gboolean, gint
 #include <gtk/gtk.h>      // for GtkWidget, GtkCheckMenu...
 
+#include "model/PageRef.h"         // for UndoRedoListener
+#include "undo/UndoRedoHandler.h"  // for UndoRedoListener
 #include "util/Point.h"
 #include "util/raii/GObjectSPtr.h"
 
@@ -64,7 +66,7 @@ class LibraryView;
 
 typedef std::array<xoj::util::WidgetSPtr, TOOLBAR_DEFINITIONS_LEN> ToolbarWidgetArray;
 
-class MainWindow: public GladeGui {
+class MainWindow: public GladeGui, public UndoRedoListener {
 public:
     MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkApplication* parent);
     ~MainWindow() override;
@@ -164,6 +166,11 @@ public:
     void boardContentChanged();
     /// Ambitus: the open documents changed (opened, closed, saved, edited)
     void tabsChanged();
+    /// Ambitus: a draft opens at once, with no name and no subject, and saves on its own (see ambitus::drafts)
+    void newDraft();
+
+    void undoRedoChanged() override;
+    void undoRedoPageChanged(PageRef page) override;
 
     const ToolbarWidgetArray& getToolbarWidgets() const;
     const char* getToolbarName(GtkToolbar* toolbar) const;
@@ -184,6 +191,11 @@ public:
 
 private:
     void initXournalWidget();
+    void initDraftStrip(GtkWidget* box);
+    void updateDraftStrip();
+    void scheduleDraftSave();
+    void saveDraft();
+    void cancelDraftSave();
 
     void createToolbar();
 
@@ -268,6 +280,10 @@ private:
     std::unique_ptr<ambitus::Toast> toast;
     std::unique_ptr<ambitus::CommandPalette> commandPalette;
     std::unique_ptr<ambitus::NewNotebookDialog> newNotebookDialog;
+    /// Ambitus: the strip over the page while a draft is open
+    GtkWidget* draftStrip = nullptr;
+    GtkWidget* draftStripBox = nullptr;
+    guint draftSaveTimer = 0;
     /// Ambitus: the versions of the notebook, at the right of the page, and the preview of one over it
     std::unique_ptr<ambitus::VersionsPanel> versionsPanel;
     /// Ambitus: minimap and zoom of a board

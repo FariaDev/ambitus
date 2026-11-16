@@ -845,6 +845,52 @@ headerbar.amb-titlebar.dark { background: @amb_dk_bg; border-bottom-color: @amb_
 .amb-dlg button.amb-dlg-field image { color: @amb_text3; }
 popover.amb-dlg-pop { padding: 4px; }
 
+/* a faixa do rascunho, no alto da página: some quando o documento vira caderno */
+.amb-draft-strip {
+    background: @amb_layer;
+    color: @amb_text2;
+    border-bottom: 1px solid @amb_border;
+    padding: 6px 14px;
+    font-size: 13px;
+}
+.amb-draft-strip label { color: @amb_text2; }
+.amb-draft-strip button {
+    min-height: 0;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    background-image: none;
+    font-size: 13px;
+}
+.amb-draft-strip button.amb-draft-ghost { background: transparent; color: @amb_text2; padding: 3px 8px; }
+.amb-draft-strip button.amb-draft-ghost:hover { background: @amb_hover; color: @amb_text; }
+.amb-draft-strip button.amb-draft-ghost:active { background: @amb_active; color: @amb_text; }
+.amb-draft-strip button.amb-draft-primary {
+    background: @amb_accent;
+    color: @amb_on_accent;
+    font-weight: 600;
+    padding: 0 14px;
+    min-height: 28px;
+}
+.amb-draft-strip button.amb-draft-primary:hover { background: shade(@amb_accent, 1.25); }
+.amb-draft-strip button.amb-draft-primary:active { background: shade(@amb_accent, 1.5); }
+
+#mainWindow.darkMode .amb-draft-strip {
+    background: @amb_dk_layer;
+    color: @amb_dk_text2;
+    border-bottom-color: @amb_dk_border;
+}
+#mainWindow.darkMode .amb-draft-strip label { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-draft-strip button.amb-draft-ghost { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-draft-strip button.amb-draft-ghost:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-draft-strip button.amb-draft-ghost:active { background: @amb_dk_active; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-draft-strip button.amb-draft-primary {
+    background: @amb_dk_accent;
+    color: @amb_dk_on_accent;
+}
+#mainWindow.darkMode .amb-draft-strip button.amb-draft-primary:hover { background: shade(@amb_dk_accent, 0.9); }
+#mainWindow.darkMode .amb-draft-strip button.amb-draft-primary:active { background: shade(@amb_dk_accent, 0.8); }
+
 /* os cartões de papel: a miniatura é desenhada no código; o anel do escolhido também (cor = color) */
 .amb-dlg button.amb-paper {
     padding: 0;

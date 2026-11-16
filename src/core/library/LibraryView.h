@@ -59,6 +59,8 @@ public:
         std::function<void(const fs::path& folder)> newNotebook;
         /// new board (one page that grows), same folder rule as newNotebook
         std::function<void(const fs::path& folder)> newBoard;
+        /// a quick draft, with no name and no subject, saved on its own
+        std::function<void()> newDraft;
         /// whether the search may read the handwriting through Summa (the settings); unset: it may
         std::function<bool()> searchInk;
     };

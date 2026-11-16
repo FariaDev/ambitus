@@ -150,6 +150,13 @@ LibraryView::LibraryView(fs::path storeFile, fs::path indexFile, Actions a):
         }
     });
     gtk_container_add(GTK_CONTAINER(head), boardBtn);
+    GtkWidget* draftBtn = iconButton("xopp-file-plus", _("Draft"), "amb-secondary");
+    onClicked(draftBtn, [this] {
+        if (actions.newDraft) {
+            actions.newDraft();
+        }
+    });
+    gtk_container_add(GTK_CONTAINER(head), draftBtn);
     GtkWidget* newBtn = iconButton("list-add-symbolic", _("New notebook"), "amb-primary");
     onClicked(newBtn, [this] {
         if (actions.newNotebook) {

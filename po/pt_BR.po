@@ -5804,3 +5804,12 @@ msgstr "segurar parado"
 
 msgid "straightens the stroke into a line, circle, arrow…"
 msgstr "endireita o traço em reta, círculo, seta…"
+
+msgid "Draft"
+msgstr "Rascunho"
+
+msgid "Keep as notebook…"
+msgstr "Guardar como caderno…"
+
+msgid "Draft · Saved on its own. Keep it in a subject when you want."
+msgstr "Rascunho · Salvo sozinho. Guarde numa matéria quando quiser."
