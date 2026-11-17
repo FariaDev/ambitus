@@ -279,7 +279,7 @@ private:
     /// Ambitus: over the library and the editor alike, for what is shown over the whole window
     GtkWidget* windowOverlay = nullptr;
     std::unique_ptr<ambitus::library::LibraryView> library;
-    /// Ambitus: "+2 cm" on the page edges
+    /// Ambitus: "+5 cm" on the page edges
     std::unique_ptr<ambitus::PageGrowHandle> growHandle;
     /// Ambitus: palette of the Studio mode
     std::unique_ptr<ambitus::StudioPalette> studioPalette;

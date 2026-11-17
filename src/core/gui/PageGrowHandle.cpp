@@ -40,11 +40,11 @@ PageGrowHandle::PageGrowHandle(Control* control, XournalView* xournal, GtkOverla
     pill.reset(gtk_button_new(), xoj::util::adopt);
     gtk_style_context_add_class(gtk_widget_get_style_context(pill.get()), "amb-grow-pill");
     gtk_widget_set_can_focus(pill.get(), false);
-    gtk_widget_set_tooltip_text(pill.get(), _("Grow the page by 2 cm"));
+    gtk_widget_set_tooltip_text(pill.get(), _("Grow the page by 5 cm"));
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     pillIcon = gtk_image_new_from_icon_name("go-next-symbolic", GTK_ICON_SIZE_MENU);
     gtk_box_pack_start(GTK_BOX(box), pillIcon, false, false, 0);
-    gtk_box_pack_start(GTK_BOX(box), gtk_label_new("+2 cm"), false, false, 0);
+    gtk_box_pack_start(GTK_BOX(box), gtk_label_new("+5 cm"), false, false, 0);
     gtk_container_add(GTK_CONTAINER(pill.get()), box);
     gtk_widget_show_all(box);
     gtk_widget_set_no_show_all(pill.get(), true);

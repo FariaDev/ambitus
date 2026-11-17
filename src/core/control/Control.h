@@ -237,7 +237,7 @@ public:
     /// Pages with a PDF background are left as they are.
     void growPage(double dw, double dh);
     void growPage(const PageRef& page, double dw, double dh);
-    static constexpr double GROW_STEP = 2.0 / 2.54 * 72.0;  ///< 2 cm in points
+    static constexpr double GROW_STEP = 5.0 / 2.54 * 72.0;  ///< 5 cm in points
     void changePageBackgroundColor();
     void updateBackgroundSizeButton();
 

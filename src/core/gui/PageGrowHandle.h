@@ -2,7 +2,7 @@
  * Ambitus
  *
  * Grow handle: when the pointer comes near the right or bottom edge of a page,
- * a striped strip previews the 2 cm the page would gain and a "+2 cm" pill
+ * a striped strip previews the 5 cm the page would gain and a "+5 cm" pill
  * makes it grow. Both live in the GtkOverlay above the pages, so the page
  * rendering of Xournal++ is left alone.
  *
