@@ -13,6 +13,7 @@
 #include "control/tools/EditSelection.h"
 #include "gui/MainWindow.h"
 #include "gui/XournalView.h"
+#include "gui/menus/menubar/Menubar.h"
 #include "library/InkReader.h"
 #include "model/Document.h"
 #include "model/PageRef.h"
@@ -47,6 +48,26 @@ auto messageFor(library::PageSend result) -> std::string {
 /// What to send, worked out when it is sent (after the notebook is saved)
 using Choose = std::function<summacrop::Pick(Control*)>;
 
+void sendChosen(Control* ctrl, Choose choose);
+
+/// The toast after a page went: an excerpt is offered whole, for the one who wanted all of it
+void toastSent(Control* ctrl, const summacrop::Pick& what, bool cropSent) {
+    auto* win = ctrl->getWindow();
+    if (!win) {
+        return;
+    }
+    if (cropSent && what.fromSelection) {
+        win->showToast(_("Selection sent to Summa"));
+    } else if (cropSent) {
+        const size_t page = what.page;
+        win->showToastAction(_("Excerpt sent to Summa"), _("Send the whole page"), [ctrl, page] {
+            sendChosen(ctrl, [page](Control*) { return summacrop::Pick{page, std::nullopt, false}; });
+        });
+    } else {
+        win->showToast(_("Page sent to Summa"));
+    }
+}
+
 void send(Control* ctrl, const Choose& choose) {
     Document* doc = ctrl->getDocument();
     doc->lock();
@@ -69,17 +90,20 @@ void send(Control* ctrl, const Choose& choose) {
     // a part goes with its place on the page, and only with the picture: without it Summa reads the whole page
     const std::optional<library::PageCrop> crop = png.empty() ? std::nullopt : wireCrop(what.crop);
     // the bridge answers at once, but a socket never runs on the UI thread
-    std::thread([file, page, name, png = std::move(png), crop, ctrl] {
+    std::thread([file, page, name, png = std::move(png), crop, what, ctrl] {
         auto bridge = library::findSummaBridge();
-        const auto result =
-                bridge ? library::sendPageToSumma(*bridge, file, page, name, png, crop) : library::PageSend::NoSumma;
-        if (result != library::PageSend::Sent) {
-            Util::execInUiThread([ctrl, result] {
+        bool cropSent = false;
+        const auto result = bridge ? library::sendPageToSumma(*bridge, file, page, name, png, crop, &cropSent) :
+                                     library::PageSend::NoSumma;
+        Util::execInUiThread([ctrl, result, what, cropSent] {
+            if (result != library::PageSend::Sent) {
                 if (auto* win = ctrl->getWindow()) {
                     win->showToast(messageFor(result));
                 }
-            });
-        }
+                return;
+            }
+            toastSent(ctrl, what, cropSent);
+        });
     }).detach();
 }
 
@@ -159,6 +183,26 @@ std::optional<library::PageCrop> wireCrop(const std::optional<summacrop::Rect>& 
 
 void sendPageToSumma(Control* ctrl) {
     sendChosen(ctrl, [](Control* c) { return choosePage(c, true, currentSendMode(c)); });
+}
+
+void sendOtherPartToSumma(Control* ctrl) {
+    const summacrop::SendMode other = currentSendMode(ctrl) == summacrop::SendMode::Page ? summacrop::SendMode::Screen :
+                                                                                           summacrop::SendMode::Page;
+    sendChosen(ctrl, [other](Control* c) { return choosePage(c, false, other); });
+}
+
+std::string sendOtherPartLabel(Control* ctrl) {
+    return currentSendMode(ctrl) == summacrop::SendMode::Page ? _("Send only what is on screen to Summa") :
+                                                                _("Send the whole page to Summa");
+}
+
+void setSendMode(Control* ctrl, summacrop::SendMode mode) {
+    ctrl->getSettings()->setAmbitusSummaSend(summacrop::sendModeId(mode));
+    if (auto* win = ctrl->getWindow()) {
+        if (auto* menubar = win->getMenubar()) {
+            menubar->setActionLabel("win.send-other-part-to-summa", sendOtherPartLabel(ctrl));
+        }
+    }
 }
 
 }  // namespace ambitus

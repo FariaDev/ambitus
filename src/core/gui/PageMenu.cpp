@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "ambitus/SendPage.h"
 #include "control/Control.h"
 #include "control/ToolEnums.h"
 #include "control/pagetype/PageTypeHandler.h"
@@ -84,6 +85,7 @@ void PageMenu::open(const InputEvent& e) {
             gtk_widget_set_sensitive(convert, false);  // only handwriting can be converted
         }
         menu.addItem(box, "xopp-send", _("Send to Summa"), "send-page-to-summa", nullptr);
+        menu.addItem(box, nullptr, sendOtherPartLabel(control).c_str(), "send-other-part-to-summa", nullptr);
         menu.addSeparator(box);
         menu.addItem(box, "xopp-edit-cut", C_("Page menu", "Cut"), "cut", nullptr);
         menu.addItem(box, "xopp-edit-copy", C_("Page menu", "Copy"), "copy", nullptr);
@@ -114,6 +116,7 @@ void PageMenu::open(const InputEvent& e) {
                      makeGVariant(TOOL_VERTICAL_SPACE));
         menu.addSeparator(box);
         menu.addItem(box, "xopp-send", C_("Page menu", "Send page to Summa"), "send-page-to-summa", nullptr);
+        menu.addItem(box, nullptr, sendOtherPartLabel(control).c_str(), "send-other-part-to-summa", nullptr);
         menu.addItem(box, "xopp-trash-danger", C_("Page menu", "Delete page"), "delete-page", nullptr, true);
     }
     menu.popup();

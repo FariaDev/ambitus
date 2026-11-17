@@ -42,6 +42,8 @@ public:
     inline PageTypeSubmenu& getPageTypeSubmenu() const { return *pageTypeSubmenu; }
 
     void setDisabled(bool disabled);
+    /// Gives the item(s) that run `action` (e.g. "win.send-page-to-summa") the label `label`, in the menu and submenus
+    void setActionLabel(const char* action, const std::string& label);
 
     void setUndoDescription(const std::string& description);
     void setRedoDescription(const std::string& description);

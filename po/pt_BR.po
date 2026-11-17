@@ -5943,3 +5943,33 @@ msgstr "+ Página"
 
 msgid "+ New page"
 msgstr "+ Nova página"
+
+msgid "Send the whole page to Summa"
+msgstr "Mandar a página inteira ao Summa"
+
+msgid "Send only what is on screen to Summa"
+msgstr "Mandar só o que está na tela ao Summa"
+
+msgid "Excerpt sent to Summa"
+msgstr "Trecho enviado ao Summa"
+
+msgid "Send the whole page"
+msgstr "Mandar a página inteira"
+
+msgid "Selection sent to Summa"
+msgstr "Seleção enviada ao Summa"
+
+msgid "Page sent to Summa"
+msgstr "Página enviada ao Summa"
+
+msgid "What goes to Summa"
+msgstr "O que vai ao Summa"
+
+msgid "when sending and in Check; a lasso selection always goes alone"
+msgstr "ao mandar e no Conferir; uma seleção do laço sempre vai sozinha"
+
+msgid "What is on screen"
+msgstr "O que está na tela"
+
+msgid "The whole page"
+msgstr "A página inteira"

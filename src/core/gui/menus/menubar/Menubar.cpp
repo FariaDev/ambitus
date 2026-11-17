@@ -1,5 +1,6 @@
 #include "Menubar.h"
 
+#include "ambitus/SendPage.h"
 #include "control/Control.h"
 #include "gui/GladeSearchpath.h"
 #include "gui/MainWindow.h"
@@ -41,6 +42,37 @@ static void removeItemsWithClass(GMenu* menu, const char* classname) {
                 }
             }
         }
+    }
+}
+
+/// @brief Gives the items that run `action` the label `label`, in the menu and its submenus. An item is replaced by a
+/// copy with the new label, in its place.
+static void relabelAction(GMenu* menu, const char* action, const std::string& label) {
+    int N = g_menu_model_get_n_items(G_MENU_MODEL(menu));
+    for (int n = 0; n < N; ++n) {
+        xoj::util::GVariantSPtr a(
+                g_menu_model_get_item_attribute_value(G_MENU_MODEL(menu), n, "action", G_VARIANT_TYPE_STRING),
+                xoj::util::adopt);
+        if (a && std::string_view(g_variant_get_string(a.get(), nullptr)) == action) {
+            xoj::util::GObjectSPtr<GMenuItem> item(g_menu_item_new_from_model(G_MENU_MODEL(menu), n), xoj::util::adopt);
+            g_menu_item_set_label(item.get(), label.c_str());
+            g_menu_remove(menu, n);
+            g_menu_insert_item(menu, n, item.get());
+        }
+        xoj::util::GObjectSPtr<GMenuLinkIter> it(g_menu_model_iterate_item_links(G_MENU_MODEL(menu), n),
+                                                 xoj::util::adopt);
+        while (g_menu_link_iter_next(it.get())) {
+            xoj::util::GObjectSPtr<GMenuModel> sub(g_menu_link_iter_get_value(it.get()), xoj::util::adopt);
+            if (sub && G_IS_MENU(sub.get())) {
+                relabelAction(G_MENU(sub.get()), action, label);
+            }
+        }
+    }
+}
+
+void Menubar::setActionLabel(const char* action, const std::string& label) {
+    if (menu) {
+        relabelAction(G_MENU(menu), action, label);
     }
 }
 
@@ -116,6 +148,8 @@ void Menubar::populate(const GladeSearchpath* gladeSearchPath, MainWindow* win) 
     if (!ctrl->getAudioController()) {
         removeItemsWithClass(G_MENU(menu), "audio");
     }
+    // the second Summa item says what it sends: the whole page, or what is on screen when the setting is "page"
+    setActionLabel("win.send-other-part-to-summa", ambitus::sendOtherPartLabel(ctrl));
 
     undoRedoSection = G_MENU(gtk_builder_get_object(builder.get(), UNDO_REDO_SECTION_ID));
 }

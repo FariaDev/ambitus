@@ -93,6 +93,7 @@ const char* iconFor(const Command& c) {
             {"win.new-page-after", "xopp-file-plus"},
             {"win.new-page-at-end", "xopp-file-plus"},
             {"win.send-page-to-summa", "xopp-send"},
+            {"win.send-other-part-to-summa", "xopp-send"},
             {"win.convert-to-text", "xopp-convert-text"},
             {"win.earlier-versions", "xopp-history"},
             {"win.preferences", "xopp-settings"},

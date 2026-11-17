@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "ambitus/SendPage.h"
 #include "control/Control.h"
 #include "control/settings/Settings.h"
 #include "control/tools/EditSelection.h"
@@ -173,6 +174,8 @@ SelectionBar::SelectionBar(Control* control, XournalView* xournal, GtkOverlay* o
     gtk_box_pack_start(GTK_BOX(bar), more, false, false, 0);
     menu = buildMenu();
     g_signal_connect_swapped(more, "clicked", G_CALLBACK(+[](SelectionBar* self) {
+                                 gtk_label_set_text(GTK_LABEL(self->otherPartLabel),
+                                                    ambitus::sendOtherPartLabel(self->control).c_str());
                                  gtk_popover_set_position(GTK_POPOVER(self->menu),
                                                           self->below ? GTK_POS_BOTTOM : GTK_POS_TOP);
                                  gtk_popover_popup(GTK_POPOVER(self->menu));
@@ -211,7 +214,7 @@ GtkWidget* SelectionBar::buildMenu() {
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(pop), box);
 
-    auto item = [&](const char* iconName, const char* text, const char* action, GVariant* target) {
+    auto item = [&](const char* iconName, const char* text, const char* action, GVariant* target) -> GtkWidget* {
         GtkWidget* b = actionButton(action, target);
         addClass(b, "amb-selpop-item");
         GtkWidget* row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -222,8 +225,12 @@ GtkWidget* SelectionBar::buildMenu() {
         gtk_container_add(GTK_CONTAINER(b), row);
         g_signal_connect_swapped(b, "clicked", G_CALLBACK(gtk_popover_popdown), pop);
         gtk_box_pack_start(GTK_BOX(box), b, false, false, 0);
+        return l;
     };
     item("xopp-send", _("Send to Summa"), "win.send-page-to-summa", nullptr);
+    // the second item says what it sends, which follows the setting: its text is set again each time the menu opens
+    otherPartLabel =
+            item("xopp-send", ambitus::sendOtherPartLabel(control).c_str(), "win.send-other-part-to-summa", nullptr);
     // no "copy as image" here: Xournal++ only copies the whole page, and doing it ends the selection
     GtkWidget* sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     addClass(sep, "amb-selpop-sep");

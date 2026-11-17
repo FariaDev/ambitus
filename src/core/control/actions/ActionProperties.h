@@ -130,6 +130,11 @@ struct ActionProperties<Action::SEND_PAGE_TO_SUMMA> {
 };
 
 template <>
+struct ActionProperties<Action::SEND_OTHER_PART_TO_SUMMA> {
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ambitus::sendOtherPartToSumma(ctrl); }
+};
+
+template <>
 struct ActionProperties<Action::CONVERT_TO_TEXT> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ambitus::convertSelectionToText(ctrl); }
 };

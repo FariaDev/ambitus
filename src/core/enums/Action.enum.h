@@ -41,15 +41,16 @@ enum class Action : size_t {
     EXPORT_AS,
     PRINT,
     QUIT,
-    LIBRARY,             ///< Ambitus: show the notebook library
-    SEARCH_NOTEBOOKS,    ///< Ambitus: library with the keyboard in its search
-    SCRATCH_OUT,         ///< Ambitus: toggle scratch out to erase
-    HOLD_TO_SNAP,        ///< Ambitus: toggle holding the pen still to straighten the stroke into a shape
-    SEND_PAGE_TO_SUMMA,  ///< Ambitus: the page on screen to the side chat of Summa
-    CONVERT_TO_TEXT,     ///< Ambitus: the selected handwriting to text, read by Summa
-    COPY_PAGE_AS_IMAGE,  ///< Ambitus: the page on screen to the clipboard, as a PNG
-    COMMAND_PALETTE,     ///< Ambitus: find a command of the menu by name and run it
-    EARLIER_VERSIONS,    ///< Ambitus: the copies kept before each save of the notebook
+    LIBRARY,                   ///< Ambitus: show the notebook library
+    SEARCH_NOTEBOOKS,          ///< Ambitus: library with the keyboard in its search
+    SCRATCH_OUT,               ///< Ambitus: toggle scratch out to erase
+    HOLD_TO_SNAP,              ///< Ambitus: toggle holding the pen still to straighten the stroke into a shape
+    SEND_PAGE_TO_SUMMA,        ///< Ambitus: the page on screen to the side chat of Summa
+    SEND_OTHER_PART_TO_SUMMA,  ///< Ambitus: the other of the two (the whole page or what is on screen), to Summa
+    CONVERT_TO_TEXT,           ///< Ambitus: the selected handwriting to text, read by Summa
+    COPY_PAGE_AS_IMAGE,        ///< Ambitus: the page on screen to the clipboard, as a PNG
+    COMMAND_PALETTE,           ///< Ambitus: find a command of the menu by name and run it
+    EARLIER_VERSIONS,          ///< Ambitus: the copies kept before each save of the notebook
 
     // Menu edit
     ARRANGE_SELECTION_ORDER,

@@ -74,6 +74,7 @@ private:
     GtkWidget* copyIcon = nullptr;
     GtkWidget* more = nullptr;
     GtkWidget* menu = nullptr;  ///< The popover of "..."
+    GtkWidget* otherPartLabel = nullptr;  ///< The label of the second send item: its text follows the setting
     std::array<GtkWidget*, DOTS> dots{};
 
     gulong positionId = 0;

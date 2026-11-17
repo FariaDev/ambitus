@@ -15,6 +15,7 @@
 #include <system_error>
 
 #include "ambitus/NewNotebook.h"
+#include "ambitus/SendPage.h"
 #include "ambitus/SettingsApply.h"
 #include "ambitus/SettingsRows.h"
 #include "control/Control.h"
@@ -584,6 +585,12 @@ void SettingsCard::buildSumma() {
                   gtk_widget_set_sensitive(row, on);
                   setClass(row, "off", !on);
               });
+    // what goes when the person sends, or Summa checks: a lasso selection always goes alone (ambitus/SummaCrop.h)
+    addRow(SUMMA, _("What goes to Summa"), _("when sending and in Check; a lasso selection always goes alone"),
+           makeSegmented({_("What is on screen"), _("The whole page")},
+                         currentSendMode(ctrl) == summacrop::SendMode::Page ? 1 : 0, [this](int i) {
+                             setSendMode(ctrl, i == 1 ? summacrop::SendMode::Page : summacrop::SendMode::Screen);
+                         }));
     searchInkSwitch = addSwitch(
             SUMMA, _("Search handwriting too"), _("pages with ink go to your model and become text for the search"),
             settings->getAmbitusSearchInk(), [this](bool on) { ctrl->getSettings()->setAmbitusSearchInk(on); },

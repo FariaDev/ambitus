@@ -61,6 +61,10 @@
      <attribute name="action">win.send-page-to-summa</attribute>
      <attribute name="accel">&lt;Primary&gt;&lt;Shift&gt;m</attribute>
     </item>
+    <item>
+     <attribute name="label" translatable="yes">Send the whole page to Summa</attribute>
+     <attribute name="action">win.send-other-part-to-summa</attribute>
+    </item>
    </section>
    <section>
     <item>

@@ -19,6 +19,7 @@ constexpr const char* ACTION_NAMES[] = {  // Action to string conversion map
         "scratch-out",
         "hold-to-snap",
         "send-page-to-summa",
+        "send-other-part-to-summa",
         "convert-to-text",
         "copy-page-as-image",
         "command-palette",
