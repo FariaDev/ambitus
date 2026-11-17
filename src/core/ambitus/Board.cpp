@@ -42,7 +42,23 @@ double grow(double size, double reach) {
     if (reach + MARGIN <= size) {
         return size;
     }
-    return std::ceil((reach + MARGIN) / RASTER) * RASTER;
+    return std::min(MAX_SIDE, std::ceil((reach + MARGIN) / RASTER) * RASTER);
+}
+
+/// A side the view reaches within one view of its far end: it grows to one view past that end
+double growAxis(double size, double viewEnd, double viewSize) {
+    if (viewSize <= 0 || size - viewEnd >= viewSize) {
+        return size;
+    }
+    return std::max(size, std::min(MAX_SIDE, std::ceil((viewEnd + viewSize) / RASTER) * RASTER));
+}
+
+/// A side the view reaches within one view of its near end: the content moves by one view, in whole dots
+double moveAxis(double size, double viewStart, double viewSize) {
+    if (viewSize <= 0 || viewStart >= viewSize) {
+        return 0;
+    }
+    return roomWithinCap(size, std::ceil((viewSize - viewStart) / RASTER) * RASTER);
 }
 }  // namespace
 
@@ -55,6 +71,29 @@ Size shiftToFit(const Range& content) {
     auto room = [](double from) { return from >= MARGIN ? 0.0 : std::ceil((MARGIN - from) / RASTER) * RASTER; };
     return {room(content.minX), room(content.minY)};
 }
+
+double roomWithinCap(double size, double room) {
+    if (room <= 0) {
+        return 0;
+    }
+    const double fits = std::floor((MAX_SIDE - size) / RASTER) * RASTER;
+    return std::max(0.0, std::min(room, fits));
+}
+
+// Zoomed out, a view covers more points than the cap (at 5 % it is some 15000 pt): one view ahead would send the page
+// to the cap at once, and each shift would move the content by that much. So the room is one view, but at most a
+// starting board.
+Size growAhead(Size page, const Range& view) {
+    return {growAxis(page.width, view.maxX, std::min(view.getWidth(), START_WIDTH)),
+            growAxis(page.height, view.maxY, std::min(view.getHeight(), START_HEIGHT))};
+}
+
+Size moveAhead(Size page, const Range& view) {
+    return {moveAxis(page.width, view.minX, std::min(view.getWidth(), START_WIDTH)),
+            moveAxis(page.height, view.minY, std::min(view.getHeight(), START_HEIGHT))};
+}
+
+bool mayMoveContent(bool selectionOrText, bool canRedo) { return !selectionOrText && !canRedo; }
 
 Range contentBounds(const XojPage& page) {
     Range r;

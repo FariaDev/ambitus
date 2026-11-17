@@ -43,6 +43,22 @@ class Layout final {
 public:
     Layout(XournalView* view, ScrollHandling* scrollHandling);
 
+    /// Ambitus: while alive, the scrolls are made by the program (zoom, relayout, a jump to a page, a board shift),
+    /// not by the person: they are not a pan, so they do not make the board grow (see updateVisibility)
+    class ProgrammaticScroll {
+    public:
+        explicit ProgrammaticScroll(Layout& layout): layout(layout), wasProgrammatic(layout.programmatic) {
+            layout.programmatic = true;
+        }
+        ~ProgrammaticScroll() { layout.programmatic = wasProgrammatic; }
+        ProgrammaticScroll(const ProgrammaticScroll&) = delete;
+        ProgrammaticScroll& operator=(const ProgrammaticScroll&) = delete;
+
+    private:
+        Layout& layout;
+        bool wasProgrammatic;
+    };
+
 public:
     // Todo(Fabian): move to ScrollHandling also it must not depend on Layout
     /**
@@ -197,6 +213,22 @@ private:
     std::vector<size_t> previouslyVisiblePages;  ///< indexes of pages with XojPageView::isVisible() == true
 
     PreCalculated pc{};
+
+    /// Ambitus: true while the program scrolls or sets the scroll limits (see ProgrammaticScroll)
+    bool programmatic = false;
+    /// Ambitus: a pan of the user happened since the last updateVisibility()
+    bool panPending = false;
+    /// Ambitus: the scroll range (page sizes and upper limits) as the last updateVisibility() saw it
+    struct ScrollRange {
+        double pageX = 0, upperX = 0, pageY = 0, upperY = 0;
+        bool operator==(const ScrollRange& o) const {
+            return pageX == o.pageX && upperX == o.upperX && pageY == o.pageY && upperY == o.upperY;
+        }
+    };
+    ScrollRange seenScrollRange;
+    ScrollRange currentScrollRange() const;
+    /// Ambitus: a scroll of the adjustments came from the user, if the layout did not set it
+    void notePan();
 
     /// Used to have only one call when zooming in/out
     enum class DelayStatus { NO_DELAY, DELAY, MUST_RUN_AFTER } delayUpdate = DelayStatus::NO_DELAY;

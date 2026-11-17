@@ -49,7 +49,22 @@ static inline void afterMove(Layout* layout, GtkWidget* w) {
     gtk_widget_queue_draw(w);
 }
 
+Layout::ScrollRange Layout::currentScrollRange() const {
+    GtkAdjustment* h = scrollHandling->getHorizontal();
+    GtkAdjustment* v = scrollHandling->getVertical();
+    return {gtk_adjustment_get_page_size(h), gtk_adjustment_get_upper(h), gtk_adjustment_get_page_size(v),
+            gtk_adjustment_get_upper(v)};
+}
+
+void Layout::notePan() {
+    // Ambitus: a scroll the program made, or one that comes with a new scroll range, is not a pan of the person
+    if (!programmatic && currentScrollRange() == seenScrollRange) {
+        panPending = true;
+    }
+}
+
 void Layout::horizontalScrollChanged(GtkAdjustment*, Layout* layout) {
+    layout->notePan();
     if (layout->delayUpdate == DelayStatus::NO_DELAY) {
         afterMove(layout, layout->view->getWidget());
     } else {
@@ -58,6 +73,7 @@ void Layout::horizontalScrollChanged(GtkAdjustment*, Layout* layout) {
 }
 
 void Layout::verticalScrollChanged(GtkAdjustment*, Layout* layout) {
+    layout->notePan();
     layout->maybeAddLastPage(layout);
     if (layout->delayUpdate == DelayStatus::NO_DELAY) {
         afterMove(layout, layout->view->getWidget());
@@ -287,6 +303,14 @@ void Layout::updateVisibility() {
     if (mostPageNr) {
         this->view->getControl()->firePageSelected(*mostPageNr);
     }
+    // Ambitus: a board grows ahead of the part on screen when the person pans it. A scroll the program makes (zoom,
+    // resize, a jump to a page, a board shift: see ProgrammaticScroll) is not a pan: growing then would add a view at
+    // every zoom step.
+    seenScrollRange = currentScrollRange();
+    if (panPending) {
+        panPending = false;
+        this->view->getControl()->boardViewChanged();
+    }
 }
 
 auto Layout::getVisiblePages() const -> std::vector<size_t> {
@@ -388,14 +412,20 @@ void Layout::recomputeCenteringPadding(int allocWidth, int allocHeight) {
     auto width = getTotalPixelWidthUnsafe();
     auto height = getTotalPixelHeightUnsafe();
     g.unlock();
+    programmatic = true;  // Ambitus: the scroll this may clamp is not a pan
     gtk_adjustment_set_upper(scrollHandling->getHorizontal(), width);
     gtk_adjustment_set_upper(scrollHandling->getVertical(), height);
+    seenScrollRange = currentScrollRange();
+    programmatic = false;
 }
 
 void Layout::recalculate() {
     computePrecalculated();
+    programmatic = true;  // Ambitus: see recomputeCenteringPadding
     gtk_adjustment_set_upper(scrollHandling->getHorizontal(), getTotalPixelWidth());
     gtk_adjustment_set_upper(scrollHandling->getVertical(), getTotalPixelHeight());
+    seenScrollRange = currentScrollRange();
+    programmatic = false;
     gtk_widget_queue_draw(view->getWidget());
 }
 

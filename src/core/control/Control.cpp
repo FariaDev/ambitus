@@ -47,6 +47,7 @@
 #include "control/zoom/ZoomControl.h"                            // for Zoom...
 #include "gui/ExportPdfCard.h"                                   // for ExportPdfCard
 #include "gui/FloatingToolbox.h"                                 // for Floa...
+#include "gui/Layout.h"                                          // for Layout
 #include "gui/MainWindow.h"                                      // for Main...
 #include "gui/PageView.h"                                        // for XojP...
 #include "gui/PdfFloatingToolbox.h"                              // for PdfF...
@@ -1219,9 +1220,13 @@ void Control::growBoardToFit() {
         auto size = ambitus::board::grownToFit({page->getWidth(), page->getHeight()}, reach.width, reach.height);
         bool grown = size.width != page->getWidth() || size.height != page->getHeight();
         if (grown) {
+            // Ambitus: a board keeps the zoom the person has; in fit-width mode a bigger page would zoom out again
+            ctrl->zoom->setZoomFitMode(false);
             Document::setPageSize(page, size.width, size.height);
         }
         auto shift = ambitus::board::shiftToFit(ambitus::board::contentBounds(*page));
+        shift = {ambitus::board::roomWithinCap(page->getWidth(), shift.width),
+                 ambitus::board::roomWithinCap(page->getHeight(), shift.height)};
         ctrl->doc->unlock();
         ctrl->setBoardOpen(true);
         if (grown) {
@@ -1230,17 +1235,102 @@ void Control::growBoardToFit() {
         // room on the left and on top: only right after a new action (not while undoing, which would clear
         // the redo history) and not while a selection or a text box holds elements apart from the page
         bool busy = ctrl->win && (ctrl->win->getXournal()->getSelection() || ctrl->win->getXournal()->getTextEditor());
-        if ((shift.width > 0 || shift.height > 0) && !busy && !ctrl->undoRedo->canRedo()) {
-            if (auto cause = ctrl->undoRedo->takeLastUndoAction()) {
-                ambitus::board::shiftContent(ctrl, page, shift.width, shift.height);
-                ctrl->undoRedo->addUndoAction(std::make_unique<ambitus::board::ShiftUndoAction>(
-                        page, shift.width, shift.height, std::move(cause)));
-            }
+        if ((shift.width > 0 || shift.height > 0) && ambitus::board::mayMoveContent(busy, ctrl->undoRedo->canRedo())) {
+            ctrl->zoom->setZoomFitMode(false);
+            ambitus::board::moveAndRecord(*ctrl->undoRedo, *ctrl->doc, page, shift.width, shift.height, ctrl);
         }
         if (ctrl->win) {
             ctrl->win->boardContentChanged();
         }
     });
+}
+
+void Control::boardViewChanged() {
+    if (boardViewPending || !boardOpen) {
+        return;
+    }
+    boardViewPending = true;
+    // once per main loop iteration, however many scroll events came before it
+    Util::execInUiThread([ctrl = this]() {
+        ctrl->boardViewPending = false;
+        ctrl->growBoardAhead();
+    });
+}
+
+void Control::growBoardAhead() {
+    if (!win || !boardOpen) {
+        return;
+    }
+    XournalView* xournal = win->getXournal();
+    // a stroke or another tool in progress holds coordinates of the page: nothing moves under it
+    for (auto& view: xournal->getViewPages()) {
+        if (view->isInputActive()) {
+            return;
+        }
+    }
+    doc->lock_shared();
+    const bool board = ambitus::board::isBoard(*doc);
+    PageRef page = board ? doc->getPage(0) : nullptr;
+    doc->unlock_shared();
+    if (!board) {
+        return;
+    }
+
+    // the part on screen in page points; it is not clipped to the page, the view may reach past it
+    const double pixelsPerPoint = zoom->getZoom();
+    if (!(pixelsPerPoint > 0)) {
+        return;
+    }
+    Layout* layout = xournal->getLayout();
+    const auto screen = layout->getVisibleRect();
+    const auto origin = layout->getPixelCoordinatesOfEntry(size_t{0});
+    const Range view((screen.x - origin.x) / pixelsPerPoint, (screen.y - origin.y) / pixelsPerPoint,
+                     (screen.x + screen.width - origin.x) / pixelsPerPoint,
+                     (screen.y + screen.height - origin.y) / pixelsPerPoint);
+    // a side that fits in the view is not scrolled: there is no edge to reach, and centring would move it
+    const bool scrollsX = layout->getTotalPixelWidth() > screen.width;
+    const bool scrollsY = layout->getTotalPixelHeight() > screen.height;
+
+    // right and bottom: no coordinate changes, so not in the history
+    doc->lock_shared();
+    const ambitus::board::Size size{page->getWidth(), page->getHeight()};
+    doc->unlock_shared();
+    ambitus::board::Size grow = ambitus::board::growAhead(size, view);
+    if (!scrollsX) {
+        grow.width = size.width;
+    }
+    if (!scrollsY) {
+        grow.height = size.height;
+    }
+    bool changed = grow.width != size.width || grow.height != size.height;
+    if (changed) {
+        zoom->setZoomFitMode(false);  // Ambitus: see growBoardToFit
+        doc->lock();
+        Document::setPageSize(page, grow.width, grow.height);
+        doc->unlock();
+        firePageSizeChanged(0);
+    }
+
+    // left and top: the content moves, which the history must know about
+    doc->lock_shared();
+    const ambitus::board::Size now{page->getWidth(), page->getHeight()};
+    doc->unlock_shared();
+    ambitus::board::Size room = ambitus::board::moveAhead(now, view);
+    if (!scrollsX) {
+        room.width = 0;
+    }
+    if (!scrollsY) {
+        room.height = 0;
+    }
+    const bool busy = xournal->getSelection() || xournal->getTextEditor();
+    if ((room.width > 0 || room.height > 0) && ambitus::board::mayMoveContent(busy, undoRedo->canRedo())) {
+        zoom->setZoomFitMode(false);  // Ambitus: see growBoardToFit
+        ambitus::board::moveAndRecord(*undoRedo, *doc, page, room.width, room.height, this);
+        changed = true;
+    }
+    if (changed) {
+        win->boardContentChanged();
+    }
 }
 
 void Control::setBoardOpen(bool board) {

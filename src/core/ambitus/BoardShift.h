@@ -20,17 +20,29 @@
 #include "undo/UndoAction.h"
 
 class Control;
+class Document;
+class UndoRedoHandler;
 
 namespace ambitus::board {
 
-/// Moves everything on the page by (dx, dy), grows the page by as much and scrolls the view along.
-/// Negative values move back and shrink.
-void shiftContent(Control* control, const PageRef& page, double dx, double dy);
+/// Moves everything on the page by (dx, dy) and grows the page by as much. With a control, the view scrolls along.
+/// Negative values move back and shrink. Not in the undo history: see moveAndRecord.
+void moveContent(Document& doc, const PageRef& page, double dx, double dy, Control* control);
 
-/// The action that brought content to the edge, followed by the move that made room for it.
+/// Moves the content of a board and keeps the history right: a move made after an action is folded into the move on
+/// top of the history, or wraps the last action, so one undo takes back the action and the move. With an empty
+/// history nothing refers to the old coordinates, so there is no entry. A move does not make a saved document
+/// changed, so the history stays saved when it was. The caller checks mayMoveContent.
+void moveAndRecord(UndoRedoHandler& history, Document& doc, const PageRef& page, double dx, double dy,
+                   Control* control);
+
+/// The move of the content of a board, with the action that brought the content to the edge (or the move itself)
 class ShiftUndoAction: public UndoAction {
 public:
-    ShiftUndoAction(PageRef page, double dx, double dy, std::unique_ptr<UndoAction> cause);
+    ShiftUndoAction(Document& doc, PageRef page, double dx, double dy, std::unique_ptr<UndoAction> cause);
+
+    /// Folds another move of the same page, made after this one, into it: one undo takes back both
+    void addMove(double dx, double dy);
 
     bool undo(Control* control) override;
     bool redo(Control* control) override;
@@ -38,6 +50,7 @@ public:
     std::vector<PageRef> getPages() override;
 
 private:
+    Document* doc;
     double dx, dy;
     std::unique_ptr<UndoAction> cause;
 };

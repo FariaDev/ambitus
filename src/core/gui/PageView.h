@@ -165,6 +165,9 @@ public:  // event handler
     void onSequenceCancelEvent(DeviceId id);
     void onTapEvent(const PositionInputData& pos);
 
+    /// Ambitus: a stroke or another tool is being drawn on this page (its coordinates must not change meanwhile)
+    bool isInputActive() const { return inputHandler != nullptr; }
+
     /**
      * This event fires after onButtonPressEvent and also
      * if no input sequence is actively running and a stylus button was pressed

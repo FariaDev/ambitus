@@ -40,7 +40,7 @@ public:
     static constexpr int MAP_HEIGHT = 124;
 
 private:
-    /// Scale and offset that fit the page in the minimap
+    /// Scale and offset that fit the content and the part on screen in the minimap (not the whole board: it grows)
     struct MapFit {
         double scale, x0, y0;
     };
@@ -67,6 +67,7 @@ private:
 
     double pageWidth = 0, pageHeight = 0;
     std::vector<Range> blocks;  ///< bounding boxes of the content, in page coordinates
+    Range contentRange;         ///< the box around all the blocks (empty when nothing is written)
 };
 
 }  // namespace ambitus

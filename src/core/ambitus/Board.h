@@ -29,6 +29,8 @@ constexpr double START_WIDTH = 89 * RASTER;
 constexpr double START_HEIGHT = 56 * RASTER;
 /// Room kept free between the writing and the right and bottom edges of the page
 constexpr double MARGIN = 28 * RASTER;
+/// Longest side of a board, a whole number of dots (about 14 m); past it scrolling stops
+constexpr double MAX_SIDE = 2222 * RASTER;
 /// Lowest zoom on a board, relative to 100 %
 constexpr double MIN_ZOOM = 0.05;
 
@@ -52,6 +54,21 @@ Size grownToFit(Size page, double right, double bottom);
 /// How far the content must move right and down so the margin is free on the left and on top too;
 /// whole dots, (0, 0) when there is room or no content
 Size shiftToFit(const Range& content);
+/// `room` cut back so that a side of `size` stays within MAX_SIDE (whole dots, never negative)
+double roomWithinCap(double size, double room);
+
+/// The part of the board on screen, in page points (it may reach past the page: the view can scroll beyond it).
+/// Its width and height are the size of the view.
+/// New size when the view comes near the right or bottom edge of the page: blank board stays ahead of it, one view
+/// (at most a starting board, see the .cpp). Grows in whole multiples of RASTER, never past MAX_SIDE; `page` itself
+/// when there is room already.
+Size growAhead(Size page, const Range& view);
+/// How far the content must move right and down when the view comes near the left or top edge of the page, so that
+/// blank board stays ahead of it (as growAhead); whole dots, never past MAX_SIDE, (0, 0) when there is room
+Size moveAhead(Size page, const Range& view);
+/// Whether the content may move at all: not while something is selected or typed into (they hold its coordinates),
+/// and not with a redo history (a redo would put its action back at the old coordinates)
+bool mayMoveContent(bool selectionOrText, bool canRedo);
 
 /// How far right and down the content of the page reaches (0, 0 when empty). The caller locks the document.
 Size contentReach(const XojPage& page);

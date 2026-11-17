@@ -135,6 +135,7 @@ void BoardNavigator::zoomChanged() {
 
 void BoardNavigator::updateContent() {
     blocks.clear();
+    contentRange = Range();
     Document* doc = control->getDocument();
     doc->lock_shared();
     if (doc->getPageCount() > 0) {
@@ -144,6 +145,7 @@ void BoardNavigator::updateContent() {
         for (const Layer* layer: page->getLayersView()) {
             for (const Element* e: layer->getElementsView()) {
                 blocks.emplace_back(e->getBoundingBox());
+                contentRange = contentRange.unite(blocks.back());
             }
         }
     }
@@ -152,11 +154,19 @@ void BoardNavigator::updateContent() {
 }
 
 auto BoardNavigator::fit() const -> MapFit {
-    if (pageWidth <= 0 || pageHeight <= 0) {
+    // The map frames what is written and what is on screen, with some air. Not the whole page: a board grows ahead
+    // of the view, and framing the page would shrink the writing to a dot.
+    Range region = contentRange.unite(shownRange());
+    if (!region.isValid()) {
+        region = Range(0, 0, pageWidth, pageHeight);
+    }
+    constexpr double AIR = 2 * board::RASTER;
+    const double w = region.getWidth() + 2 * AIR, h = region.getHeight() + 2 * AIR;
+    if (!(w > 0 && h > 0)) {
         return {1, 0, 0};
     }
-    double s = std::min(MAP_WIDTH / pageWidth, MAP_HEIGHT / pageHeight);
-    return {s, (MAP_WIDTH - pageWidth * s) / 2, (MAP_HEIGHT - pageHeight * s) / 2};
+    double s = std::min(MAP_WIDTH / w, MAP_HEIGHT / h);
+    return {s, (MAP_WIDTH - w * s) / 2 - (region.minX - AIR) * s, (MAP_HEIGHT - h * s) / 2 - (region.minY - AIR) * s};
 }
 
 Range BoardNavigator::shownRange() const {

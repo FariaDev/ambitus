@@ -474,6 +474,8 @@ void XournalView::scrollTo(size_t pageNo, XojPdfRectangle rect) {
         height = round_cast<int>((rect.y2 - rect.y1) * zoom);
     }
 
+    // Ambitus: a jump to a page (opening the document, the page number, the page changed) is not a pan of the person
+    Layout::ProgrammaticScroll jump(*layout);
     layout->ensureRectIsVisible(x, y, width, height);
 
     // Select the page
@@ -578,6 +580,8 @@ void XournalView::ensureRectIsVisible(int x, int y, int width, int height) {
 
 void XournalView::zoomChanged() {
     ZoomControl* zoom = control->getZoomControl();
+    // Ambitus: the scroll this moves (to keep the view on the zoom) is the program's, not a pan of the person
+    Layout::ProgrammaticScroll relayout(*this->getLayout());
     this->getLayout()->recomputeCenteringPadding();
 
     if (zoom->isZoomPresentationMode()) {

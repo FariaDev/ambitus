@@ -103,6 +103,8 @@ public:
     void newBoard(fs::path filepath = {});
     /// Ambitus: on a board, makes the page bigger when the writing gets near its right or bottom edge
     void growBoardToFit();
+    /// Ambitus: the view on a board moved, zoomed or was resized: the page grows ahead of it, after the main loop
+    void boardViewChanged();
     /// Ambitus: the open document is a board (cached, updated on load and after every edit)
     bool isBoardOpen() const { return boardOpen; }
 
@@ -554,6 +556,9 @@ private:
      */
     std::vector<PageRef> changedPages;
     bool boardGrowPending = false;
+    bool boardViewPending = false;
+    /// Ambitus: the grow ahead of the view, run by boardViewChanged after the main loop iteration
+    void growBoardAhead();
     bool boardOpen = false;
     std::vector<ambitus::Tab> tabs;
     /// Ambitus: answers the "Check" of Summa with the page on screen (ambitus/SummaPoll.h)
