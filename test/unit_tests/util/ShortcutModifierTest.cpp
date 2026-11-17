@@ -11,6 +11,12 @@
 #include "util/ShortcutModifier.h"
 
 namespace {
+/// GTK takes the names of the modifiers from the keymap of the display, opened by gtk_init
+bool hasDisplay() {
+    static const bool opened = gtk_init_check(nullptr, nullptr);
+    return opened;
+}
+
 constexpr guint MOD2_BIT = 0x10;
 constexpr guint META_BIT = 0x10000000;
 constexpr guint CONTROL_BIT = 0x4;
@@ -53,4 +59,29 @@ TEST(ShortcutModifier, mod2AlongWithCmdIsDroppedOnMacOsOnly) {
 TEST(ShortcutModifier, otherBitsAreKept) {
     const auto state = static_cast<GdkModifierType>(CONTROL_BIT | SHIFT_BIT | MOD1_BIT);
     EXPECT_EQ(static_cast<guint>(withoutMacMod2(state)), CONTROL_BIT | SHIFT_BIT | MOD1_BIT);
+}
+
+TEST(ShortcutModifier, labelOfThePrimaryShortcutIsTheSystemOne) {
+    // GTK takes the names of the modifiers from the display's keymap: without a display the label is only the key
+    if (!hasDisplay()) {
+        GTEST_SKIP() << "no display: GTK labels need the keymap of one";
+    }
+#ifdef __APPLE__
+    EXPECT_EQ(shortcutLabel("<Primary>c"), "⌘C");
+    EXPECT_EQ(shortcutModifierLabel(), "⌘");
+#else
+    EXPECT_EQ(shortcutLabel("<Primary>c"), "Ctrl+C");
+    EXPECT_EQ(shortcutModifierLabel(), "Ctrl");
+#endif
+}
+
+TEST(ShortcutModifier, labelOfAShortcutWithAShiftIsKept) {
+    if (!hasDisplay()) {
+        GTEST_SKIP() << "no display: GTK labels need the keymap of one";
+    }
+    // the order of the modifiers in the label is GTK's; only the presence of the shift is checked
+    const std::string withShift = shortcutLabel("<Primary><Shift>n");
+    EXPECT_NE(withShift.find('N'), std::string::npos);
+    EXPECT_NE(withShift, shortcutLabel("<Primary>n"));
+    EXPECT_GT(withShift.size(), shortcutLabel("<Primary>n").size());
 }

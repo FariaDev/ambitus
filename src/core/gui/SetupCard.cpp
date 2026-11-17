@@ -20,6 +20,7 @@
 #include "gui/AmbitusMotion.h"
 #include "gui/NewNotebookDialog.h"
 #include "library/SummaState.h"
+#include "util/ShortcutModifier.h"
 #include "util/StringUtils.h"
 #include "util/i18n.h"
 
@@ -836,7 +837,7 @@ void SetupCard::buildDone() {
     };
     line(0, keys({"P", "M", "E"}, ""), _("pen, highlighter, eraser"));
     line(1, keys({"S", "T", "X"}, ""), _("selection, text, LaTeX"));
-    line(2, keys({"Ctrl", "K"}, "+"), _("search the notebooks, or any command by name"));
+    line(2, keys({shortcutModifierLabel().c_str(), "K"}, "+"), _("search the notebooks, or any command by name"));
     GtkWidget* hold = label(_("hold still"), "amb-setup-cap");
     line(3, hold, _("straightens the stroke into a line, circle, arrow…"));
     gtk_box_pack_start(GTK_BOX(body), grid, false, false, 0);

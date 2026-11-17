@@ -5015,8 +5015,8 @@ msgstr "Lendo a escrita…"
 msgid "Nothing legible in the selection."
 msgstr "Nada legível na seleção."
 
-msgid "Converted. Ctrl+Z brings the strokes back."
-msgstr "Convertido. Ctrl+Z traz os traços de volta."
+msgid "Converted. {1} brings the strokes back."
+msgstr "Convertido. {1} traz os traços de volta."
 
 msgid "Copy page as image"
 msgstr "Copiar página como imagem"

@@ -20,6 +20,7 @@
 #include "undo/InsertUndoAction.h"
 #include "undo/UndoRedoHandler.h"
 #include "util/Color.h"
+#include "util/ShortcutModifier.h"
 #include "util/Util.h"  // for DPI_NORMALIZATION_FACTOR, execInUiThread
 #include "util/i18n.h"
 #include "view/ElementContainerView.h"
@@ -171,7 +172,7 @@ void convertSelectionToText(Control* ctrl) {
                 win->showToast(_("Nothing legible in the selection."));
                 return;
             }
-            win->showToast(_("Converted. Ctrl+Z brings the strokes back."));
+            win->showToast(FS(_F("Converted. {1} brings the strokes back.") % shortcutLabel("<Primary>z")));
             place(ctrl, pending, std::move(text));
         });
     }).detach();

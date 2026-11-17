@@ -15,6 +15,7 @@
 #include "model/Stroke.h"
 #include "util/Color.h"
 #include "util/GVariantTemplate.h"
+#include "util/ShortcutModifier.h"
 #include "util/i18n.h"
 
 #include "AmbitusTip.h"
@@ -131,7 +132,7 @@ SelectionBar::SelectionBar(Control* control, XournalView* xournal, GtkOverlay* o
     GtkWidget* copy = actionButton("win.copy", nullptr);
     copyIcon = icon("xopp-edit-copy");
     gtk_container_add(GTK_CONTAINER(copy), copyIcon);
-    tip(copy, _("Copy"), "Ctrl+C");
+    tip(copy, _("Copy"), shortcutLabel("<Primary>c").c_str());
     g_signal_connect_swapped(copy, "clicked", G_CALLBACK(+[](SelectionBar* self) { self->copied(); }), this);
     gtk_box_pack_start(GTK_BOX(bar), copy, false, false, 0);
 

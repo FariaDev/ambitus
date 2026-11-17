@@ -44,6 +44,36 @@ static void removeItemsWithClass(GMenu* menu, const char* classname) {
     }
 }
 
+#ifdef __APPLE__
+/// Ambitus: Cmd+M (minimize) and Cmd+H (hide) belong to macOS. The items of the menu file that carry them (Merge Layer
+/// Down, and the Help menu) keep their action and lose the accelerator. Linux keeps the menu as it is.
+static void dropSystemAccelerators(GMenuModel* model) {
+    const int N = g_menu_model_get_n_items(model);
+    for (int n = 0; n < N; ++n) {
+        xoj::util::GVariantSPtr accel(g_menu_model_get_item_attribute_value(model, n, "accel", G_VARIANT_TYPE_STRING),
+                                      xoj::util::adopt);
+        if (accel) {
+            std::string_view value = g_variant_get_string(accel.get(), nullptr);
+            if (value == "<Primary>m" || value == "<Primary>h") {
+                // the copy keeps the links (the submenus) and the other attributes
+                xoj::util::GObjectSPtr<GMenuItem> item(g_menu_item_new_from_model(model, n), xoj::util::adopt);
+                g_menu_item_set_attribute_value(item.get(), "accel", nullptr);
+                g_menu_remove(G_MENU(model), n);
+                g_menu_insert_item(G_MENU(model), n, item.get());
+            }
+        }
+
+        xoj::util::GObjectSPtr<GMenuLinkIter> it(g_menu_model_iterate_item_links(model, n), xoj::util::adopt);
+        while (g_menu_link_iter_next(it.get())) {
+            xoj::util::GObjectSPtr<GMenuModel> sub(g_menu_link_iter_get_value(it.get()), xoj::util::adopt);
+            if (sub && G_IS_MENU(sub.get())) {
+                dropSystemAccelerators(sub.get());
+            }
+        }
+    }
+}
+#endif
+
 void Menubar::populate(const GladeSearchpath* gladeSearchPath, MainWindow* win) {
     builder.reset(gtk_builder_new(), xoj::util::adopt);
 
@@ -63,6 +93,11 @@ void Menubar::populate(const GladeSearchpath* gladeSearchPath, MainWindow* win) 
     }
 
     menu = G_MENU_MODEL(gtk_builder_get_object(builder.get(), MENU_ID));
+#ifdef __APPLE__
+    if (menu) {
+        dropSystemAccelerators(menu);
+    }
+#endif
 
     Control* ctrl = win->getControl();
 
