@@ -588,6 +588,14 @@ public:
     void setAmbitusNewSize(const std::string& size);
     const std::string& getAmbitusNewSize() const;
 
+    /// Ambitus: the paper of the last draft, the one a new draft opens with (the same ids as the new notebook's)
+    void setAmbitusDraftPaper(const std::string& paper);
+    const std::string& getAmbitusDraftPaper() const;
+
+    /// Ambitus: the size of the last draft: "a4", "letter" or "infinite" (the board)
+    void setAmbitusDraftSize(const std::string& size);
+    const std::string& getAmbitusDraftSize() const;
+
     /// Ambitus: the folder of the notebooks chosen in the settings (empty: the one of Summa)
     void setAmbitusNotebooksFolder(const std::string& folder);
     const std::string& getAmbitusNotebooksFolder() const;
@@ -1229,6 +1237,8 @@ private:
     bool ambitusStudioPages{};
     std::string ambitusNewPaper;
     std::string ambitusNewSize;
+    std::string ambitusDraftPaper;
+    std::string ambitusDraftSize;
     std::string ambitusSummaSend;  ///< "screen" or "page"
     std::string ambitusNotebooksFolder;
     bool ambitusSetupDone{};

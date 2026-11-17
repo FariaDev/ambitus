@@ -153,24 +153,35 @@ NewNotebookDialog::NewNotebookDialog(GtkOverlay* overlay, GtkWindow* window): wi
     gtk_widget_set_size_request(card, CARD_WIDTH, -1);
     gtk_container_add(GTK_CONTAINER(veil), card);
 
-    gtk_box_pack_start(GTK_BOX(card), label(_("New notebook"), "amb-dlg-title"), false, false, 0);
+    title = label(_("New notebook"), "amb-dlg-title");
+    gtk_box_pack_start(GTK_BOX(card), title, false, false, 0);
+
+    // the line under the title of a draft: the note of the "Keep draft" card
+    draftLine = label(_("Stays in the drafts until you keep it in a subject."), "amb-dlg-problem");
+    addClass(draftLine, "amb-dlg-note");
+    gtk_label_set_line_wrap(GTK_LABEL(draftLine), true);
+    gtk_box_pack_start(GTK_BOX(card), draftLine, false, false, 0);
+
+    // the name and the subject, in a box of their own: a draft has neither, so the box is hidden for it
+    notebookFields = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_pack_start(GTK_BOX(card), notebookFields, false, false, 0);
 
     // name
-    gtk_box_pack_start(GTK_BOX(card), label(_("Name"), "amb-opt-label"), false, false, 0);
+    gtk_box_pack_start(GTK_BOX(notebookFields), label(_("Name"), "amb-opt-label"), false, false, 0);
     entry = gtk_entry_new();
     addClass(entry, "amb-cmd-entry");
     gtk_entry_set_activates_default(GTK_ENTRY(entry), false);
-    gtk_box_pack_start(GTK_BOX(card), entry, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(notebookFields), entry, false, false, 0);
     problem = label("", "amb-dlg-problem");
     gtk_label_set_ellipsize(GTK_LABEL(problem), PANGO_ELLIPSIZE_END);
-    gtk_box_pack_start(GTK_BOX(card), problem, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(notebookFields), problem, false, false, 0);
 
     // subject: the field is the one of the "Keep draft" card (SubjectPicker)
-    gtk_box_pack_start(GTK_BOX(card), label(_("Subject"), "amb-opt-label"), false, false, 0);
+    gtk_box_pack_start(GTK_BOX(notebookFields), label(_("Subject"), "amb-opt-label"), false, false, 0);
     subjectPicker = std::make_unique<SubjectPicker>();
     subjectPicker->setOnChanged([this] { suggest(); });
     subjectPicker->setOnPicked([this] { gtk_widget_grab_focus(entry); });
-    gtk_box_pack_start(GTK_BOX(card), subjectPicker->field(), false, false, 0);
+    gtk_box_pack_start(GTK_BOX(notebookFields), subjectPicker->field(), false, false, 0);
 
     // paper
     gtk_box_pack_start(GTK_BOX(card), label(_("Paper"), "amb-opt-label"), false, false, 0);
@@ -342,6 +353,7 @@ fs::path NewNotebookDialog::folderOfSubject() const {
 void NewNotebookDialog::open(std::vector<library::Subject> list, const fs::path& near,
                              std::function<void(const Request&)> create) {
     onCreate = std::move(create);
+    setDraft(false);
     paper = startPaper;
     size = startSize;
     nameEdited = false;
@@ -365,6 +377,31 @@ void NewNotebookDialog::open(std::vector<library::Subject> list, const fs::path&
     choosePaper(paper);
     chooseSize(size);
 
+    showCard(entry);
+    gtk_editable_select_region(GTK_EDITABLE(entry), 0, -1);
+}
+
+void NewNotebookDialog::openDraft(std::function<void(const Request&)> create) {
+    onCreate = std::move(create);
+    setDraft(true);
+    paper = startDraftPaper;
+    size = startDraftSize;
+    nameEdited = false;
+    choosePaper(paper);
+    chooseSize(size);
+
+    // "Create" has the focus: Enter makes the draft, as the shortcut did when it made it at once
+    showCard(createButton);
+}
+
+void NewNotebookDialog::setDraft(bool isDraft) {
+    draft = isDraft;
+    gtk_label_set_text(GTK_LABEL(title), isDraft ? _("New draft") : _("New notebook"));
+    gtk_widget_set_visible(draftLine, isDraft);
+    gtk_widget_set_visible(notebookFields, !isDraft);
+}
+
+void NewNotebookDialog::showCard(GtkWidget* focus) {
     if (focusBack) {
         g_object_remove_weak_pointer(G_OBJECT(focusBack), reinterpret_cast<gpointer*>(&focusBack));
         focusBack = nullptr;
@@ -377,9 +414,8 @@ void NewNotebookDialog::open(std::vector<library::Subject> list, const fs::path&
     gtk_revealer_set_transition_duration(GTK_REVEALER(revealer), animationsOn(revealer) ? FADE_IN_MS : 0);
     gtk_widget_show(revealer);
     gtk_revealer_set_reveal_child(GTK_REVEALER(revealer), true);
-    gtk_widget_realize(entry);  // the revealer realizes its child late, and the focus change needs it realized
-    gtk_widget_grab_focus(entry);
-    gtk_editable_select_region(GTK_EDITABLE(entry), 0, -1);
+    gtk_widget_realize(focus);  // the revealer realizes its child late, and the focus change needs it realized
+    gtk_widget_grab_focus(focus);
 }
 
 void NewNotebookDialog::close() { close(true); }
@@ -405,12 +441,14 @@ void NewNotebookDialog::create() {
         return;
     }
     Request r;
-    r.name = cleanName(typedName());
     r.paper = paper;
     r.size = size;
-    const fs::path dir = folderOfSubject();
-    if (!dir.empty()) {
-        r.file = dir / (r.name + ".xopp");
+    if (!draft) {  // a draft has no name and no subject yet: the caller names it
+        r.name = cleanName(typedName());
+        const fs::path dir = folderOfSubject();
+        if (!dir.empty()) {
+            r.file = dir / (r.name + ".xopp");
+        }
     }
     auto done = std::move(onCreate);
     onCreate = nullptr;
@@ -450,7 +488,7 @@ void NewNotebookDialog::chooseSize(PageSize s) {
 }
 
 void NewNotebookDialog::suggest() {
-    if (!nameEdited) {
+    if (!nameEdited && !draft) {
         const fs::path dir = folderOfSubject();
         auto exists = [&dir](const std::string& n) {
             std::error_code ec;
@@ -472,6 +510,11 @@ void NewNotebookDialog::suggest() {
 }
 
 void NewNotebookDialog::refresh() {
+    if (draft) {  // nothing to check: "Create" is on
+        valid = true;
+        gtk_widget_set_sensitive(createButton, true);
+        return;
+    }
     const fs::path dir = folderOfSubject();
     auto exists = [&dir](const std::string& n) {
         std::error_code ec;

@@ -94,3 +94,33 @@ TEST(Setup, thePageSizeOfNewNotebooksIsKept) {
     again.load();
     EXPECT_EQ(again.getAmbitusNewSize(), "letter");
 }
+
+TEST(Setup, theDraftChoiceStartsSummaA4AndIsKept) {
+    const fs::path file = scratchFile("draft.xml");
+    {
+        Settings settings(file);
+        settings.load();
+        EXPECT_EQ(settings.getAmbitusDraftPaper(), "summa");
+        EXPECT_EQ(settings.getAmbitusDraftSize(), "a4");
+        settings.setAmbitusDraftPaper("grid");
+        settings.setAmbitusDraftSize("infinite");
+    }
+    Settings again(file);
+    again.load();
+    EXPECT_EQ(again.getAmbitusDraftPaper(), "grid");
+    EXPECT_EQ(again.getAmbitusDraftSize(), "infinite");
+}
+
+TEST(Setup, theDraftChoiceDoesNotChangeTheNewNotebook) {
+    const fs::path file = scratchFile("draft-apart.xml");
+    {
+        Settings settings(file);
+        settings.load();
+        settings.setAmbitusDraftPaper("dotted");
+        settings.setAmbitusDraftSize("letter");
+    }
+    Settings again(file);
+    again.load();
+    EXPECT_EQ(again.getAmbitusNewPaper(), "summa");
+    EXPECT_EQ(again.getAmbitusNewSize(), "a4");
+}

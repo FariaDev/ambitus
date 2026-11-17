@@ -259,6 +259,8 @@ void Settings::loadDefault() {
     this->ambitusStudioPages = false;
     this->ambitusNewPaper = "summa";
     this->ambitusNewSize = "a4";
+    this->ambitusDraftPaper = "summa";
+    this->ambitusDraftSize = "a4";
     this->ambitusSummaSend = "screen";
     this->ambitusNotebooksFolder.clear();
     this->ambitusSetupDone = true;  // load() starts the setup only for a settings file that did not exist
@@ -765,6 +767,10 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->ambitusNewPaper = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewSize")) == 0) {
         this->ambitusNewSize = reinterpret_cast<const char*>(value);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusDraftPaper")) == 0) {
+        this->ambitusDraftPaper = reinterpret_cast<const char*>(value);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusDraftSize")) == 0) {
+        this->ambitusDraftSize = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSummaSend")) == 0) {
         this->ambitusSummaSend = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSetupDone")) == 0) {
@@ -1297,6 +1303,8 @@ void Settings::save() {
     SAVE_BOOL_PROP(ambitusStudioPages);
     SAVE_STRING_PROP(ambitusNewPaper);
     SAVE_STRING_PROP(ambitusNewSize);
+    SAVE_STRING_PROP(ambitusDraftPaper);
+    SAVE_STRING_PROP(ambitusDraftSize);
     SAVE_STRING_PROP(ambitusSummaSend);
     SAVE_BOOL_PROP(ambitusSetupDone);
     SAVE_INT_PROP(ambitusLook);
@@ -2532,6 +2540,26 @@ void Settings::setAmbitusNewSize(const std::string& size) {
 }
 
 auto Settings::getAmbitusNewSize() const -> const std::string& { return this->ambitusNewSize; }
+
+void Settings::setAmbitusDraftPaper(const std::string& paper) {
+    if (this->ambitusDraftPaper == paper) {
+        return;
+    }
+    this->ambitusDraftPaper = paper;
+    save();
+}
+
+auto Settings::getAmbitusDraftPaper() const -> const std::string& { return this->ambitusDraftPaper; }
+
+void Settings::setAmbitusDraftSize(const std::string& size) {
+    if (this->ambitusDraftSize == size) {
+        return;
+    }
+    this->ambitusDraftSize = size;
+    save();
+}
+
+auto Settings::getAmbitusDraftSize() const -> const std::string& { return this->ambitusDraftSize; }
 
 void Settings::setAmbitusSummaSend(const std::string& mode) {
     if (this->ambitusSummaSend == mode) {

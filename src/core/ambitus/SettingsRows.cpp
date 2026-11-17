@@ -103,4 +103,15 @@ std::optional<newnotebook::PageSize> sizeFromId(const std::string& id) {
     return std::nullopt;
 }
 
+const char* draftSizeId(newnotebook::PageSize size) {
+    return size == newnotebook::PageSize::INFINITE ? "infinite" : sizeId(size);
+}
+
+std::optional<newnotebook::PageSize> draftSizeFromId(const std::string& id) {
+    if (id == "infinite") {
+        return newnotebook::PageSize::INFINITE;
+    }
+    return sizeFromId(id);
+}
+
 }  // namespace ambitus::settingsrows

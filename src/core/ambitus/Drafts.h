@@ -15,12 +15,20 @@
 #include <optional>
 #include <string>
 
+#include "ambitus/NewNotebook.h"
+#include "control/settings/PageTemplateSettings.h"
+
 #include "filesystem.h"
 
 namespace ambitus::drafts {
 
 /// The folder of the drafts: "drafts" in Ambitus's data folder
 fs::path folder();
+
+/// The page template of a draft made in the draft card: the paper and the size chosen there, on the user's page
+/// template `base`. The infinite size is the board, as "New board" makes it (board::pageTemplate).
+PageTemplateSettings pageTemplate(const PageTemplateSettings& base, newnotebook::Paper paper,
+                                  newnotebook::PageSize size);
 
 /// Points folder() elsewhere (an empty path brings the default back). For the tests.
 void setFolderForTesting(const fs::path& folder);

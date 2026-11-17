@@ -38,4 +38,9 @@ const char* sizeId(newnotebook::PageSize size);
 /// The size of a saved id; an id that is not known gives nothing
 std::optional<newnotebook::PageSize> sizeFromId(const std::string& id);
 
+/// What the settings save for the size of the last draft: as sizeId, and "infinite" for the board, which a draft can be
+const char* draftSizeId(newnotebook::PageSize size);
+/// The size of a saved draft size; an id that is not known gives nothing
+std::optional<newnotebook::PageSize> draftSizeFromId(const std::string& id);
+
 }  // namespace ambitus::settingsrows

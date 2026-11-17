@@ -544,6 +544,23 @@ void MainWindow::showNewNotebook(const fs::path& folder) {
 }
 
 void MainWindow::newDraft() {
+    if (!newNotebookDialog || newNotebookDialog->isOpen()) {
+        return;
+    }
+    auto* settings = control->getSettings();
+    newNotebookDialog->setStartDraftPaper(ambitus::settingsrows::paperFromId(settings->getAmbitusDraftPaper())
+                                                  .value_or(ambitus::newnotebook::DEFAULT_PAPER));
+    newNotebookDialog->setStartDraftSize(ambitus::settingsrows::draftSizeFromId(settings->getAmbitusDraftSize())
+                                                 .value_or(ambitus::newnotebook::DEFAULT_SIZE));
+    newNotebookDialog->openDraft([this](const ambitus::NewNotebookDialog::Request& r) {
+        // the next draft opens with this choice; the notebook's choice (the settings of the notebook) is not touched
+        control->getSettings()->setAmbitusDraftPaper(ambitus::settingsrows::paperId(r.paper));
+        control->getSettings()->setAmbitusDraftSize(ambitus::settingsrows::draftSizeId(r.size));
+        makeDraft(r.paper, r.size);
+    });
+}
+
+void MainWindow::makeDraft(ambitus::newnotebook::Paper paper, ambitus::newnotebook::PageSize size) {
     const fs::path dir = ambitus::drafts::folder();
     std::error_code ec;
     fs::create_directories(dir, ec);
@@ -567,18 +584,14 @@ void MainWindow::newDraft() {
     });
     const fs::path file = dir / (name + ".xopp");
 
-    using namespace ambitus::newnotebook;
-    PageTemplateSettings page = control->getSettings()->getPageTemplateSettings();
-    const Dimensions d = pageDimensions(PageSize::A4);
-    page.setPageWidth(d.width);
-    page.setPageHeight(d.height);
-    page.setBackgroundType(paperType(
-            ambitus::settingsrows::paperFromId(control->getSettings()->getAmbitusNewPaper()).value_or(DEFAULT_PAPER)));
-    page.setBackgroundColor(Colors::white);
-
     showEditor();
-    control->newFile(file, page);
-    setEditorMode(ambitus::EditorMode::STUDIO);
+    if (size == ambitus::newnotebook::PageSize::INFINITE) {
+        control->newBoard(file);  // the board that the Infinite choice of the new notebook makes
+    } else {
+        control->newFile(file,
+                         ambitus::drafts::pageTemplate(control->getSettings()->getPageTemplateSettings(), paper, size));
+        setEditorMode(ambitus::EditorMode::STUDIO);
+    }
     draftDirty = false;
     draftPendingPath.clear();
     updateDraftStatus();

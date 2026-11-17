@@ -14,6 +14,7 @@
 
 #include <glib.h>
 
+#include "ambitus/Board.h"
 #include "util/i18n.h"
 
 namespace ambitus::drafts {
@@ -141,6 +142,20 @@ fs::path folder() {
 }
 
 bool isDraft(const fs::path& file) { return !file.empty() && inside(file, folder()); }
+
+PageTemplateSettings pageTemplate(const PageTemplateSettings& base, newnotebook::Paper paper,
+                                  newnotebook::PageSize size) {
+    if (size == newnotebook::PageSize::INFINITE) {
+        return board::pageTemplate(base);
+    }
+    PageTemplateSettings page = base;
+    const newnotebook::Dimensions d = newnotebook::pageDimensions(size);
+    page.setPageWidth(d.width);
+    page.setPageHeight(d.height);
+    page.setBackgroundType(newnotebook::paperType(paper));
+    page.setBackgroundColor(Colors::white);
+    return page;
+}
 
 std::string newName(std::tm now, const std::function<bool(const std::string&)>& exists) {
     char stamp[64] = {};

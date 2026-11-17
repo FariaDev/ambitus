@@ -60,6 +60,10 @@ class NewNotebookDialog;
 class KeepDraftCard;
 class VersionsPanel;
 enum class EditorMode;
+namespace newnotebook {
+enum class Paper;
+enum class PageSize;
+}  // namespace newnotebook
 }
 namespace ambitus::library {
 class LibraryView;
@@ -181,8 +185,10 @@ public:
     void boardContentChanged();
     /// Ambitus: the open documents changed (opened, closed, saved, edited)
     void tabsChanged();
-    /// Ambitus: a draft opens at once, with no name and no subject, and saves on its own (see ambitus::drafts)
+    /// Ambitus: "New draft" opens the card of the new notebook without its name and subject (see ambitus::drafts)
     void newDraft();
+    /// Ambitus: makes the draft with the paper and the size chosen in that card; it saves on its own
+    void makeDraft(ambitus::newnotebook::Paper paper, ambitus::newnotebook::PageSize size);
 
     void undoRedoChanged() override;
     void undoRedoPageChanged(PageRef page) override;

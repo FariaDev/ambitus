@@ -74,3 +74,16 @@ TEST(SettingsRows, theSizeOfThePageKeepsItsIdAndComesBack) {
     EXPECT_FALSE(sizeFromId("a3"));
     EXPECT_FALSE(sizeFromId(""));
 }
+
+TEST(SettingsRows, theDraftSizeKeepsTheBoardToo) {
+    using ambitus::newnotebook::PageSize;
+    for (PageSize size: {PageSize::A4, PageSize::LETTER, PageSize::INFINITE}) {
+        auto back = draftSizeFromId(draftSizeId(size));
+        ASSERT_TRUE(back.has_value());
+        EXPECT_EQ(*back, size);
+    }
+    EXPECT_EQ(std::string(draftSizeId(PageSize::INFINITE)), "infinite");
+    EXPECT_EQ(std::string(draftSizeId(PageSize::A4)), "a4");
+    EXPECT_FALSE(draftSizeFromId("a3"));
+    EXPECT_FALSE(draftSizeFromId(""));
+}

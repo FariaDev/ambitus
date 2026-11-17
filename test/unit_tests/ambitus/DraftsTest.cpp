@@ -12,7 +12,11 @@
 #include <glib.h>
 #include <gtest/gtest.h>
 
+#include "ambitus/Board.h"
 #include "ambitus/Drafts.h"
+#include "ambitus/NewNotebook.h"
+#include "control/settings/PageTemplateSettings.h"
+#include "util/Color.h"
 #include "util/i18n.h"
 
 #include "filesystem.h"
@@ -157,4 +161,33 @@ TEST_F(DraftsTest, discardingOnlyWorksInsideTheDraftsFolder) {
 TEST_F(DraftsTest, theFolderIsAmbitusOwnDraftsFolder) {
     setFolderForTesting({});
     EXPECT_EQ(folder(), fs::path(g_get_user_data_dir()) / "ambitus" / "drafts");
+}
+
+TEST_F(DraftsTest, theTemplateOfADraftIsItsPaperAndItsSize) {
+    using ambitus::newnotebook::PageSize;
+    using ambitus::newnotebook::Paper;
+    PageTemplateSettings base;
+    PageTemplateSettings letter = pageTemplate(base, Paper::GRID, PageSize::LETTER);
+    EXPECT_EQ(letter.getPageWidth(), 612.0);
+    EXPECT_EQ(letter.getPageHeight(), 792.0);
+    EXPECT_EQ(letter.getBackgroundType().format, PageTypeFormat::Graph);
+    EXPECT_FALSE(ambitus::board::isBoardPageType(letter.getBackgroundType()));
+    EXPECT_EQ(letter.getBackgroundColor(), Colors::white);
+
+    PageTemplateSettings a4 = pageTemplate(base, Paper::SUMMA, PageSize::A4);
+    EXPECT_NEAR(a4.getPageWidth(), 595.28, 0.01);
+    EXPECT_NEAR(a4.getPageHeight(), 841.89, 0.01);
+    EXPECT_EQ(a4.getBackgroundType().format, PageTypeFormat::Lined);
+    EXPECT_FALSE(a4.getBackgroundType().config.empty());  // the Summa lines
+}
+
+TEST_F(DraftsTest, anInfiniteDraftIsABoardOfTheStartSize) {
+    PageTemplateSettings base;
+    PageTemplateSettings board =
+            pageTemplate(base, ambitus::newnotebook::Paper::GRID, ambitus::newnotebook::PageSize::INFINITE);
+    EXPECT_TRUE(ambitus::board::isBoardPageType(board.getBackgroundType()));
+    EXPECT_EQ(board.getPageWidth(), ambitus::board::START_WIDTH);
+    EXPECT_EQ(board.getPageHeight(), ambitus::board::START_HEIGHT);
+    // and it is still a draft: the folder says so, not the page
+    EXPECT_TRUE(isDraft(folder() / "Draft 2026-11-17 14-32.xopp"));
 }

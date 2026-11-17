@@ -5982,3 +5982,9 @@ msgstr "Coloridos"
 
 msgid "Neutral"
 msgstr "Neutros"
+
+msgid "New draft"
+msgstr "Novo rascunho"
+
+msgid "Stays in the drafts until you keep it in a subject."
+msgstr "Fica nos rascunhos até você guardar numa matéria."

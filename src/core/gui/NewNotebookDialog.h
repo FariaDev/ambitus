@@ -65,11 +65,20 @@ public:
     void setStartPaper(newnotebook::Paper paper) { startPaper = paper; }
     /// The page size chosen the next time it opens (the setup keeps it)
     void setStartSize(newnotebook::PageSize size) { startSize = size; }
+    /// "New draft": the same card without the name and the subject. onCreate runs once, after the card is gone, with
+    /// the paper and the size chosen; the file and the name of the Request stay empty (the draft has none yet).
+    void openDraft(std::function<void(const Request&)> onCreate);
+    /// The paper and the size of a draft the next time a draft opens (the settings keep them, apart from the
+    /// notebook's)
+    void setStartDraftPaper(newnotebook::Paper paper) { startDraftPaper = paper; }
+    void setStartDraftSize(newnotebook::PageSize size) { startDraftSize = size; }
     void close();
     bool isOpen() const;
 
 private:
     void close(bool restoreFocus);
+    void setDraft(bool isDraft);  ///< the title, the line under it and the name and subject, for a draft or a notebook
+    void showCard(GtkWidget* focus);  ///< fades the card in and gives `focus` the keyboard
     void create();
     void choosePaper(newnotebook::Paper paper);
     void chooseSize(newnotebook::PageSize size);
@@ -83,6 +92,9 @@ private:
     GtkWindow* window;
     GtkWidget* revealer = nullptr;
     GtkWidget* card = nullptr;
+    GtkWidget* title = nullptr;
+    GtkWidget* draftLine = nullptr;       ///< "Stays in the drafts...": shown for a draft only
+    GtkWidget* notebookFields = nullptr;  ///< the name and the subject: hidden for a draft
     GtkWidget* entry = nullptr;
     GtkWidget* problem = nullptr;
     std::unique_ptr<SubjectPicker> subjectPicker;
@@ -92,10 +104,13 @@ private:
     GtkWidget* cancelButton = nullptr;
     GtkWidget* createButton = nullptr;
 
+    bool draft = false;  ///< the card makes a draft, not a notebook
     newnotebook::Paper startPaper = newnotebook::DEFAULT_PAPER;
     newnotebook::Paper paper = newnotebook::DEFAULT_PAPER;
     newnotebook::PageSize startSize = newnotebook::DEFAULT_SIZE;
     newnotebook::PageSize size = newnotebook::DEFAULT_SIZE;
+    newnotebook::Paper startDraftPaper = newnotebook::DEFAULT_PAPER;
+    newnotebook::PageSize startDraftSize = newnotebook::DEFAULT_SIZE;
     bool nameEdited = false;  ///< the user typed in the field: the suggestion is not put there again
     bool settingName = false;
     bool settingSize = false;
