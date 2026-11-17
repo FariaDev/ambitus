@@ -1,11 +1,18 @@
 #include "TitleBar.h"
 
 #include "util/i18n.h"
+#ifdef __APPLE__
+#include "ambitus/MacWindowButtons.h"
+#endif
 
 namespace ambitus {
 
 namespace {
 void addClass(GtkWidget* w, const char* c) { gtk_style_context_add_class(gtk_widget_get_style_context(w), c); }
+
+#ifdef __APPLE__
+void useSystemButtonsOf(GtkWidget* window, gpointer) { macwindow::useSystemWindowButtons(GTK_WINDOW(window)); }
+#endif
 
 GtkWidget* iconButton(const char* icon, const char* action, const char* tooltip) {
     GtkWidget* b = gtk_button_new_from_icon_name(icon, GTK_ICON_SIZE_BUTTON);
@@ -31,12 +38,17 @@ TitleBar::TitleBar(GtkWindow* window, GMenuModel* menu, std::function<void(Edito
         g_object_unref(closeTab);
     }
     bar = gtk_header_bar_new();
-    gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(bar), true);
     addClass(bar, "amb-titlebar");
 #ifdef __APPLE__
-    // macOS: the window buttons on the left, in the order of the system, drawn as its three lights (ambitus.css)
-    gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(bar), "close,minimize,maximize:");
+    // macOS: the bar draws no window buttons. The system's are on the window, over the left of the bar, and the tabs
+    // start after them (ambitus.css). The style is set once the window exists, and again on each map (GTK may set it)
+    gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(bar), false);
+    gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(bar), ":");
     addClass(bar, "amb-mac");
+    g_signal_connect_after(window, "realize", G_CALLBACK(useSystemButtonsOf), nullptr);
+    g_signal_connect_after(window, "map", G_CALLBACK(useSystemButtonsOf), nullptr);
+#else
+    gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(bar), true);
 #endif
 
     // left: the tabs (no mark: the Library tab comes first, as in Summa)

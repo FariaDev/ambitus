@@ -25,6 +25,10 @@ project(xournalpp
         DESCRIPTION "Xournal++ - Open source hand note-taking program"
         HOMEPAGE_URL "https://xournalpp.github.io/"
         LANGUAGES CXX C)
+if (APPLE)
+    # Ambitus: the window buttons of macOS are set up in Objective-C++ (src/core/ambitus/MacWindowButtons.mm)
+    enable_language(OBJCXX)
+endif ()
 # according to https://cmake.org/cmake/help/latest/command/project.html we must fix the suffix:
 # And https://gitlab.kitware.com/cmake/cmake/-/issues/16716 is still open:
 set(VERSION_SUFFIX "+dev")
