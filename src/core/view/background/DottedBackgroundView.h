@@ -28,6 +28,9 @@ public:
     virtual void draw(cairo_t* cr) const override;
 
 protected:
+    // Ambitus: strokes the dots that lie in the page rectangle, one path with a single round-capped stroke
+    void strokeDots(cairo_t* cr, double minX, double minY, double maxX, double maxY) const;
+
     double squareSize = 14.17;  // 5mm
 
     constexpr static Color DEFAULT_LINE_COLOR = Colors::xopp_silver;

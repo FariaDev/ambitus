@@ -2,6 +2,7 @@
 
 #include <memory>  // for allocator
 
+#include "ambitus/DotTiles.h"                        // for tiles::paintTiled, tiles::DotTileParams
 #include "model/BackgroundConfig.h"                  // for BackgroundConfig
 #include "view/background/BackgroundView.h"          // for view
 #include "view/background/OneColorBackgroundView.h"  // for OneColorBackgrou...
@@ -22,13 +23,32 @@ void DottedBackgroundView::draw(cairo_t* cr) const {
     // Paint the background color
     PlainBackgroundView::draw(cr);
 
+    // Ambitus: on an image target the dots are copied from cached tiles (ambitus/DotTiles.h), which avoids stroking
+    // every dot again at each repaint of a large page. Other targets (PDF, SVG) keep the dots as vectors.
+    const ::ambitus::tiles::DotTileParams params{
+            .squareSize = squareSize,
+            .lineWidth = lineWidth,
+            .color = static_cast<uint32_t>(foregroundColor),
+            .pageWidth = pageWidth,
+            .pageHeight = pageHeight,
+    };
+    const auto paintTile = [this](cairo_t* tileCr, const ::ambitus::tiles::PageRect& rect) {
+        strokeDots(tileCr, rect.minX, rect.minY, rect.maxX, rect.maxY);
+    };
+    if (::ambitus::tiles::paintTiled(cr, params, paintTile)) {
+        return;
+    }
+
     // Get the bounds of the mask, in page coordinates
     double minX;
     double maxX;
     double minY;
     double maxY;
     cairo_clip_extents(cr, &minX, &minY, &maxX, &maxY);
+    strokeDots(cr, minX, minY, maxX, maxY);
+}
 
+void DottedBackgroundView::strokeDots(cairo_t* cr, double minX, double minY, double maxX, double maxY) const {
     const double halfLineWidth = 0.5 * lineWidth;
     /*  1- Add a halfLineWidth padding in case the line is just outside the mask but its thickness still makes it
      *     (partially) visible
