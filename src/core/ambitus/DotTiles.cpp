@@ -59,17 +59,17 @@ auto renderTile(const DotTileKey& key, const TilePainter& painter) -> std::share
     cairo_t* tileCr = cairo_create(surface);
     cairo_set_antialias(tileCr, static_cast<cairo_antialias_t>(p.antialias));
     cairo_set_tolerance(tileCr, p.tolerance);
-    // The target's matrix, moved by the tile's origin, which is a whole number of device pixels: every dot keeps its
-    // sub-pixel position, and so its pixels.
+    // The page's matrix, moved by the tile's origin, which is a whole number of pixels: every dot keeps its sub-pixel
+    // position, and so its pixels.
     cairo_matrix_t matrix;
-    cairo_matrix_init(&matrix, p.xx, 0.0, 0.0, p.yy, p.x0 - tileMinX, p.y0 - tileMinY);
+    cairo_matrix_init(&matrix, p.xx, 0.0, 0.0, p.yy, -tileMinX, -tileMinY);
     cairo_set_matrix(tileCr, &matrix);
 
     // The page rectangle of the tile, with the margin a dot needs to reach into it (half its width and an antialiasing
     // pixel): the dots outside it cannot touch the tile.
     const double margin = 0.5 * std::abs(p.lineWidth) * std::max(std::abs(p.xx), std::abs(p.yy)) + 2.0;
-    const auto [minX, maxX] = unmapInterval(tileMinX - margin, tileMinX + DOT_TILE_SIZE + margin, p.xx, p.x0);
-    const auto [minY, maxY] = unmapInterval(tileMinY - margin, tileMinY + DOT_TILE_SIZE + margin, p.yy, p.y0);
+    const auto [minX, maxX] = unmapInterval(tileMinX - margin, tileMinX + DOT_TILE_SIZE + margin, p.xx, 0.0);
+    const auto [minY, maxY] = unmapInterval(tileMinY - margin, tileMinY + DOT_TILE_SIZE + margin, p.yy, 0.0);
     painter(tileCr, PageRect{minX, minY, maxX, maxY});
 
     cairo_destroy(tileCr);
@@ -90,8 +90,6 @@ auto DotTileKeyHash::operator()(const DotTileKey& key) const -> std::size_t {
     const DotTileParams& p = key.params;
     combine(p.xx);
     combine(p.yy);
-    combine(p.x0);
-    combine(p.y0);
     combine(p.squareSize);
     combine(p.lineWidth);
     combine(p.color);
@@ -127,10 +125,14 @@ auto paintTiled(cairo_t* cr, DotTileParams params, const TilePainter& painter) -
         !std::isfinite(matrix.yy) || !std::isfinite(matrix.x0) || !std::isfinite(matrix.y0)) {
         return false;
     }
+    // The origin of the target is a whole pixel of the page's pixel grid, which is what the tiles are copied at
+    const double originX = scaleX * matrix.x0;
+    const double originY = scaleY * matrix.y0;
+    if (originX != std::floor(originX) || originY != std::floor(originY)) {
+        return false;
+    }
     params.xx = scaleX * matrix.xx;
     params.yy = scaleY * matrix.yy;
-    params.x0 = scaleX * matrix.x0;
-    params.y0 = scaleY * matrix.y0;
     params.antialias = static_cast<int>(cairo_get_antialias(cr));
     params.tolerance = cairo_get_tolerance(cr);
 
@@ -151,10 +153,10 @@ auto paintTiled(cairo_t* cr, DotTileParams params, const TilePainter& painter) -
         return false;
     }
 
-    const auto [devMinX, devMaxX] = mapInterval(clipMinX, clipMaxX, params.xx, params.x0);
-    const auto [devMinY, devMaxY] = mapInterval(clipMinY, clipMaxY, params.yy, params.y0);
-    const auto [firstX, lastX] = tileIndexRange(devMinX, devMaxX, DOT_TILE_SIZE);
-    const auto [firstY, lastY] = tileIndexRange(devMinY, devMaxY, DOT_TILE_SIZE);
+    const auto [pageMinX, pageMaxX] = mapInterval(clipMinX, clipMaxX, params.xx, 0.0);
+    const auto [pageMinY, pageMaxY] = mapInterval(clipMinY, clipMaxY, params.yy, 0.0);
+    const auto [firstX, lastX] = tileIndexRange(pageMinX, pageMaxX, DOT_TILE_SIZE);
+    const auto [firstY, lastY] = tileIndexRange(pageMinY, pageMaxY, DOT_TILE_SIZE);
     if (lastX < firstX || lastY < firstY) {
         return true;
     }
@@ -187,8 +189,9 @@ auto paintTiled(cairo_t* cr, DotTileParams params, const TilePainter& painter) -
     cairo_matrix_init_scale(&toPixels, 1.0 / scaleX, 1.0 / scaleY);
     cairo_set_matrix(cr, &toPixels);
     for (const auto& [key, tile]: tiles) {
-        const double x = static_cast<double>(key.tileX) * DOT_TILE_SIZE;
-        const double y = static_cast<double>(key.tileY) * DOT_TILE_SIZE;
+        // The tile's pixels start at its position in the page's pixel frame, moved by the origin of the target
+        const double x = static_cast<double>(key.tileX) * DOT_TILE_SIZE + originX;
+        const double y = static_cast<double>(key.tileY) * DOT_TILE_SIZE + originY;
         cairo_set_source_surface(cr, tile.get(), x, y);
         cairo_rectangle(cr, x, y, DOT_TILE_SIZE, DOT_TILE_SIZE);
         cairo_fill(cr);

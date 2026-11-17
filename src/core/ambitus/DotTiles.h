@@ -36,13 +36,14 @@ constexpr std::size_t DOT_TILE_BUDGET = 64u * 1024u * 1024u;
 /// Above this many tiles in one paint, the caller draws directly
 constexpr long MAX_TILES_PER_PAINT = 4096;
 
-/// Everything that the pixels of a tile depend on, apart from its position
+/**
+ * Everything that the pixels of a tile depend on, apart from its position. The tiles lie on the pixel grid of the
+ * page, which starts at the page origin: a mask of the same page and zoom, at any whole-pixel offset, shares them.
+ */
 struct DotTileParams {
-    // Matrix from user space to the pixels of the target: pixel = (xx * u + x0, yy * v + y0)
+    // Scale from user space to the pixels of the page: pixel = xx * u, yy * v
     double xx = 1.0;
     double yy = 1.0;
-    double x0 = 0.0;
-    double y0 = 0.0;
     // Settings of the grid painted in the tile
     double squareSize = 0.0;
     double lineWidth = 0.0;

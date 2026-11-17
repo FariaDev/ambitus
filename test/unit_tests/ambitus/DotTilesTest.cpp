@@ -160,9 +160,6 @@ TEST(DotTileKey, aKeyIsItsParamsAndPosition) {
     DotTileParams zoomed = params;
     zoomed.xx = 0.73;
     EXPECT_NE(a, (DotTileKey{zoomed, 3, -2}));
-    DotTileParams shifted = params;
-    shifted.x0 = 1.0;
-    EXPECT_NE(a, (DotTileKey{shifted, 3, -2}));
     DotTileParams recolored = params;
     recolored.color = 0xff000000;
     EXPECT_NE(a, (DotTileKey{recolored, 3, -2}));
@@ -200,6 +197,25 @@ TEST(DotTiles, aSecondPaintFromTheCacheIsTheSame) {
     EXPECT_EQ(maxDifference(first, second), 0);
 }
 
+TEST(DotTiles, aMaskAtAnotherWholePixelOffsetReusesTheTiles) {
+    // A grid that no other test paints, so that its tiles are not in the cache yet
+    DotTileParams params = gridParams();
+    params.squareSize = 11.3;
+    const auto countPainted = [&params](double originX, double originY) {
+        cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 300, 300);
+        cairo_t* cr = cairo_create(surface);
+        cairo_translate(cr, originX, originY);
+        int painted = 0;
+        EXPECT_TRUE(paintTiled(cr, params, [&painted](cairo_t*, const PageRect&) { ++painted; }));
+        cairo_destroy(cr);
+        cairo_surface_destroy(surface);
+        return painted;
+    };
+    EXPECT_GT(countPainted(0, 0), 0);
+    // The same page, moved by whole pixels: its tiles are the same, so none is painted again
+    EXPECT_EQ(countPainted(-5, -7), 0);
+}
+
 TEST(DotTiles, aFractionalClipIsLeftToTheDirectPaint) {
     const Render tiled = paintPage(true, 1, 0.73, 137, -53, Clip::Fractional);
     EXPECT_FALSE(tiled.tiled);
@@ -215,6 +231,20 @@ TEST(DotTiles, aVectorTargetIsNotTiled) {
     EXPECT_FALSE(painted);
     cairo_destroy(cr);
     cairo_surface_destroy(recording);
+}
+
+TEST(DotTiles, aFractionalOriginIsLeftToTheDirectPaint) {
+    cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 100, 100);
+    cairo_t* cr = cairo_create(surface);
+    bool painted = false;
+    const auto painter = [&painted](cairo_t*, const PageRect&) { painted = true; };
+
+    cairo_translate(cr, 0.5, 0.0);
+    EXPECT_FALSE(paintTiled(cr, gridParams(), painter));
+    EXPECT_FALSE(painted);
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
 }
 
 TEST(DotTiles, anotherOperatorOrARotationIsNotTiled) {
