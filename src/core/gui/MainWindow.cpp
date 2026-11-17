@@ -1666,6 +1666,23 @@ GtkWidget* MainWindow::studioBottomBar() const {
     return nullptr;
 }
 
+/// Ambitus: whether a widget is or holds a spin button (the page spinner of the bar holds one)
+static bool holdsSpinButton(GtkWidget* w) {
+    if (GTK_IS_SPIN_BUTTON(w)) {
+        return true;
+    }
+    if (!GTK_IS_CONTAINER(w)) {
+        return false;
+    }
+    bool found = false;
+    GList* children = gtk_container_get_children(GTK_CONTAINER(w));
+    for (GList* l = children; l != nullptr && !found; l = l->next) {
+        found = holdsSpinButton(GTK_WIDGET(l->data));
+    }
+    g_list_free(children);
+    return found;
+}
+
 void MainWindow::updateStudioPageItems() {
     GtkWidget* bottom = studioBottomBar();
     if (!bottom) {
@@ -1718,7 +1735,26 @@ void MainWindow::updateStudioPageItems() {
     gtk_widget_show(GTK_WIDGET(separator));
     gtk_toolbar_insert(GTK_TOOLBAR(bottom), toggle, 0);
     gtk_toolbar_insert(GTK_TOOLBAR(bottom), separator, 1);
-    studioPageItems = {toggle, separator};
+
+    // "+ Page" right after "Page n of m": the page after the current one, as the New page after action makes it
+    GtkWidget* addButton = gtk_button_new_with_label(_("+ Page"));
+    gtk_widget_set_tooltip_text(addButton, _("New page after"));
+    g_signal_connect_swapped(addButton, "clicked", G_CALLBACK(+[](MainWindow* self) {
+                                 self->control->insertNewPage(self->control->getCurrentPageNo() + 1);
+                             }),
+                             this);
+    GtkToolItem* add = gtk_tool_item_new();
+    gtk_container_add(GTK_CONTAINER(add), addButton);
+    gtk_widget_show_all(GTK_WIDGET(add));
+    int spinnerIndex = -1;
+    for (int i = 0; i < gtk_toolbar_get_n_items(GTK_TOOLBAR(bottom)); i++) {
+        if (holdsSpinButton(GTK_WIDGET(gtk_toolbar_get_nth_item(GTK_TOOLBAR(bottom), i)))) {
+            spinnerIndex = i;
+            break;
+        }
+    }
+    gtk_toolbar_insert(GTK_TOOLBAR(bottom), add, spinnerIndex < 0 ? 2 : spinnerIndex + 1);
+    studioPageItems = {toggle, separator, add};
 }
 
 void MainWindow::toggleStudioPages() {

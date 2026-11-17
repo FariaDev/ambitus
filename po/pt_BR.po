@@ -5937,3 +5937,9 @@ msgstr "Mover para baixo"
 
 msgid "Delete page"
 msgstr "Apagar a página"
+
+msgid "+ Page"
+msgstr "+ Página"
+
+msgid "+ New page"
+msgstr "+ Nova página"

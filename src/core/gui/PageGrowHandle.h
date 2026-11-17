@@ -50,6 +50,8 @@ private:
     xoj::util::WidgetSPtr strip;
     xoj::util::WidgetSPtr pill;
     GtkWidget* pillIcon = nullptr;
+    /// the page after the last one, beside the pill of the bottom edge (shown on the last page only)
+    xoj::util::WidgetSPtr newPagePill;
     gulong hookId = 0;
     gulong positionId = 0;
     gulong scrollIds[2] = {0, 0};
@@ -60,6 +62,7 @@ private:
     double pointerX = 0;
     GdkRectangle stripRect{};  ///< in scrolled-window coordinates
     GdkRectangle pillRect{};
+    GdkRectangle newPageRect{};
 };
 
 }  // namespace ambitus

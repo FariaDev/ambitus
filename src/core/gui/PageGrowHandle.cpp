@@ -4,9 +4,11 @@
 #include <cmath>
 
 #include "control/Control.h"
+#include "gui/MainWindow.h"
 #include "gui/PageView.h"
 #include "gui/XournalView.h"
 #include "gui/scroll/ScrollHandling.h"
+#include "model/Document.h"
 #include "model/XojPage.h"
 #include "util/i18n.h"
 
@@ -50,9 +52,19 @@ PageGrowHandle::PageGrowHandle(Control* control, XournalView* xournal, GtkOverla
     gtk_widget_set_no_show_all(pill.get(), true);
     g_signal_connect_swapped(pill.get(), "clicked", G_CALLBACK(+[](PageGrowHandle* self) { self->grow(); }), this);
 
+    newPagePill.reset(gtk_button_new_with_label(_("+ New page")), xoj::util::adopt);
+    gtk_style_context_add_class(gtk_widget_get_style_context(newPagePill.get()), "amb-grow-pill");
+    gtk_widget_set_can_focus(newPagePill.get(), false);
+    gtk_widget_set_tooltip_text(newPagePill.get(), _("Add a page after the last one"));
+    gtk_widget_set_no_show_all(newPagePill.get(), true);
+    g_signal_connect_swapped(newPagePill.get(), "clicked",
+                             G_CALLBACK(+[](PageGrowHandle* self) { self->control->getWindow()->appendPageAtEnd(); }),
+                             this);
+
     gtk_overlay_add_overlay(overlay, strip.get());
     gtk_overlay_set_overlay_pass_through(overlay, strip.get(), true);
     gtk_overlay_add_overlay(overlay, pill.get());
+    gtk_overlay_add_overlay(overlay, newPagePill.get());
     positionId = g_signal_connect(overlay, "get-child-position", G_CALLBACK(onChildPosition), this);
 
     // Xournal++ handles the input of the pages in an "event" handler that stops the emission,
@@ -75,6 +87,7 @@ PageGrowHandle::~PageGrowHandle() {
     g_signal_handler_disconnect(overlay, positionId);
     gtk_container_remove(GTK_CONTAINER(overlay), strip.get());
     gtk_container_remove(GTK_CONTAINER(overlay), pill.get());
+    gtk_container_remove(GTK_CONTAINER(overlay), newPagePill.get());
 }
 
 void PageGrowHandle::hide() {
@@ -82,6 +95,7 @@ void PageGrowHandle::hide() {
     page.reset();
     gtk_widget_hide(strip.get());
     gtk_widget_hide(pill.get());
+    gtk_widget_hide(newPagePill.get());
 }
 
 gboolean PageGrowHandle::onEvent(GSignalInvocationHint*, guint n, const GValue* params, gpointer data) {
@@ -211,26 +225,55 @@ void PageGrowHandle::place() {
     }
     if (edge == Edge::BOTTOM) {
         pillY = sy + (std::max(sh, 0.0) - nat.height) / 2.0;
+        // at the end of the notebook the strip is under the view: the pill stays in the view, not over the bottom bar
+        pillY = std::clamp(pillY, static_cast<double>(PILL_GAP),
+                           std::max(static_cast<double>(PILL_GAP), static_cast<double>(vh - nat.height - PILL_GAP)));
     }
 
     // the strip is clipped to the visible area
     double x0 = std::max(sx, 0.0), y0 = std::max(sy, 0.0);
     double x1 = std::min(sx + sw, static_cast<double>(vw)), y1 = std::min(sy + sh, static_cast<double>(vh));
-    if (x1 - x0 < 1 || y1 - y0 < 1) {
+    const bool stripVisible = x1 - x0 >= 1 && y1 - y0 >= 1;
+    if (!stripVisible && edge == Edge::RIGHT) {
         hide();
         return;
     }
-    stripRect = {static_cast<int>(std::floor(x0)), static_cast<int>(std::floor(y0)),
-                 static_cast<int>(std::ceil(x1 - x0)), static_cast<int>(std::ceil(y1 - y0))};
+    if (stripVisible) {
+        stripRect = {static_cast<int>(std::floor(x0)), static_cast<int>(std::floor(y0)),
+                     static_cast<int>(std::ceil(x1 - x0)), static_cast<int>(std::ceil(y1 - y0))};
+    }
     // keep the pill inside the window: when there is no room after the strip it sits on it
     pillX = std::min(pillX, static_cast<double>(vw - nat.width - PILL_GAP));
     pillRect = {static_cast<int>(std::round(pillX)), static_cast<int>(std::round(pillY)), nat.width, nat.height};
 
-    gtk_widget_show(strip.get());
+    // the last page: the page after it is offered left of the pill, on the same row
+    bool last = false;
+    {
+        Document* doc = control->getDocument();
+        doc->lock_shared();
+        last = doc->getPageCount() > 0 && doc->indexOf(page) + 1 == doc->getPageCount();
+        doc->unlock_shared();
+    }
+    if (edge == Edge::BOTTOM && last) {
+        GtkRequisition newNat;
+        gtk_widget_get_preferred_size(newPagePill.get(), nullptr, &newNat);
+        double nx = std::max(0.0, static_cast<double>(pillRect.x - PILL_GAP - newNat.width));
+        newPageRect = {static_cast<int>(std::round(nx)), pillRect.y, newNat.width, newNat.height};
+        gtk_widget_show(newPagePill.get());
+        gtk_widget_queue_resize(newPagePill.get());
+    } else {
+        gtk_widget_hide(newPagePill.get());
+    }
+
+    if (stripVisible) {
+        gtk_widget_show(strip.get());
+        gtk_widget_queue_resize(strip.get());
+        gtk_widget_queue_draw(strip.get());
+    } else {
+        gtk_widget_hide(strip.get());
+    }
     gtk_widget_show(pill.get());
-    gtk_widget_queue_resize(strip.get());
     gtk_widget_queue_resize(pill.get());
-    gtk_widget_queue_draw(strip.get());
 }
 
 void PageGrowHandle::grow() {
@@ -259,6 +302,8 @@ gboolean PageGrowHandle::onChildPosition(GtkOverlay*, GtkWidget* w, GdkRectangle
         r = self->stripRect;
     } else if (w == self->pill.get()) {
         r = self->pillRect;
+    } else if (w == self->newPagePill.get()) {
+        r = self->newPageRect;
     } else {
         return false;
     }
