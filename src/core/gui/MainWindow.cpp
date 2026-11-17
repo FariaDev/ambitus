@@ -925,7 +925,10 @@ void MainWindow::openKeepDraftCard(std::function<void(bool)> after) {
     keepDraftCard->open(
             library->subjects(),
             [this, draft, after = std::move(after)](const ambitus::KeepDraftCard::Request& r) {
-                keepDraft(draft, r.file.parent_path(), r.name, std::move(after));
+                // a board goes in the "Boards" folder of the subject, as a new board does
+                const fs::path folder =
+                        control->isBoardOpen() ? r.file.parent_path() / _("Boards") : r.file.parent_path();
+                keepDraft(draft, folder, r.name, std::move(after));
             },
             [cancel = std::move(cancel)] {
                 if (cancel) {
