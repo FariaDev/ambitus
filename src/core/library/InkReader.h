@@ -88,10 +88,19 @@ struct PollReply {
 PollReply parsePollReply(int status, const std::string& body);
 /// Holds the long-poll until Summa asks, or answers Idle (blocking: call it from a worker thread; cancel stops it)
 PollReply pollPageRequest(const SummaBridge& bridge, GCancellable* cancel);
+/// The part of a page that the PNG shows, in page points (the origin at the top left): the member "recorte" of the
+/// JSON, only when the picture is a part and not the whole page
+struct PageCrop {
+    double x = 0;
+    double y = 0;
+    double width = 0;
+    double height = 0;
+};
 /// The JSON of POST /pagina-atual with the page: the notebook path is empty when it was never saved, the page is
-/// 0-based here and 1-based on the wire, the PNG goes in base64
+/// 0-based here and 1-based on the wire, the PNG goes in base64. A crop goes as "recorte" next to the PNG.
 std::string pageAnswerJson(const std::string& requestId, const std::string& notebook, size_t page,
-                           const std::string& name, const std::string& png);
+                           const std::string& name, const std::string& png,
+                           const std::optional<PageCrop>& crop = std::nullopt);
 /// The JSON of POST /pagina-atual when there is no document to show
 std::string noPageAnswerJson(const std::string& requestId);
 /// Sends the answer (blocking: worker thread); true when Summa took it
@@ -111,12 +120,16 @@ enum class PageSend {
 /// The answer of the bridge to /mandar-pagina
 PageSend parsePageReply(int status, const std::string& body);
 /// The JSON of POST /mandar-pagina: the page is 0-based here and 1-based on the wire; the PNG (in base64) only when
-/// there is one
-std::string pageSendJson(const fs::path& notebook, size_t page, const std::string& name, const std::string& png);
+/// there is one, and the crop ("recorte") only with that PNG
+std::string pageSendJson(const fs::path& notebook, size_t page, const std::string& name, const std::string& png,
+                         const std::optional<PageCrop>& crop = std::nullopt);
 /// Sends a page (0-based) of a saved notebook to the side chat of Summa, with the PNG drawn from memory when given
 /// (the tutor sees it as an image and reads the notebook again by the path). Blocking, but Summa answers at once.
+/// `cropSent` (when given) tells whether the PNG went as the part `crop`: an old Summa that refuses the PNG gets the
+/// path alone, the whole page, and then it is false.
 PageSend sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t page, const std::string& name,
-                         const std::string& png = std::string());
+                         const std::string& png = std::string(), const std::optional<PageCrop>& crop = std::nullopt,
+                         bool* cropSent = nullptr);
 
 /// What a run of readInk did
 struct InkRun {

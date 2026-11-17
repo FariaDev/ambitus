@@ -248,10 +248,25 @@ auto jsonText(JsonBuilder* builder) -> std::string {
     json_node_unref(root);
     return out;
 }
+
+/// The member "recorte": the part of the page the PNG shows, in page points
+void addCrop(JsonBuilder* builder, const PageCrop& crop) {
+    json_builder_set_member_name(builder, "recorte");
+    json_builder_begin_object(builder);
+    json_builder_set_member_name(builder, "x");
+    json_builder_add_double_value(builder, crop.x);
+    json_builder_set_member_name(builder, "y");
+    json_builder_add_double_value(builder, crop.y);
+    json_builder_set_member_name(builder, "largura");
+    json_builder_add_double_value(builder, crop.width);
+    json_builder_set_member_name(builder, "altura");
+    json_builder_add_double_value(builder, crop.height);
+    json_builder_end_object(builder);
+}
 }  // namespace
 
 auto pageAnswerJson(const std::string& requestId, const std::string& notebook, size_t page, const std::string& name,
-                    const std::string& png) -> std::string {
+                    const std::string& png, const std::optional<PageCrop>& crop) -> std::string {
     xoj::util::GObjectSPtr<JsonBuilder> builder(json_builder_new(), xoj::util::adopt);
     json_builder_begin_object(builder.get());
     json_builder_set_member_name(builder.get(), "pedido");
@@ -262,6 +277,9 @@ auto pageAnswerJson(const std::string& requestId, const std::string& notebook, s
     json_builder_add_int_value(builder.get(), static_cast<gint64>(page + 1));
     json_builder_set_member_name(builder.get(), "nome");
     json_builder_add_string_value(builder.get(), name.c_str());
+    if (crop && !png.empty()) {
+        addCrop(builder.get(), *crop);
+    }
     json_builder_set_member_name(builder.get(), "png");
     gchar* b64 = g_base64_encode(reinterpret_cast<const guchar*>(png.data()), png.size());
     json_builder_add_string_value(builder.get(), b64);
@@ -324,8 +342,8 @@ auto parsePageReply(int status, const std::string& body) -> PageSend {
     return PageSend::Failed;
 }
 
-auto pageSendJson(const fs::path& notebook, size_t page, const std::string& name, const std::string& png)
-        -> std::string {
+auto pageSendJson(const fs::path& notebook, size_t page, const std::string& name, const std::string& png,
+                  const std::optional<PageCrop>& crop) -> std::string {
     xoj::util::GObjectSPtr<JsonBuilder> builder(json_builder_new(), xoj::util::adopt);
     json_builder_begin_object(builder.get());
     json_builder_set_member_name(builder.get(), "caminho");
@@ -335,6 +353,9 @@ auto pageSendJson(const fs::path& notebook, size_t page, const std::string& name
     json_builder_add_int_value(builder.get(), static_cast<gint64>(page + 1));
     json_builder_set_member_name(builder.get(), "nome");
     json_builder_add_string_value(builder.get(), name.c_str());
+    if (crop && !png.empty()) {
+        addCrop(builder.get(), *crop);
+    }
     if (!png.empty()) {
         json_builder_set_member_name(builder.get(), "png");
         gchar* b64 = g_base64_encode(reinterpret_cast<const guchar*>(png.data()), png.size());
@@ -346,16 +367,22 @@ auto pageSendJson(const fs::path& notebook, size_t page, const std::string& name
 }
 
 auto sendPageToSumma(const SummaBridge& bridge, const fs::path& notebook, size_t page, const std::string& name,
-                     const std::string& png) -> PageSend {
-    auto answer = postBridge(bridge, "/mandar-pagina", "application/json", pageSendJson(notebook, page, name, png),
-                             std::chrono::seconds(10));
+                     const std::string& png, const std::optional<PageCrop>& crop, bool* cropSent) -> PageSend {
+    if (cropSent) {
+        *cropSent = false;
+    }
+    auto answer = postBridge(bridge, "/mandar-pagina", "application/json",
+                             pageSendJson(notebook, page, name, png, crop), std::chrono::seconds(10));
     if (!answer.connected) {
         return PageSend::NoSumma;
     }
     auto result = answer.body ? parsePageReply(answer.status, *answer.body) : PageSend::Failed;
     if (result == PageSend::Failed && !png.empty() && answer.status == 400) {
-        // a Summa from before the png field refuses the larger body: the path alone still works there
-        return sendPageToSumma(bridge, notebook, page, name, std::string());
+        // a Summa from before the png field refuses the larger body: the path alone still works there (the whole page)
+        return sendPageToSumma(bridge, notebook, page, name, std::string(), std::nullopt, cropSent);
+    }
+    if (cropSent) {
+        *cropSent = result == PageSend::Sent && crop && !png.empty();
     }
     return result;
 }

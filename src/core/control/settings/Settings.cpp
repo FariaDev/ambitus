@@ -259,6 +259,7 @@ void Settings::loadDefault() {
     this->ambitusStudioPages = false;
     this->ambitusNewPaper = "summa";
     this->ambitusNewSize = "a4";
+    this->ambitusSummaSend = "screen";
     this->ambitusNotebooksFolder.clear();
     this->ambitusSetupDone = true;  // load() starts the setup only for a settings file that did not exist
     this->ambitusSetupKeyRead = false;
@@ -764,6 +765,8 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->ambitusNewPaper = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewSize")) == 0) {
         this->ambitusNewSize = reinterpret_cast<const char*>(value);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSummaSend")) == 0) {
+        this->ambitusSummaSend = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSetupDone")) == 0) {
         this->ambitusSetupDone = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
         this->ambitusSetupKeyRead = true;
@@ -1294,6 +1297,7 @@ void Settings::save() {
     SAVE_BOOL_PROP(ambitusStudioPages);
     SAVE_STRING_PROP(ambitusNewPaper);
     SAVE_STRING_PROP(ambitusNewSize);
+    SAVE_STRING_PROP(ambitusSummaSend);
     SAVE_BOOL_PROP(ambitusSetupDone);
     SAVE_INT_PROP(ambitusLook);
     SAVE_STRING_PROP(ambitusNotebooksFolder);
@@ -2528,6 +2532,16 @@ void Settings::setAmbitusNewSize(const std::string& size) {
 }
 
 auto Settings::getAmbitusNewSize() const -> const std::string& { return this->ambitusNewSize; }
+
+void Settings::setAmbitusSummaSend(const std::string& mode) {
+    if (this->ambitusSummaSend == mode) {
+        return;
+    }
+    this->ambitusSummaSend = mode;
+    save();
+}
+
+auto Settings::getAmbitusSummaSend() const -> const std::string& { return this->ambitusSummaSend; }
 
 void Settings::setAmbitusSetupDone(bool done) {
     if (this->ambitusSetupDone == done) {

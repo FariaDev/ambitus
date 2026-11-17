@@ -97,3 +97,26 @@ TEST(SettingsTest, studioPagesColumnIsRememberedAndClosedByDefault) {
 
     fs::remove(outPath);
 }
+
+// Ambitus: what goes to Summa without a lasso selection is the part on screen by default, and the choice is remembered
+TEST(SettingsTest, theSummaSendChoiceIsRememberedAndTheScreenByDefault) {
+    const fs::path outPath = fs::temp_directory_path() / "xournalpp-test-units_Settings_summaSend.xml";
+    if (fs::exists(outPath)) {
+        fs::remove(outPath);
+    }
+
+    Settings settings(outPath);
+    EXPECT_EQ(settings.getAmbitusSummaSend(), "screen");
+    settings.setAmbitusSummaSend("page");  // calls save()
+
+    Settings loaded(outPath);
+    loaded.load();
+    EXPECT_EQ(loaded.getAmbitusSummaSend(), "page");
+
+    loaded.setAmbitusSummaSend("screen");
+    Settings back(outPath);
+    back.load();
+    EXPECT_EQ(back.getAmbitusSummaSend(), "screen");
+
+    fs::remove(outPath);
+}

@@ -567,6 +567,11 @@ public:
     void setAmbitusSummaBridge(bool enabled);
     bool getAmbitusSummaBridge() const;
 
+    /// Ambitus: what goes to Summa when there is no lasso selection: "screen" (the part on screen) or "page" (the whole
+    /// page). A selection always goes alone.
+    void setAmbitusSummaSend(const std::string& mode);
+    const std::string& getAmbitusSummaSend() const;
+
     /// Ambitus: the search of the library reads the handwriting too (through Summa); off by default, it leaves the PC
     void setAmbitusSearchInk(bool enabled);
     bool getAmbitusSearchInk() const;
@@ -1224,6 +1229,7 @@ private:
     bool ambitusStudioPages{};
     std::string ambitusNewPaper;
     std::string ambitusNewSize;
+    std::string ambitusSummaSend;  ///< "screen" or "page"
     std::string ambitusNotebooksFolder;
     bool ambitusSetupDone{};
     bool ambitusSetupKeyRead{};  ///< the file has the key of the setup

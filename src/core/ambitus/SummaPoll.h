@@ -18,6 +18,8 @@
 #include <string>
 #include <thread>
 
+#include "ambitus/SummaCrop.h"
+
 class Control;
 class Document;
 
@@ -41,8 +43,10 @@ private:
 };
 
 /// The PNG of a page (0-based), drawn from the document in memory (so unsaved ink is in it) at the resolution
-/// Summa's tutor reads pages at, opaque, with the paper colour and the ruling. UI thread; nothing when it could not
-/// be drawn.
-std::optional<std::string> renderCurrentPage(Document* doc, size_t page);
+/// Summa's tutor reads pages at, opaque, with the paper colour and the ruling. With `crop` (page points), the PNG is
+/// that part of the page only, at the same resolution (smaller when its longest side would pass
+/// summacrop::PART_MAX_SIDE pixels). UI thread; nothing when it could not be drawn.
+std::optional<std::string> renderCurrentPage(Document* doc, size_t page,
+                                             const std::optional<summacrop::Rect>& crop = std::nullopt);
 
 }  // namespace ambitus

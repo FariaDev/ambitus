@@ -6,8 +6,10 @@
  * @license GNU GPLv2 or later
  */
 
+#include <optional>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include <gio/gio.h>
 #include <glib.h>
@@ -107,6 +109,57 @@ struct FakeBridge {
         g_object_unref(listener);
     }
 };
+
+/// Answers each connection with the next response, and keeps the requests in order
+struct ScriptedBridge {
+    GSocketListener* listener = g_socket_listener_new();
+    int port = 0;
+    std::vector<std::string> requests;
+    std::thread thread;
+
+    explicit ScriptedBridge(std::vector<std::string> responses) {
+        port = g_socket_listener_add_any_inet_port(listener, nullptr, nullptr);
+        thread = std::thread([this, responses = std::move(responses)] {
+            for (const auto& response: responses) {
+                GSocketConnection* conn = g_socket_listener_accept(listener, nullptr, nullptr, nullptr);
+                if (!conn) {
+                    return;
+                }
+                GInputStream* in = g_io_stream_get_input_stream(G_IO_STREAM(conn));
+                std::string request;
+                char buf[4096];
+                for (;;) {
+                    gssize n = g_input_stream_read(in, buf, sizeof(buf), nullptr, nullptr);
+                    if (n <= 0) {
+                        break;
+                    }
+                    request.append(buf, static_cast<size_t>(n));
+                    auto headEnd = request.find("\r\n\r\n");
+                    auto lenAt = request.find("Content-Length: ");
+                    if (headEnd != std::string::npos && lenAt != std::string::npos &&
+                        request.size() >= headEnd + 4 + std::stoul(request.substr(lenAt + 16))) {
+                        break;
+                    }
+                }
+                requests.push_back(request);
+                GOutputStream* out = g_io_stream_get_output_stream(G_IO_STREAM(conn));
+                g_output_stream_write_all(out, response.data(), response.size(), nullptr, nullptr, nullptr);
+                g_io_stream_close(G_IO_STREAM(conn), nullptr, nullptr);
+                g_object_unref(conn);
+            }
+        });
+    }
+    ~ScriptedBridge() {
+        if (thread.joinable()) {
+            thread.join();
+        }
+        g_socket_listener_close(listener);
+        g_object_unref(listener);
+    }
+};
+
+/// The body of a request (what follows its blank line)
+std::string bodyOf(const std::string& request) { return request.substr(request.find("\r\n\r\n") + 4); }
 }  // namespace
 
 TEST(InkReader, thePageGoesWithTheTokenAndTheTextComesBack) {
@@ -176,6 +229,56 @@ TEST(InkReader, aSentPageCarriesThePngOnlyWhenThereIsOne) {
               R"({"caminho":"/cadernos/Limites.xopp","pagina":1,"nome":"Limites","png":"iVBORw=="})");
     EXPECT_EQ(pageSendJson("/cadernos/Limites.xopp", 0, "Limites", ""),
               R"({"caminho":"/cadernos/Limites.xopp","pagina":1,"nome":"Limites"})");
+}
+
+TEST(InkReader, aPartSentGoesWithItsPlaceOnThePageAndOnlyWithItsPicture) {
+    const PageCrop crop{88, 188, 74, 64};
+    EXPECT_EQ(pageSendJson("/cadernos/Limites.xopp", 0, "Limites", std::string("\x89PNG", 4), crop),
+              R"({"caminho":"/cadernos/Limites.xopp","pagina":1,"nome":"Limites",)"
+              R"("recorte":{"x":88.0,"y":188.0,"largura":74.0,"altura":64.0},"png":"iVBORw=="})");
+    // without a picture the place would be a lie: Summa reads the whole page from the file
+    EXPECT_EQ(pageSendJson("/cadernos/Limites.xopp", 0, "Limites", "", crop),
+              R"({"caminho":"/cadernos/Limites.xopp","pagina":1,"nome":"Limites"})");
+    // a whole page has no place: the JSON is the one of before
+    EXPECT_EQ(pageSendJson("/cadernos/Limites.xopp", 0, "Limites", std::string("\x89PNG", 4), std::nullopt),
+              R"({"caminho":"/cadernos/Limites.xopp","pagina":1,"nome":"Limites","png":"iVBORw=="})");
+}
+
+TEST(InkReader, aPartOfAPageAnswerGoesWithItsPlaceToo) {
+    EXPECT_EQ(pageAnswerJson("a1b2", "/cadernos/Limites.xopp", 1, "Limites", "abc", PageCrop{0, 10.5, 300, 200}),
+              R"({"pedido":"a1b2","caminho":"/cadernos/Limites.xopp","pagina":2,"nome":"Limites",)"
+              R"("recorte":{"x":0.0,"y":10.5,"largura":300.0,"altura":200.0},"png":"YWJj"})");
+    EXPECT_EQ(pageAnswerJson("a1b2", "/cadernos/Limites.xopp", 1, "Limites", "abc"),
+              R"({"pedido":"a1b2","caminho":"/cadernos/Limites.xopp","pagina":2,"nome":"Limites","png":"YWJj"})");
+}
+
+TEST(InkReader, aSentPartSaysItWasSentAsAPart) {
+    FakeBridge fake("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\n{\"ok\":true}");
+    bool cropSent = false;
+    EXPECT_EQ(sendPageToSumma({fake.port, "segredo"}, "/cadernos/Limites.xopp", 0, "Limites", "\x89PNG",
+                              PageCrop{88, 188, 74, 64}, &cropSent),
+              PageSend::Sent);
+    fake.thread.join();
+    fake.thread = std::thread([] {});
+    EXPECT_TRUE(cropSent);
+    EXPECT_EQ(bodyOf(fake.request), R"({"caminho":"/cadernos/Limites.xopp","pagina":1,"nome":"Limites",)"
+                                    R"("recorte":{"x":88.0,"y":188.0,"largura":74.0,"altura":64.0},"png":"iVBORw=="})");
+}
+
+TEST(InkReader, aSummaThatRefusesThePngGetsThePathAloneAndTheWholePage) {
+    // an old Summa answers 400 to the larger body: the path goes again, without the picture and without its place
+    ScriptedBridge fake({"HTTP/1.1 400 Bad Request\r\nContent-Length: 2\r\n\r\n{}",
+                         "HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\n{\"ok\":true}"});
+    bool cropSent = true;
+    EXPECT_EQ(sendPageToSumma({fake.port, "segredo"}, "/cadernos/Limites.xopp", 0, "Limites", "\x89PNG",
+                              PageCrop{88, 188, 74, 64}, &cropSent),
+              PageSend::Sent);
+    fake.thread.join();
+    fake.thread = std::thread([] {});
+    ASSERT_EQ(fake.requests.size(), 2u);
+    EXPECT_NE(bodyOf(fake.requests[0]).find("recorte"), std::string::npos);
+    EXPECT_EQ(bodyOf(fake.requests[1]), R"({"caminho":"/cadernos/Limites.xopp","pagina":1,"nome":"Limites"})");
+    EXPECT_FALSE(cropSent);
 }
 
 TEST(InkReader, theAnswerToTheLongPollSaysWhatSummaWants) {
