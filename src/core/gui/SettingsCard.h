@@ -111,6 +111,7 @@ private:
     GtkWidget* folderLabel = nullptr;
     GtkWidget* folderButton = nullptr;
     GtkWidget* searchInkSwitch = nullptr;
+    GtkWidget* summaSendRow = nullptr;  ///< "What goes to Summa": off with the bridge
     size_t folderRowIndex = 0;
     std::vector<GtkWidget*> paperButtons;  ///< Summa, Grid, Plain and "…"
     GtkWidget* morePapers = nullptr;       ///< the popover of "…"

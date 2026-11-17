@@ -264,6 +264,16 @@ auto renderCurrentPage(Document* doc, size_t page, const std::optional<summacrop
     if (crop) {
         return renderPart(doc, page, *crop);
     }
+    {
+        // a page too big for the export (a board grown far) goes whole too, drawn smaller as a part is
+        doc->lock_shared();
+        const double width = doc->getPage(page)->getWidth();
+        const double height = doc->getPage(page)->getHeight();
+        doc->unlock_shared();
+        if (std::max(width, height) * library::PAGE_DPI / Util::DPI_NORMALIZATION_FACTOR > summacrop::PART_MAX_SIDE) {
+            return renderPart(doc, page, summacrop::Rect{0, 0, width, height});
+        }
+    }
     gchar* dir = g_dir_make_tmp("ambitus-check-XXXXXX", nullptr);
     if (!dir) {
         return std::nullopt;

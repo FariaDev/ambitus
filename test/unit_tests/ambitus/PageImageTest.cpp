@@ -229,3 +229,21 @@ TEST(PageImage, aHugePartIsCappedAtTwentyFourHundredPixelsOnItsLongestSide) {
     EXPECT_TRUE(st.opaque) << "a pixel with alpha < 255";
     cairo_surface_destroy(s);
 }
+
+TEST(PageImage, aHugeWholePageIsCappedAtTwentyFourHundredPixelsOnItsLongestSide) {
+    DocumentHandler dh;
+    Document doc(&dh);
+    auto page = std::make_shared<XojPage>(6000, 3000);  // a board grown far, sent whole
+    page->setBackgroundType(PageType(PageTypeFormat::Graph));
+    page->setBackgroundColor(Color(PAPER));
+    doc.addPage(page);
+    auto png = ambitus::renderCurrentPage(&doc, 0);
+    ASSERT_TRUE(png.has_value());
+    cairo_surface_t* s = decode(*png);
+    ASSERT_EQ(cairo_surface_status(s), CAIRO_STATUS_SUCCESS);
+    EXPECT_EQ(cairo_image_surface_get_width(s), 2400);
+    EXPECT_EQ(cairo_image_surface_get_height(s), 1200);
+    const Stats st = scan(s);
+    EXPECT_TRUE(st.opaque) << "a pixel with alpha < 255";
+    cairo_surface_destroy(s);
+}

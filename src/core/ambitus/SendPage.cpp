@@ -12,6 +12,7 @@
 #include "control/settings/Settings.h"
 #include "control/tools/EditSelection.h"
 #include "gui/MainWindow.h"
+#include "gui/PageView.h"
 #include "gui/XournalView.h"
 #include "gui/menus/menubar/Menubar.h"
 #include "library/InkReader.h"
@@ -145,10 +146,10 @@ summacrop::Pick choosePage(Control* ctrl, bool useSelection, summacrop::SendMode
     doc->lock_shared();
     const size_t count = doc->getPageCount();
     if (xournal) {
-        // the selection is in page points of the page it was made on
+        // the selection is in page points of the page it is on now (dragged to another page, it is there)
         EditSelection* sel = useSelection ? xournal->getSelection() : nullptr;
-        if (sel) {
-            const PageRef page = sel->getSourcePage();
+        if (sel && sel->getView()) {
+            const PageRef page = sel->getView()->getPage();
             const size_t index = doc->indexOf(page);
             if (index < count) {
                 selection = summacrop::SelectionOnPage{
