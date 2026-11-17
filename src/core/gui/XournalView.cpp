@@ -604,6 +604,13 @@ void XournalView::zoomChanged() {
     gtk_widget_queue_draw(getWidget());
 }
 
+void XournalView::pageGrownInPlace(size_t page) {
+    layoutPages();
+    if (page != npos && page < this->viewPages.size()) {
+        this->viewPages[page]->rerenderPageKeepingBuffer();
+    }
+}
+
 void XournalView::pageSizeChanged(size_t page) {
     layoutPages();
     if (page != npos && page < this->viewPages.size()) {

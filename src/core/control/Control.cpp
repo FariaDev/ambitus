@@ -1230,7 +1230,7 @@ void Control::growBoardToFit() {
         ctrl->doc->unlock();
         ctrl->setBoardOpen(true);
         if (grown) {
-            ctrl->firePageSizeChanged(0);
+            ctrl->firePageGrownInPlace(0);
         }
         // room on the left and on top: only right after a new action (not while undoing, which would clear
         // the redo history) and not while a selection or a text box holds elements apart from the page
@@ -1310,7 +1310,7 @@ void Control::growBoardAhead() {
         doc->lock();
         Document::setPageSize(page, grow.width, grow.height);
         doc->unlock();
-        firePageSizeChanged(0);
+        firePageGrownInPlace(0);
     }
 
     // left and top: the content moves, which the history must know about

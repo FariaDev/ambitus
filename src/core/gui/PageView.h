@@ -65,6 +65,8 @@ public:
 public:
     void addOverlayView(std::unique_ptr<xoj::view::OverlayView>);
     void rerenderPage(bool sizeChanged = false) override;
+    /// Ambitus: renders the page again, keeping the pixels of the buffer that the grown page still shows
+    void rerenderPageKeepingBuffer();
     void rerenderRect(double x, double y, double width, double height) override;
 
     void repaintPage() const override;
@@ -268,6 +270,10 @@ private:
     xoj::view::Mask buffer;
     /// Ambitus: part of the page the buffer holds (page coordinates); the whole page unless it is large
     Range bufferRange;
+    /// Ambitus: the page size and scale the buffer was rendered for; a grown page keeps what the buffer holds
+    double bufferPageWidth = 0.0;
+    double bufferPageHeight = 0.0;
+    int bufferDpi = 1;
     std::mutex drawingMutex;
 
     bool inEraser = false;
@@ -289,6 +295,8 @@ private:
     std::vector<xoj::util::Rectangle<double>> rerenderRects;
     bool rerenderComplete = false;
     bool sizeChanged = false;
+    /// Ambitus: the pending render keeps the pixels of the buffer, see rerenderPageKeepingBuffer
+    bool rerenderKeep = false;
     /// Ambitus: part of a large page shown when the rerender was asked (page coordinates), see ambitus/RenderWindow.h
     Range shownRange;
 

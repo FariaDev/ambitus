@@ -6,6 +6,7 @@
 
 #include <cairo.h>  // for cairo_create, cairo_destroy, cairo_...
 
+#include "ambitus/GrowInPlace.h"        // for Geometry, backgroundKeepsPixels, canKeep, dirtyAreas, renderAreas
 #include "ambitus/RenderWindow.h"       // for isLarge, window
 #include "control/Control.h"            // for Control
 #include "control/ToolEnums.h"          // for TOOL_PLAY_OBJECT
@@ -32,19 +33,19 @@
 
 using xoj::util::Rectangle;
 
+/**
+ * Padding seems to be necessary to prevent artefacts of most strokes.
+ * These artefacts are most pronounced when using the stroke deletion
+ * tool on ellipses, but also occur occasionally when removing regular
+ * strokes.
+ **/
+constexpr int RENDER_PADDING = 1;
+
 RenderJob::RenderJob(XojPageView* view): view(view) {}
 
 auto RenderJob::getSource() -> void* { return this->view; }
 
 void RenderJob::rerenderRectangle(Rectangle<double> const& rect) {
-    /**
-     * Padding seems to be necessary to prevent artefacts of most strokes.
-     * These artefacts are most pronounced when using the stroke deletion
-     * tool on ellipses, but also occur occasionally when removing regular
-     * strokes.
-     **/
-    constexpr int RENDER_PADDING = 1;
-
     Range maskRange(rect);
     maskRange.addPadding(RENDER_PADDING);
     xoj::view::Mask newMask(view->xournal->getDpiScaleFactor(), maskRange, view->xournal->getZoom(),
@@ -65,6 +66,7 @@ void RenderJob::run() {
     this->view->repaintRectMutex.lock();
 
     bool rerenderComplete = std::exchange(this->view->rerenderComplete, false);
+    bool keep = std::exchange(this->view->rerenderKeep, false);
     bool sizeChanged = std::exchange(this->view->sizeChanged, false);
     auto rerenderRects = std::move(this->view->rerenderRects);
     Range shown = this->view->shownRange;
@@ -78,13 +80,43 @@ void RenderJob::run() {
         const int dpi = view->xournal->getDpiScaleFactor();
         Range range = ambitus::render::isLarge(w, h, zoom, dpi) ? ambitus::render::window(shown, w, h, zoom, dpi) :
                                                                   Range(0, 0, w, h);
+        const ambitus::grow::Geometry wanted{range, w, h, zoom, dpi};
         xoj::view::Mask newMask(dpi, range, zoom, CAIRO_CONTENT_COLOR_ALPHA);
 
-        renderToBuffer(newMask.get());
+        // Ambitus: a page that grew keeps the pixels of its buffer, and only the areas that can differ are rendered
+        std::vector<Range> areas;
+        bool copied = false;
+        if (keep) {
+            std::lock_guard lock(this->view->drawingMutex);
+            const ambitus::grow::Geometry kept{this->view->bufferRange, this->view->bufferPageWidth,
+                                               this->view->bufferPageHeight, this->view->buffer.getZoom(),
+                                               this->view->bufferDpi};
+            if (view->buffer.isInitialized() &&  // the buffer may have been deleted since the keep was asked
+                ambitus::grow::backgroundKeepsPixels(view->page->getBackgroundType()) &&
+                ambitus::grow::canKeep(kept, wanted)) {
+                this->view->buffer.paintTo(newMask.get());
+                std::vector<Range> changed;
+                for (const Rectangle<double>& rect: rerenderRects) {
+                    Range padded(rect);
+                    padded.addPadding(RENDER_PADDING);
+                    changed.push_back(padded);
+                }
+                areas = ambitus::grow::dirtyAreas(kept, wanted, changed);
+                copied = true;
+            }
+        }
+        if (copied) {
+            ambitus::grow::renderAreas(newMask.get(), wanted, areas, [this](cairo_t* cr) { renderToBuffer(cr); });
+        } else {
+            renderToBuffer(newMask.get());
+        }
         {
             std::lock_guard lock(this->view->drawingMutex);
             std::swap(this->view->buffer, newMask);
             this->view->bufferRange = range;
+            this->view->bufferPageWidth = w;
+            this->view->bufferPageHeight = h;
+            this->view->bufferDpi = dpi;
         }
         if (sizeChanged) {
             // We do not have any control on what portion of the widget needs to be redrawn. Redraw it all.

@@ -27,6 +27,7 @@ public:
 public:
     void fireDocumentChanged(DocumentChangeType type);
     void firePageSizeChanged(size_t page);
+    void firePageGrownInPlace(size_t page);
     void firePageChanged(size_t page);
     void firePageInserted(size_t page);
     void firePageDeleted(size_t page);

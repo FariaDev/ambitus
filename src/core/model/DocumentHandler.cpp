@@ -16,6 +16,12 @@ void DocumentHandler::firePageSizeChanged(size_t page) {
     for (DocumentListener* dl: this->listener) { dl->pageSizeChanged(page); }
 }
 
+void DocumentHandler::firePageGrownInPlace(size_t page) {
+    for (DocumentListener* dl: this->listener) {
+        dl->pageGrownInPlace(page);
+    }
+}
+
 void DocumentHandler::firePageChanged(size_t page) {
     for (DocumentListener* dl: this->listener) { dl->pageChanged(page); }
 }

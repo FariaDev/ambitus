@@ -853,8 +853,23 @@ auto XojPageView::onKeyReleaseEvent(const KeyEvent& event) -> bool {
 }
 
 void XojPageView::rerenderPage(bool sizeChanged) {
-    this->rerenderComplete = true;
-    this->sizeChanged = sizeChanged;
+    {
+        std::lock_guard lock(this->repaintRectMutex);
+        this->rerenderComplete = true;
+        this->rerenderKeep = false;  // a full render draws the whole page, nothing is kept
+        this->sizeChanged = sizeChanged;
+    }
+    this->xournal->getControl()->getScheduler()->addRerenderPage(this);
+}
+
+void XojPageView::rerenderPageKeepingBuffer() {
+    {
+        std::lock_guard lock(this->repaintRectMutex);
+        // A pending full render records no changed rectangles, so the buffer can only be kept if none is pending
+        this->rerenderKeep = this->rerenderKeep || !this->rerenderComplete;
+        this->rerenderComplete = true;
+        this->sizeChanged = true;
+    }
     this->xournal->getControl()->getScheduler()->addRerenderPage(this);
 }
 
@@ -920,13 +935,14 @@ auto XojPageView::toWidgetCoordinates(const xoj::util::Rectangle<double>& r) con
 }
 
 void XojPageView::rerenderRect(double x, double y, double width, double height) {
-    if (this->rerenderComplete) {
-        return;
-    }
-
     auto rect = Rectangle<double>{x, y, width, height};
 
     this->repaintRectMutex.lock();
+    if (this->rerenderComplete && !this->rerenderKeep) {
+        // A full render is pending and draws the rectangle too
+        this->repaintRectMutex.unlock();
+        return;
+    }
 
     for (auto&& r: this->rerenderRects) {
         // its faster to redraw only one rect than repaint twice the same area

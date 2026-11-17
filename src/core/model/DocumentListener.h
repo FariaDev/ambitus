@@ -28,6 +28,8 @@ public:
 
     virtual void documentChanged(DocumentChangeType type);
     virtual void pageSizeChanged(size_t page);
+    /// Ambitus: the page grew in place, its strokes did not move. Defaults to pageSizeChanged.
+    virtual void pageGrownInPlace(size_t page);
     virtual void pageChanged(size_t page);
     virtual void pageInserted(size_t page);
     virtual void pageDeleted(size_t page);

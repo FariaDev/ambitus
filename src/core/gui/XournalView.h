@@ -149,6 +149,7 @@ public:
     // DocumentListener interface
     void pageSelected(size_t page) override;
     void pageSizeChanged(size_t page) override;
+    void pageGrownInPlace(size_t page) override;
     void pageChanged(size_t page) override;
     void pageInserted(size_t page) override;
     void pageDeleted(size_t page) override;

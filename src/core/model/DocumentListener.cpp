@@ -23,6 +23,8 @@ void DocumentListener::documentChanged(DocumentChangeType type) {}
 
 void DocumentListener::pageSizeChanged(size_t page) {}
 
+void DocumentListener::pageGrownInPlace(size_t page) { pageSizeChanged(page); }
+
 void DocumentListener::pageChanged(size_t page) {}
 
 void DocumentListener::pageInserted(size_t page) {}
