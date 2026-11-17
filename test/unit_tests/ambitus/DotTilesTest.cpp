@@ -45,6 +45,7 @@ DotTileParams gridParams() {
     params.color = 0xff405060;
     params.pageWidth = 1602;
     params.pageHeight = 1008;
+    params.edgeClearance = 0.5 * LINE_WIDTH;
     return params;
 }
 
@@ -197,23 +198,54 @@ TEST(DotTiles, aSecondPaintFromTheCacheIsTheSame) {
     EXPECT_EQ(maxDifference(first, second), 0);
 }
 
-TEST(DotTiles, aMaskAtAnotherWholePixelOffsetReusesTheTiles) {
-    // A grid that no other test paints, so that its tiles are not in the cache yet
+namespace {
+
+/// The number of tiles painted by paintTiled on a 300 x 300 surface, whose origin is (originX, originY)
+int countPainted(const DotTileParams& params, double originX, double originY) {
+    cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 300, 300);
+    cairo_t* cr = cairo_create(surface);
+    cairo_translate(cr, originX, originY);
+    int painted = 0;
+    EXPECT_TRUE(paintTiled(cr, params, [&painted](cairo_t*, const PageRect&) { ++painted; }));
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+    return painted;
+}
+
+/// A grid of a square size that no other test uses, so that its tiles are not in the cache yet
+DotTileParams uncachedGridParams(double squareSize) {
     DotTileParams params = gridParams();
-    params.squareSize = 11.3;
-    const auto countPainted = [&params](double originX, double originY) {
-        cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 300, 300);
-        cairo_t* cr = cairo_create(surface);
-        cairo_translate(cr, originX, originY);
-        int painted = 0;
-        EXPECT_TRUE(paintTiled(cr, params, [&painted](cairo_t*, const PageRect&) { ++painted; }));
-        cairo_destroy(cr);
-        cairo_surface_destroy(surface);
-        return painted;
-    };
-    EXPECT_GT(countPainted(0, 0), 0);
+    params.squareSize = squareSize;
+    return params;
+}
+
+}  // namespace
+
+TEST(DotTiles, aMaskAtAnotherWholePixelOffsetReusesTheTiles) {
+    const DotTileParams params = uncachedGridParams(11.3);
+    EXPECT_GT(countPainted(params, 0, 0), 0);
     // The same page, moved by whole pixels: its tiles are the same, so none is painted again
-    EXPECT_EQ(countPainted(-5, -7), 0);
+    EXPECT_EQ(countPainted(params, -5, -7), 0);
+}
+
+TEST(DotTiles, aTileFarFromThePageEdgesIsSharedByPagesOfAnotherSize) {
+    // On a 300 px surface, the right edge at 250 px is reached by the second and third columns of tiles only
+    DotTileParams params = uncachedGridParams(12.9);
+    params.pageWidth = 250;
+    params.pageHeight = 1000;
+    EXPECT_EQ(countPainted(params, 0, 0), 9);
+
+    // A wider page: the first column is still far from the edge, so it is shared; the two others are painted again
+    params.pageWidth = 2000;
+    EXPECT_EQ(countPainted(params, 0, 0), 6);
+
+    // The first width again: all of its tiles are still in the cache
+    params.pageWidth = 250;
+    EXPECT_EQ(countPainted(params, 0, 0), 0);
+
+    // A narrower page reaches the first column too, so every tile is painted again
+    params.pageWidth = 120;
+    EXPECT_EQ(countPainted(params, 0, 0), 9);
 }
 
 TEST(DotTiles, aFractionalClipIsLeftToTheDirectPaint) {

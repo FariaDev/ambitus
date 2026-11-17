@@ -44,6 +44,31 @@ void store(const DotTileKey& key, std::shared_ptr<cairo_surface_t> tile) {
     tileCache().put(key, std::move(tile), TILE_BYTES);
 }
 
+/// The page rectangle a tile is painted from: its pixels, with the margin a dot needs to reach into them (half its
+/// width and an antialiasing pixel). The dots outside it cannot touch the tile.
+auto tilePageRect(const DotTileParams& p, int tileX, int tileY) -> PageRect {
+    const double tileMinX = static_cast<double>(tileX) * DOT_TILE_SIZE;
+    const double tileMinY = static_cast<double>(tileY) * DOT_TILE_SIZE;
+    const double margin = 0.5 * std::abs(p.lineWidth) * std::max(std::abs(p.xx), std::abs(p.yy)) + 2.0;
+    const auto [minX, maxX] = unmapInterval(tileMinX - margin, tileMinX + DOT_TILE_SIZE + margin, p.xx, 0.0);
+    const auto [minY, maxY] = unmapInterval(tileMinY - margin, tileMinY + DOT_TILE_SIZE + margin, p.yy, 0.0);
+    return PageRect{minX, minY, maxX, maxY};
+}
+
+/// The parameters the pixels of a tile depend on, given the page rectangle of the tile. The painter cuts the grid back
+/// at pageWidth - edgeClearance, so the page size makes a difference only if the tile reaches that far; otherwise it is
+/// left out of the key, and the tile is shared by the pages of every size.
+auto tileKeyParams(const DotTileParams& p, const PageRect& rect) -> DotTileParams {
+    DotTileParams keyed = p;
+    if (rect.maxX + 2.0 * p.edgeClearance < p.pageWidth) {
+        keyed.pageWidth = 0.0;
+    }
+    if (rect.maxY + 2.0 * p.edgeClearance < p.pageHeight) {
+        keyed.pageHeight = 0.0;
+    }
+    return keyed;
+}
+
 /// Paints one tile. Rendering happens outside the lock, so that other threads can read the cache meanwhile.
 auto renderTile(const DotTileKey& key, const TilePainter& painter) -> std::shared_ptr<cairo_surface_t> {
     const DotTileParams& p = key.params;
@@ -65,12 +90,7 @@ auto renderTile(const DotTileKey& key, const TilePainter& painter) -> std::share
     cairo_matrix_init(&matrix, p.xx, 0.0, 0.0, p.yy, -tileMinX, -tileMinY);
     cairo_set_matrix(tileCr, &matrix);
 
-    // The page rectangle of the tile, with the margin a dot needs to reach into it (half its width and an antialiasing
-    // pixel): the dots outside it cannot touch the tile.
-    const double margin = 0.5 * std::abs(p.lineWidth) * std::max(std::abs(p.xx), std::abs(p.yy)) + 2.0;
-    const auto [minX, maxX] = unmapInterval(tileMinX - margin, tileMinX + DOT_TILE_SIZE + margin, p.xx, 0.0);
-    const auto [minY, maxY] = unmapInterval(tileMinY - margin, tileMinY + DOT_TILE_SIZE + margin, p.yy, 0.0);
-    painter(tileCr, PageRect{minX, minY, maxX, maxY});
+    painter(tileCr, tilePageRect(p, key.tileX, key.tileY));
 
     cairo_destroy(tileCr);
     if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS) {
@@ -95,6 +115,7 @@ auto DotTileKeyHash::operator()(const DotTileKey& key) const -> std::size_t {
     combine(p.color);
     combine(p.pageWidth);
     combine(p.pageHeight);
+    combine(p.edgeClearance);
     combine(p.antialias);
     combine(p.tolerance);
     combine(key.tileX);
@@ -170,7 +191,7 @@ auto paintTiled(cairo_t* cr, DotTileParams params, const TilePainter& painter) -
     tiles.reserve(static_cast<std::size_t>(count));
     for (int ty = firstY; ty <= lastY; ++ty) {
         for (int tx = firstX; tx <= lastX; ++tx) {
-            const DotTileKey key{params, tx, ty};
+            const DotTileKey key{tileKeyParams(params, tilePageRect(params, tx, ty)), tx, ty};
             auto tile = lookup(key);
             if (!tile) {
                 tile = renderTile(key, painter);

@@ -31,6 +31,7 @@ void DottedBackgroundView::draw(cairo_t* cr) const {
             .color = static_cast<uint32_t>(foregroundColor),
             .pageWidth = pageWidth,
             .pageHeight = pageHeight,
+            .edgeClearance = 0.5 * lineWidth,  // the clearance strokeDots() gives the page edges
     };
     const auto paintTile = [this](cairo_t* tileCr, const ::ambitus::tiles::PageRect& rect) {
         strokeDots(tileCr, rect.minX, rect.minY, rect.maxX, rect.maxY);

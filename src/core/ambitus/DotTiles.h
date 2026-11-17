@@ -48,8 +48,11 @@ struct DotTileParams {
     double squareSize = 0.0;
     double lineWidth = 0.0;
     uint32_t color = 0;
+    // The grid is not painted within edgeClearance of the right and bottom edges of the page. The page size only counts
+    // for the tiles that reach there: the others are the same whatever the page size.
     double pageWidth = 0.0;
     double pageHeight = 0.0;
+    double edgeClearance = 0.0;
     // Settings of the context the tile is painted with
     int antialias = 0;
     double tolerance = 0.1;
