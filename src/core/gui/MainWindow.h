@@ -88,6 +88,15 @@ private:
     void loadToolbar(ToolbarData* d);
     /// Ambitus: the Studio shows the bottom bar alone, so the zoom buttons of the preset (in the top bar) go there
     void updateStudioZoom();
+    /// Ambitus: the "Pages" button at the left of the Studio bottom bar (none in the other modes)
+    void updateStudioPageItems();
+    GtkWidget* studioBottomBar() const;
+    /// Ambitus: opens or closes the column of the pages beside the Studio; the sidebar takes it or gives it back
+    void setStudioPages(bool shown);
+    /// Ambitus: the sidebar is at the right only when the setting says so and the Studio column is not shown
+    bool sidebarOnRight() const;
+    /// Ambitus: the width of the sidebar: the column of the Studio, else the one of the Classic sidebar
+    int sidebarWidthNow() const;
 
 public:
     /**
@@ -161,6 +170,11 @@ public:
     /// Ambitus: Classic (all the bars), Studio (floating palette) or Focus (only the page)
     void setEditorMode(ambitus::EditorMode mode);
     void applyEditorMode();
+    /// Ambitus: the "Pages" button of the Studio bottom bar: the column of the page thumbnails opens or closes
+    void toggleStudioPages();
+    /// Ambitus: a page after the last one, with the paper of the last one; it scrolls to it (the tile and the pill use
+    /// it)
+    void appendPageAtEnd();
     /// Ambitus: the selection appeared, changed or went away (the bar over it follows)
     void selectionChanged();
     /// Ambitus: the board was edited (the minimap follows)
@@ -256,6 +270,13 @@ private:
     ToolbarData* selectedToolbar = nullptr;
     /// Ambitus: the zoom buttons put in the bottom bar for the Studio (empty in the other modes)
     std::vector<GtkToolItem*> studioZoomItems;
+    /// Ambitus: the "Pages" button and its separator, put at the left of the Studio bottom bar
+    std::vector<GtkToolItem*> studioPageItems;
+    GtkWidget* studioPagesButton = nullptr;
+    /// Ambitus: true while the state of the button is set from the setting (its "clicked" is not a click)
+    bool studioPagesSyncing = false;
+    /// Ambitus: the column of the page thumbnails is shown beside the Studio (the Sidebar holds it)
+    bool studioPagesShown = false;
 
     std::unique_ptr<Menubar> menubar;
 

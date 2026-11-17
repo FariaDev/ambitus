@@ -134,5 +134,17 @@ protected:
      */
     bool enabled = false;
 
+    /// Ambitus: the toolbar under the miniatures (not shown in the Studio column)
+    GtkWidget* toolbarWidget = nullptr;
+
+    /// Ambitus: a widget placed after the last miniature (the "Page" tile of the Studio column); null when none
+    GtkWidget* endWidget = nullptr;
+
+    /**
+     * Sets the menu of a right click from a menu of ui/sidebar.ui. `dangerAction` (an action such as "win.delete-page")
+     * gets the red text of the danger items; null for none.
+     */
+    void setContextMenu(const char* menuId, const char* dangerAction = nullptr);
+
     friend class SidebarLayout;
 };

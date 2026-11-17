@@ -20,9 +20,10 @@ class Control;
 class PagePreviewDecoration {
 public:
     static void drawDecoration(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control);
+    /// Ambitus: the number below the miniature (the Studio column draws it so, whatever the setting)
+    static void drawPageNumberBelowPreview(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control);
 
 private:
-    static void drawPageNumberBelowPreview(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control);
     static void drawPageNumberWithCircleBackground(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control);
     static void drawPageNumberWithSquareBackground(cairo_t* cr, SidebarPreviewPageEntry* pageEntry, Control* control);
 

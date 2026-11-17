@@ -5913,3 +5913,27 @@ msgstr "Não foi possível criar o rascunho."
 
 msgid "Could not keep the draft."
 msgstr "Não foi possível guardar o rascunho."
+
+msgid "Show or hide the pages beside the page"
+msgstr "Mostra ou esconde as páginas ao lado da página"
+
+msgid "Add a page after the last one"
+msgstr "Adiciona uma página depois da última"
+
+msgid "New page after"
+msgstr "Nova página depois"
+
+msgid "New page before"
+msgstr "Nova página antes"
+
+msgid "Duplicate"
+msgstr "Duplicar"
+
+msgid "Move up"
+msgstr "Mover para cima"
+
+msgid "Move down"
+msgstr "Mover para baixo"
+
+msgid "Delete page"
+msgstr "Apagar a página"

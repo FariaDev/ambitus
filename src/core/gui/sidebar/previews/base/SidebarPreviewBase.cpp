@@ -1,6 +1,8 @@
 #include "SidebarPreviewBase.h"
 
 #include <cstdlib>  // for abs, size_t
+#include <string>
+#include <vector>
 
 #include <glib-object.h>  // for g_object_ref, G_CALLBACK, g_sig...
 #include <glib.h>         // for g_idle_add
@@ -13,6 +15,8 @@
 #include "util/Util.h"         // for npos
 #include "util/glib_casts.h"   // for wrap_for_once_v
 #include "util/gtk4_helper.h"
+#include "util/raii/GObjectSPtr.h"   // for GObjectSPtr
+#include "util/raii/GVariantSPtr.h"  // for GVariantSPtr
 
 #include "SidebarLayout.h"            // for SidebarLayout
 #include "SidebarPreviewBaseEntry.h"  // for SidebarPreviewBaseEntry
@@ -48,14 +52,60 @@ SidebarPreviewBase::SidebarPreviewBase(Control* control, const char* menuId, con
             }),
             this);
 
+    setContextMenu(menuId);
+
+    Builder builder(control->getGladeSearchPath(), XML_FILE);
+    toolbarWidget = builder.get(toolbarId);
+    gtk_box_append(GTK_BOX(mainBox.get()), toolbarWidget);
+
+    gtk_widget_show_all(mainBox.get());
+}
+
+/// Ambitus: the action of each item of a menu model, in the order GTK makes its menu items. GTK 3 keeps no action name
+/// on those items, so they are matched by their place: the sections of the model give the separators (not items).
+static void collectItemActions(GMenuModel* model, std::vector<std::string>& actions) {
+    const int n = g_menu_model_get_n_items(model);
+    for (int i = 0; i < n; ++i) {
+        xoj::util::GObjectSPtr<GMenuLinkIter> links(g_menu_model_iterate_item_links(model, i), xoj::util::adopt);
+        bool hasLinks = false;
+        while (g_menu_link_iter_next(links.get())) {
+            xoj::util::GObjectSPtr<GMenuModel> sub(g_menu_link_iter_get_value(links.get()), xoj::util::adopt);
+            if (sub) {
+                collectItemActions(sub.get(), actions);
+                hasLinks = true;
+            }
+        }
+        if (!hasLinks) {
+            xoj::util::GVariantSPtr action(
+                    g_menu_model_get_item_attribute_value(model, i, "action", G_VARIANT_TYPE_STRING), xoj::util::adopt);
+            actions.emplace_back(action ? g_variant_get_string(action.get(), nullptr) : "");
+        }
+    }
+}
+
+void SidebarPreviewBase::setContextMenu(const char* menuId, const char* dangerAction) {
     Builder builder(control->getGladeSearchPath(), XML_FILE);
     GMenuModel* menu = G_MENU_MODEL(builder.getObject(menuId));
     contextMenu.reset(GTK_MENU(gtk_menu_new_from_model(menu)), xoj::util::adopt);
     gtk_menu_attach_to_widget(contextMenu.get(), mainBox.get(), nullptr);
 
-    gtk_box_append(GTK_BOX(mainBox.get()), builder.get(toolbarId));
-
-    gtk_widget_show_all(mainBox.get());
+    if (dangerAction) {
+        // Ambitus: the item of the action is drawn in the danger colour (see the menu items of ambitus.css)
+        std::vector<std::string> actions;
+        collectItemActions(menu, actions);
+        GList* items = gtk_container_get_children(GTK_CONTAINER(contextMenu.get()));
+        size_t item = 0;
+        for (GList* l = items; l != nullptr; l = l->next) {
+            if (GTK_IS_SEPARATOR_MENU_ITEM(l->data)) {
+                continue;
+            }
+            if (item < actions.size() && actions[item] == dangerAction) {
+                gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(l->data)), "amb-danger");
+            }
+            item++;
+        }
+        g_list_free(items);
+    }
 }
 
 SidebarPreviewBase::~SidebarPreviewBase() { this->control->removeChangedDocumentListener(this); }

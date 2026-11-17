@@ -128,7 +128,56 @@ void Sidebar::updateVisibleTabs() {
         i++;
     }
 
+    if (studioColumn) {
+        selected = pagesTabIndex();  // Ambitus: the column is the page thumbnails alone
+    }
     setSelectedTab(selected);
+}
+
+void Sidebar::setStudioColumn(bool studio) {
+    if (studio == studioColumn) {
+        return;
+    }
+    studioColumn = studio;
+
+    // The header (the tab switcher and the close button) and the line under it go away in the column; they are the
+    // children of the sidebar box, next to the contents, which stay
+    GtkWidget* header = gtk_widget_get_parent(GTK_WIDGET(tbSelectTab));
+    GtkWidget* box = header ? gtk_widget_get_parent(header) : nullptr;
+    if (box) {
+        GList* children = gtk_container_get_children(GTK_CONTAINER(box));
+        for (GList* l = children; l != nullptr; l = l->next) {
+            if (l->data != sidebarContents) {
+                gtk_widget_set_visible(GTK_WIDGET(l->data), !studio);
+            }
+        }
+        g_list_free(children);
+        if (studio) {
+            gtk_style_context_add_class(gtk_widget_get_style_context(box), "amb-studio-pages");
+        } else {
+            gtk_style_context_remove_class(gtk_widget_get_style_context(box), "amb-studio-pages");
+        }
+    }
+
+    for (auto&& t: this->tabs) {
+        if (auto* pages = dynamic_cast<SidebarPreviewPages*>(t.get())) {
+            pages->setStudioColumn(studio);
+        }
+    }
+    updateVisibleTabs();
+}
+
+bool Sidebar::isStudioColumn() const { return studioColumn; }
+
+size_t Sidebar::pagesTabIndex() const {
+    size_t i = 0;
+    for (auto&& t: this->tabs) {
+        if (dynamic_cast<SidebarPreviewPages*>(t.get())) {
+            return i;
+        }
+        i++;
+    }
+    return npos;
 }
 
 void Sidebar::setTmpDisabled(bool disabled) {
@@ -143,6 +192,10 @@ void Sidebar::setTmpDisabled(bool disabled) {
 }
 
 void Sidebar::saveSize() {
+    // Ambitus: the Studio column has its own width, which is not the one of the Classic sidebar
+    if (studioColumn) {
+        return;
+    }
     GtkAllocation alloc;
     gtk_widget_get_allocation(this->sidebarContents, &alloc);
 

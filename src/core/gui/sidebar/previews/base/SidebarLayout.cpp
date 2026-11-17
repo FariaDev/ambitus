@@ -102,6 +102,18 @@ void SidebarLayout::layout(SidebarPreviewBase* sidebar) {
         row.clear();
     }
 
+    // Ambitus: the tile of the Studio column comes after the last miniature, as big as it
+    if (sidebar->endWidget && gtk_widget_get_visible(sidebar->endWidget) && !sidebar->previews.empty()) {
+        static constexpr int TILE_GAP = 8;
+        const auto& last = sidebar->previews.back();
+        const int tileWidth = last->getWidth();
+        const int tileHeight = last->getHeight();
+        gtk_widget_set_size_request(sidebar->endWidget, tileWidth, tileHeight);
+        gtk_fixed_move(w, sidebar->endWidget, 0, y + TILE_GAP);
+        y += TILE_GAP + tileHeight;
+        width = std::max(width, tileWidth);
+    }
+
     gtk_widget_set_size_request(GTK_WIDGET(w), width, y);
     gtk_widget_show_all(GTK_WIDGET(w));
 }

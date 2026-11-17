@@ -571,6 +571,10 @@ public:
     void setAmbitusSearchInk(bool enabled);
     bool getAmbitusSearchInk() const;
 
+    /// Ambitus: the column of the page thumbnails beside the Studio, open or closed; closed by default
+    void setAmbitusStudioPages(bool enabled);
+    bool getAmbitusStudioPages() const;
+
     /// Ambitus: the paper a new notebook starts with: "summa", "ruled", "grid", "dotted" or "plain"
     void setAmbitusNewPaper(const std::string& paper);
     const std::string& getAmbitusNewPaper() const;
@@ -1216,6 +1220,8 @@ private:
     bool ambitusKeepVersions{};
     bool ambitusSummaBridge{};
     bool ambitusSearchInk{};
+    /// Ambitus: the column of the pages beside the Studio is open (the "Pages" button of the bottom bar)
+    bool ambitusStudioPages{};
     std::string ambitusNewPaper;
     std::string ambitusNewSize;
     std::string ambitusNotebooksFolder;

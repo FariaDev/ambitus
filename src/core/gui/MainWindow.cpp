@@ -27,6 +27,7 @@
 #include "gui/AmbitusColors.h"                          // for stageColor
 #include "gui/FloatingToolbox.h"                        // for FloatingToolbox
 #include "gui/GladeGui.h"                               // for GladeGui
+#include "gui/IconNameHelper.h"                         // for IconNameHelper
 #include "gui/PdfFloatingToolbox.h"                     // for PdfFloatingToolbox
 #include "gui/SearchBar.h"                              // for SearchBar
 #include "gui/ToolitemDragDrop.h"                       // for ToolitemDragDrop
@@ -85,6 +86,10 @@
 
 using std::string;
 
+namespace {
+/// Ambitus: the width of the column of the pages beside the Studio, in px
+constexpr int STUDIO_PAGES_WIDTH = 120;
+}  // namespace
 
 static void themeCallback(GObject*, GParamSpec*, gpointer data) { static_cast<MainWindow*>(data)->updateColorscheme(); }
 
@@ -378,11 +383,14 @@ void MainWindow::applyEditorMode() {
     }
     bool classic = mode == ambitus::EditorMode::CLASSIC;
     bool focus = mode == ambitus::EditorMode::FOCUS;
+    // the column of the pages is the Studio's alone: not in Focus, and not on a board
+    const bool studioPages = mode == ambitus::EditorMode::STUDIO && !board && settings->getAmbitusStudioPages();
     // the bars are hidden here without touching the settings, so Classic comes back as it was;
     // the library has no menu bar: the whole menu is under "⋯" in the title bar
     gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(this->window),
                                             classic && !isLibraryShown() && settings->isMenubarVisible());
     updateStudioZoom();  // before the visibility of the bars, which counts the items of the bottom one
+    updateStudioPageItems();
     for (size_t i = 0; i < TOOLBAR_DEFINITIONS_LEN; i++) {
         if (i >= TBFloatFirst && i <= TBFloatLast) {
             continue;  // the floating toolbox keeps its own
@@ -393,7 +401,8 @@ void MainWindow::applyEditorMode() {
                     gtk_toolbar_get_n_items(GTK_TOOLBAR(w)) != 0;
         gtk_widget_set_visible(w, show);
     }
-    setSidebarVisible(classic && settings->isSidebarVisible());
+    setStudioPages(studioPages);  // before the sidebar: the column takes its place in the Studio
+    setSidebarVisible(classic ? settings->isSidebarVisible() : studioPages);
     if (studioPalette) {
         if (focus) {
             studioPalette->setRevealOnHover();
@@ -584,6 +593,32 @@ void MainWindow::newDraft() {
         }
     });
     tabsChanged();
+}
+
+void MainWindow::appendPageAtEnd() {
+    Document* doc = control->getDocument();
+    doc->lock_shared();
+    const size_t count = doc->getPageCount();
+    PageRef last = count > 0 ? doc->getPage(count - 1) : PageRef{};
+    doc->unlock_shared();
+    if (!last) {
+        return;
+    }
+
+    // the paper of the last page, as copyBackgroundFromOtherPage copies it (the page type chosen for the new pages is
+    // not used here); insertPage keeps the undo and scrolls to the page
+    control->clearSelectionEndText();
+    auto page = std::make_shared<XojPage>(last->getWidth(), last->getHeight());
+    const PageType bg = last->getBackgroundType();
+    page->setBackgroundType(bg);
+    if (bg.isPdfPage()) {
+        page->setBackgroundPdfPageNr(last->getPdfPageNr());
+    } else if (bg.isImagePage()) {
+        page->setBackgroundImage(last->getBackgroundImage());
+    } else {
+        page->setBackgroundColor(last->getBackgroundColor());
+    }
+    control->insertPage(page, count);
 }
 
 void MainWindow::initDraftPill() {
@@ -1276,7 +1311,7 @@ void MainWindow::updateScrollbarSidebarPosition() {
     // width here in case we need it afterwards.
     int contentWidth = gtk_widget_get_width(this->boxContainerWidget.get());
 
-    bool sidebarRight = control->getSettings()->isSidebarOnRight();
+    bool sidebarRight = sidebarOnRight();
     if (sidebarRight != (gtk_paned_get_child2(paned) == this->sidebarWidget.get())) {
         // switch sidebar and main content
         GtkWidget* sidebar = this->sidebarWidget.get();
@@ -1351,7 +1386,7 @@ void MainWindow::setSidebarVisible(bool visible) {
 #if GTK_MAJOR_VERSION == 3
             gtk_container_remove(GTK_CONTAINER(panedContainerWidget.get()), mainContentWidget.get());
 #else
-            if (control->getSettings()->isSidebarOnRight()) {
+            if (sidebarOnRight()) {
                 gtk_paned_set_start_child(GTK_PANED(panedContainerWidget.get()), nullptr);
             } else {
                 gtk_paned_set_end_child(GTK_PANED(panedContainerWidget.get()), nullptr);
@@ -1370,13 +1405,13 @@ void MainWindow::setSidebarVisible(bool visible) {
             gtk_box_remove(GTK_BOX(boxContainerWidget.get()), mainContentWidget.get());
 
 #if GTK_MAJOR_VERSION == 3
-            if (control->getSettings()->isSidebarOnRight()) {
+            if (sidebarOnRight()) {
                 gtk_paned_pack1(GTK_PANED(panedContainerWidget.get()), mainContentWidget.get(), true, false);
             } else {
                 gtk_paned_pack2(GTK_PANED(panedContainerWidget.get()), mainContentWidget.get(), true, false);
             }
 #else
-            if (control->getSettings()->isSidebarOnRight()) {
+            if (sidebarOnRight()) {
                 gtk_paned_set_start_child(GTK_PANED(panedContainerWidget.get()), mainContentWidget.get());
             } else {
                 gtk_paned_set_end_child(GTK_PANED(panedContainerWidget.get()), mainContentWidget.get());
@@ -1406,21 +1441,20 @@ static void invertPanedPosition(GtkWidget* widget, GtkAllocation* allocation, gu
 }
 
 void MainWindow::updatePanedPosition(int contentWidth) {
-    if (!this->control->getSettings()->isSidebarOnRight()) {
+    const int width = sidebarWidthNow();
+    if (!sidebarOnRight()) {
         // Sidebar is on the left side.
-        gtk_paned_set_position(GTK_PANED(this->panedContainerWidget.get()),
-                               this->control->getSettings()->getSidebarWidth());
+        gtk_paned_set_position(GTK_PANED(this->panedContainerWidget.get()), width);
     } else {
         // Sidebar is on the right side.
         if (contentWidth > 0) {
-            int dividerPos = contentWidth - this->control->getSettings()->getSidebarWidth();
+            int dividerPos = contentWidth - width;
             gtk_paned_set_position(GTK_PANED(this->panedContainerWidget.get()), dividerPos);
         } else {
             // Allocation is unkown (window hasn't been shown yet). We have to wait for the signal.
             // Set position as if the sidebar was on the left side, and let the signal handler
             // simply invert the position when the allocation is known.
-            gtk_paned_set_position(GTK_PANED(this->panedContainerWidget.get()),
-                                   this->control->getSettings()->getSidebarWidth());
+            gtk_paned_set_position(GTK_PANED(this->panedContainerWidget.get()), width);
             gulong* signal_id = new gulong{};
             *signal_id = g_signal_connect_data(
                     this->panedContainerWidget.get(), "size-allocate",
@@ -1428,6 +1462,35 @@ void MainWindow::updatePanedPosition(int contentWidth) {
                     [](gpointer d, GClosure*) { delete reinterpret_cast<gulong*>(d); }, GConnectFlags(0));
         }
     }
+}
+
+bool MainWindow::sidebarOnRight() const { return control->getSettings()->isSidebarOnRight() && !studioPagesShown; }
+
+int MainWindow::sidebarWidthNow() const {
+    return studioPagesShown ? STUDIO_PAGES_WIDTH : control->getSettings()->getSidebarWidth();
+}
+
+void MainWindow::setStudioPages(bool shown) {
+    if (shown == studioPagesShown) {
+        return;
+    }
+    Sidebar* sidebar = control->getSidebar();
+    if (sidebar && sidebarVisible) {
+        // the Classic width is kept as it was: saved before the column takes the place of the sidebar (in the column
+        // the sidebar does not save)
+        sidebar->saveSize();
+    }
+    studioPagesShown = shown;
+    if (sidebar) {
+        sidebar->setStudioColumn(shown);
+    }
+    if (studioPagesButton) {
+        // GTK emits "clicked" when the state is set here: the handler of the button must not take it as a click
+        studioPagesSyncing = true;
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(studioPagesButton), shown);
+        studioPagesSyncing = false;
+    }
+    updateScrollbarSidebarPosition();  // the side and the width follow the column
 }
 
 void MainWindow::setToolbarVisible(bool visible) {
@@ -1505,6 +1568,8 @@ void MainWindow::toolbarSelected(ToolbarData* d) {
 auto MainWindow::clearToolbar() -> const ToolbarData* {
     // the Studio zoom buttons go with the bars they were put in
     this->studioZoomItems.clear();
+    this->studioPageItems.clear();
+    this->studioPagesButton = nullptr;
 
     if (this->selectedToolbar != nullptr) {
         for (size_t i = 0; i < TOOLBAR_DEFINITIONS_LEN; i++) {
@@ -1525,6 +1590,7 @@ void MainWindow::loadToolbar(ToolbarData* d) {
     }
 
     this->updateStudioZoom();
+    this->updateStudioPageItems();
     this->floatingToolbox->flagRecalculateSizeRequired();
 }
 
@@ -1589,6 +1655,76 @@ void MainWindow::updateStudioZoom() {
             break;
         }
     }
+}
+
+GtkWidget* MainWindow::studioBottomBar() const {
+    for (size_t i = 0; i < TOOLBAR_DEFINITIONS_LEN; i++) {
+        if (std::string_view(TOOLBAR_DEFINITIONS[i].guiName) == "tbBottom1") {
+            return this->toolbarWidgets[i].get();
+        }
+    }
+    return nullptr;
+}
+
+void MainWindow::updateStudioPageItems() {
+    GtkWidget* bottom = studioBottomBar();
+    if (!bottom) {
+        return;
+    }
+
+    auto mode = static_cast<ambitus::EditorMode>(control->getSettings()->getEditorMode());
+    const bool board = control->isBoardOpen() && !isLibraryShown();
+    const bool studio = mode == ambitus::EditorMode::STUDIO && !board && !isLibraryShown();
+    if (!studio) {
+        for (GtkToolItem* it: studioPageItems) {
+            if (gtk_widget_get_parent(GTK_WIDGET(it)) == bottom) {
+                gtk_container_remove(GTK_CONTAINER(bottom), GTK_WIDGET(it));
+            }
+        }
+        studioPageItems.clear();
+        studioPagesButton = nullptr;
+        return;
+    }
+    if (!studioPageItems.empty()) {
+        return;
+    }
+
+    // "Pages" at the left of the bar: it opens and closes the column of the page thumbnails
+    IconNameHelper icons(control->getSettings());
+    GtkWidget* button = gtk_toggle_button_new();
+    GtkWidget* content = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    GtkWidget* icon =
+            gtk_image_new_from_icon_name(icons.iconName("sidebar-page-preview").c_str(), GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_box_pack_start(GTK_BOX(content), icon, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(content), gtk_label_new(_("Pages")), false, false, 0);
+    gtk_container_add(GTK_CONTAINER(button), content);
+    gtk_widget_set_tooltip_text(button, _("Show or hide the pages beside the page"));
+    g_signal_connect_swapped(button, "clicked", G_CALLBACK(+[](MainWindow* self) {
+                                 if (!self->studioPagesSyncing) {  // a click of the user, not the state of the setting
+                                     self->toggleStudioPages();
+                                 }
+                             }),
+                             this);
+    gtk_widget_show_all(button);
+    studioPagesSyncing = true;  // the handler above ignores this "clicked" (GTK sends it when the state is set)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), studioPagesShown);
+    studioPagesSyncing = false;
+    studioPagesButton = button;
+
+    GtkToolItem* toggle = gtk_tool_item_new();
+    gtk_container_add(GTK_CONTAINER(toggle), button);
+    gtk_widget_show_all(GTK_WIDGET(toggle));
+    GtkToolItem* separator = gtk_separator_tool_item_new();
+    gtk_widget_show(GTK_WIDGET(separator));
+    gtk_toolbar_insert(GTK_TOOLBAR(bottom), toggle, 0);
+    gtk_toolbar_insert(GTK_TOOLBAR(bottom), separator, 1);
+    studioPageItems = {toggle, separator};
+}
+
+void MainWindow::toggleStudioPages() {
+    auto* settings = control->getSettings();
+    settings->setAmbitusStudioPages(!settings->getAmbitusStudioPages());
+    applyEditorMode();
 }
 
 void MainWindow::reloadToolbars() {

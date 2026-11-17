@@ -9,8 +9,7 @@
 
 SidebarPreviewPageEntry::SidebarPreviewPageEntry(SidebarPreviewPages* sidebar, const PageRef& page, size_t index):
         SidebarPreviewBaseEntry(sidebar, page), sidebar(sidebar), index(index) {
-    if (sidebar->getControl()->getSettings()->getSidebarNumberingStyle() ==
-        SidebarNumberingStyle::NUMBER_BELOW_PREVIEW) {
+    if (sidebar->numbersBelow()) {
         gtk_widget_set_size_request(this->button.get(), imageWidth, imageHeight + PagePreviewDecoration::MARGIN_BOTTOM);
     }
 }
@@ -32,6 +31,11 @@ void SidebarPreviewPageEntry::mouseButtonPressCallback() {
 
 void SidebarPreviewPageEntry::paint(cairo_t* cr) {
     SidebarPreviewBaseEntry::paint(cr);
+    if (sidebar->isStudioColumn()) {
+        // Ambitus: the Studio column always writes the number below the miniature
+        PagePreviewDecoration::drawPageNumberBelowPreview(cr, this, sidebar->getControl());
+        return;
+    }
     if (sidebar->getControl()->getSettings()->getSidebarNumberingStyle() == SidebarNumberingStyle::NONE) {
         return;
     }
@@ -43,8 +47,7 @@ void SidebarPreviewPageEntry::drawEntryNumber(cairo_t* cr) {
 }
 
 auto SidebarPreviewPageEntry::getHeight() const -> int {
-    if (sidebar->getControl()->getSettings()->getSidebarNumberingStyle() ==
-        SidebarNumberingStyle::NUMBER_BELOW_PREVIEW) {
+    if (sidebar->numbersBelow()) {
         return imageHeight + PagePreviewDecoration::MARGIN_BOTTOM;
     }
     return imageHeight;

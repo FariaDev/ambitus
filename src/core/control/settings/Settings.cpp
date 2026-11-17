@@ -256,6 +256,7 @@ void Settings::loadDefault() {
     this->ambitusKeepVersions = true;
     this->ambitusSummaBridge = true;
     this->ambitusSearchInk = false;
+    this->ambitusStudioPages = false;
     this->ambitusNewPaper = "summa";
     this->ambitusNewSize = "a4";
     this->ambitusNotebooksFolder.clear();
@@ -757,6 +758,8 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->ambitusSummaBridge = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSearchInk")) == 0) {
         this->ambitusSearchInk = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusStudioPages")) == 0) {
+        this->ambitusStudioPages = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewPaper")) == 0) {
         this->ambitusNewPaper = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewSize")) == 0) {
@@ -1288,6 +1291,7 @@ void Settings::save() {
     SAVE_BOOL_PROP(ambitusKeepVersions);
     SAVE_BOOL_PROP(ambitusSummaBridge);
     SAVE_BOOL_PROP(ambitusSearchInk);
+    SAVE_BOOL_PROP(ambitusStudioPages);
     SAVE_STRING_PROP(ambitusNewPaper);
     SAVE_STRING_PROP(ambitusNewSize);
     SAVE_BOOL_PROP(ambitusSetupDone);
@@ -2502,6 +2506,7 @@ AMBITUS_BOOL_SETTING(ToolKeys, ambitusToolKeys)
 AMBITUS_BOOL_SETTING(KeepVersions, ambitusKeepVersions)
 AMBITUS_BOOL_SETTING(SummaBridge, ambitusSummaBridge)
 AMBITUS_BOOL_SETTING(SearchInk, ambitusSearchInk)
+AMBITUS_BOOL_SETTING(StudioPages, ambitusStudioPages)
 #undef AMBITUS_BOOL_SETTING
 
 void Settings::setAmbitusNewPaper(const std::string& paper) {

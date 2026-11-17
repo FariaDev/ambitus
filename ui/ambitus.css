@@ -586,6 +586,40 @@ button.amb-grow-pill:hover { background: @amb_hover; color: @amb_text; }
 }
 #mainWindow.darkMode button.amb-grow-pill:hover { background: @amb_dk_hover; color: @amb_dk_text; }
 
+/* ---------- coluna de páginas ao lado do Estúdio ---------- */
+
+#mainWindow #sidebar.amb-studio-pages {
+    background: @amb_bg;
+    border-right: 1px solid @amb_border;
+}
+#mainWindow.darkMode #sidebar.amb-studio-pages {
+    background: @amb_dk_bg;
+    border-right-color: @amb_dk_border;
+}
+
+/* o quadro tracejado do fim da coluna: uma página depois da última */
+button.amb-add-page {
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: 1px dashed @amb_border_strong;
+    border-radius: 3px;
+    color: @amb_text3;
+}
+button.amb-add-page:hover { background: @amb_hover; color: @amb_text; }
+label.amb-add-page-plus { font-size: 16pt; font-weight: 300; }
+label.amb-add-page-text { font-size: 8.5pt; }
+#mainWindow.darkMode button.amb-add-page { border-color: @amb_dk_border_strong; color: @amb_dk_text3; }
+#mainWindow.darkMode button.amb-add-page:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+
+/* a ação que apaga: o texto em vermelho do menu da coluna */
+menu menuitem.amb-danger,
+menu menuitem.amb-danger label { color: @amb_danger; }
+
 /* ---------- barra de título: ∂, biblioteca, caderno, modos, desfazer, menu ---------- */
 
 headerbar.amb-titlebar {

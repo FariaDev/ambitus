@@ -79,3 +79,21 @@ TEST(SettingsTest, testReadWrite) {
     };
     saveReloadTest(fs::temp_directory_path());
 }
+
+// Ambitus: the column of the pages beside the Studio is closed by default and remembers that it was opened
+TEST(SettingsTest, studioPagesColumnIsRememberedAndClosedByDefault) {
+    const fs::path outPath = fs::temp_directory_path() / "xournalpp-test-units_Settings_studioPages.xml";
+    if (fs::exists(outPath)) {
+        fs::remove(outPath);
+    }
+
+    Settings settings(outPath);
+    EXPECT_FALSE(settings.getAmbitusStudioPages());
+    settings.setAmbitusStudioPages(true);  // calls save()
+
+    Settings loaded(outPath);
+    loaded.load();
+    EXPECT_TRUE(loaded.getAmbitusStudioPages());
+
+    fs::remove(outPath);
+}

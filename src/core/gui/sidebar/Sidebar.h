@@ -78,6 +78,13 @@ public:
      */
     void setSelectedTab(size_t tab);
 
+    /**
+     * Ambitus: the Studio column. The page thumbnails are the only thing shown, at the left of the window, with no tab
+     * switcher; the width of the Classic sidebar is not touched by it (see saveSize()).
+     */
+    void setStudioColumn(bool studio);
+    bool isStudioColumn() const;
+
 public:
     // DocumentListener interface
     void documentChanged(DocumentChangeType type) override;
@@ -126,6 +133,12 @@ private:
      * The sidebarContents widget
      */
     GtkWidget* sidebarContents = nullptr;
+
+    /// Ambitus: the Studio column is shown (see setStudioColumn())
+    bool studioColumn = false;
+
+    /// Index of the page thumbnails in the tabs, npos if there are none
+    size_t pagesTabIndex() const;
 };
 
 class SidebarTabButton {

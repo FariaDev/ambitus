@@ -37,6 +37,17 @@ public:
     void enableSidebar() override;
 
     /**
+     * Ambitus: the Studio column. The miniatures get their numbers below them, the right click menu is the Studio's,
+     * the toolbar goes and the "Page" tile comes after the last miniature. The miniatures are rebuilt (their size
+     * changes).
+     */
+    void setStudioColumn(bool studio);
+    bool isStudioColumn() const;
+
+    /// Ambitus: the numbers go below the miniatures: in the Studio column, or with the setting of the numbers
+    bool numbersBelow();
+
+    /**
      * @overwrite
      */
     std::string getName() override;
@@ -73,4 +84,7 @@ private:
 
 private:
     IconNameHelper iconNameHelper;
+
+    /// Ambitus: the Studio column is shown (see setStudioColumn())
+    bool studioColumn = false;
 };
