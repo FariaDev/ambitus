@@ -25,7 +25,7 @@ struct Command {
     std::string path;                ///< the submenus to it, joined by " › "
     std::string action;              ///< detailed name, with the "win." or "app." prefix
     xoj::util::GVariantSPtr target;  ///< may be null
-    std::string accel;               ///< as in the menu file, like "<Ctrl>k"; may be empty
+    std::string accel;               ///< as in the menu file, like "<Primary>k"; may be empty
 };
 
 /// Every item of the menu that runs an action, in the order of the menu

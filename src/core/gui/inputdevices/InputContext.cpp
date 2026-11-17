@@ -22,6 +22,7 @@
 #include "gui/inputdevices/TouchDrawingInputHandler.h"  // for TouchDrawingI...
 #include "gui/inputdevices/TouchInputHandler.h"         // for TouchInputHan...
 #include "util/Assert.h"                                // for xoj_assert
+#include "util/ShortcutModifier.h"                      // for withoutMacMod2
 #include "util/gdk4_helper.h"
 #include "util/glib_casts.h"  // for wrap_for_g_callback
 #include "util/gtk4_helper.h"
@@ -72,8 +73,8 @@ static gboolean keyboardCallback(GtkEventControllerKey* self, guint keyval, guin
     auto* gdkEvent = gtk_event_controller_get_current_event(GTK_EVENT_CONTROLLER(self));
     KeyEvent e;
     e.keyval = keyval;
-    e.state = static_cast<GdkModifierType>(state & gtk_accelerator_get_default_mod_mask() &
-                                           ~gdk_key_event_get_consumed_modifiers(gdkEvent));
+    e.state = withoutMacMod2(static_cast<GdkModifierType>(state & gtk_accelerator_get_default_mod_mask() &
+                                                          ~gdk_key_event_get_consumed_modifiers(gdkEvent)));
     e.sourceEvent = gdkEvent;
     return (static_cast<KeyboardInputHandler*>(d)->*handler)(e);
 }

@@ -42,6 +42,7 @@
 #include "util/Assert.h"                         // for xoj_assert
 #include "util/Point.h"                          // for Point
 #include "util/Rectangle.h"                      // for Rectangle
+#include "util/ShortcutModifier.h"               // for isShortcutOnly
 #include "util/Util.h"                           // for npos
 #include "util/glib_casts.h"                     // for wrap_v
 #include "util/gtk4_helper.h"                    // for gtk_scrolled_window_set_child
@@ -163,7 +164,7 @@ auto XournalView::onKeyPressEvent(const KeyEvent& event) -> bool {
     auto keyval = event.keyval;
     auto state = event.state;
     if (auto* tool = getControl()->getWindow()->getPdfToolbox(); tool->hasSelection()) {
-        if ((keyval == GDK_KEY_c && state == GDK_CONTROL_MASK) || keyval == GDK_KEY_Copy) {
+        if ((keyval == GDK_KEY_c && isShortcutOnly(state)) || keyval == GDK_KEY_Copy) {
             // Shortcut to get selected PDF text.
             tool->copyTextToClipboard();
             return true;

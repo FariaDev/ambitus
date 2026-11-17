@@ -18,6 +18,7 @@
 #include "gui/AmbitusMotion.h"
 #include "model/TexImage.h"
 #include "util/Color.h"
+#include "util/ShortcutModifier.h"
 #include "util/i18n.h"
 
 namespace ambitus {
@@ -254,7 +255,7 @@ bool LatexCard::onKey(GdkEventKey* e) {
         cancel();
         return true;
     }
-    if (enter && (e->state & GDK_CONTROL_MASK)) {
+    if (enter && (e->state & shortcutModifier())) {
         insert();
         return true;
     }

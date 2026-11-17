@@ -241,6 +241,12 @@ void Control::startNewTab() {
     newTabAfter = previous;
 }
 
+void Control::closeActiveTab() {
+    if (activeTab != ambitus::NO_TAB) {
+        closeTab(activeTab);
+    }
+}
+
 void Control::closeTab(size_t index) {
     if (index >= tabs.size()) {
         return;

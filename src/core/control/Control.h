@@ -112,6 +112,8 @@ public:
     void activateTab(size_t index);
     /// Asks to save when needed, like closing a file
     void closeTab(size_t index);
+    /// Ambitus: closes the tab in the window (Cmd+W on macOS); nothing when the library is shown
+    void closeActiveTab();
     std::vector<ambitus::TabInfo> getTabs() const;
 
     /// Ambitus: the open document is a draft (see ambitus/Drafts.h)

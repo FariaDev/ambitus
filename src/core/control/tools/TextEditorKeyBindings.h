@@ -18,6 +18,7 @@
 #include <gdk/gdkkeysyms.h>
 
 #include "gui/inputdevices/InputEvents.h"
+#include "util/ShortcutModifier.h"
 #include "util/gdk4_helper.h"
 
 #include "TextEditor.h"
@@ -32,6 +33,8 @@ struct PressedModifier {
 };
 constexpr PressedModifier NONE{(GdkModifierType)0};
 constexpr PressedModifier CTRL(GDK_CONTROL_MASK);
+// Ambitus: select all, clipboard, bold and font size use Cmd on macOS; the word and paragraph movements stay on Ctrl
+constexpr PressedModifier SHORTCUT(shortcutModifier());
 constexpr PressedModifier SHIFT(GDK_SHIFT_MASK);
 
 struct TextEditor::KeyBindings {
@@ -92,8 +95,8 @@ const TextEditor::KeyBindings TextEditor::keyBindings(
          move_binding(CTRL, Page_Down, GTK_MOVEMENT_HORIZONTAL_PAGES, 1),
 
 
-         {KeyBindings::hash(CTRL, GDK_KEY_a), wrap<&TextEditor::selectAtCursor, TextEditor::SelectType::ALL>},
-         {KeyBindings::hash(CTRL, GDK_KEY_slash), wrap<&TextEditor::selectAtCursor, TextEditor::SelectType::ALL>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_a), wrap<&TextEditor::selectAtCursor, TextEditor::SelectType::ALL>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_slash), wrap<&TextEditor::selectAtCursor, TextEditor::SelectType::ALL>},
 
          {KeyBindings::hash(NONE, GDK_KEY_Delete), wrap<&TextEditor::deleteFromCursor, GTK_DELETE_CHARS, 1>},
          {KeyBindings::hash(NONE, GDK_KEY_KP_Delete), wrap<&TextEditor::deleteFromCursor, GTK_DELETE_CHARS, 1>},
@@ -113,29 +116,29 @@ const TextEditor::KeyBindings TextEditor::keyBindings(
          {KeyBindings::hash(CTRL & SHIFT, GDK_KEY_BackSpace),
           wrap<&TextEditor::deleteFromCursor, GTK_DELETE_PARAGRAPH_ENDS, -1>},
 
-         {KeyBindings::hash(CTRL, GDK_KEY_x), wrap<&TextEditor::cutToClipboard>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_x), wrap<&TextEditor::cutToClipboard>},
          {KeyBindings::hash(NONE, GDK_KEY_Cut), wrap<&TextEditor::cutToClipboard>},
          {KeyBindings::hash(SHIFT, GDK_KEY_Delete), wrap<&TextEditor::cutToClipboard>},
 
-         {KeyBindings::hash(CTRL, GDK_KEY_c), wrap<&TextEditor::copyToClipboard>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_c), wrap<&TextEditor::copyToClipboard>},
          {KeyBindings::hash(NONE, GDK_KEY_Copy), wrap<&TextEditor::copyToClipboard>},
-         {KeyBindings::hash(CTRL, GDK_KEY_Insert), wrap<&TextEditor::copyToClipboard>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_Insert), wrap<&TextEditor::copyToClipboard>},
 
-         {KeyBindings::hash(CTRL, GDK_KEY_v), wrap<&TextEditor::pasteFromClipboard>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_v), wrap<&TextEditor::pasteFromClipboard>},
          {KeyBindings::hash(NONE, GDK_KEY_Paste), wrap<&TextEditor::pasteFromClipboard>},
          {KeyBindings::hash(SHIFT, GDK_KEY_Insert), wrap<&TextEditor::pasteFromClipboard>},
 
          {KeyBindings::hash(NONE, GDK_KEY_Insert), wrap<&TextEditor::toggleOverwrite>},
          {KeyBindings::hash(NONE, GDK_KEY_KP_Insert), wrap<&TextEditor::toggleOverwrite>},
 
-         {KeyBindings::hash(CTRL, GDK_KEY_b), wrap<&TextEditor::toggleBoldFace>},
-         {KeyBindings::hash(CTRL, GDK_KEY_B), wrap<&TextEditor::toggleBoldFace>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_b), wrap<&TextEditor::toggleBoldFace>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_B), wrap<&TextEditor::toggleBoldFace>},
 
-         {KeyBindings::hash(CTRL, GDK_KEY_plus), wrap<&TextEditor::increaseFontSize>},
-         {KeyBindings::hash(CTRL, GDK_KEY_KP_Add), wrap<&TextEditor::increaseFontSize>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_plus), wrap<&TextEditor::increaseFontSize>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_KP_Add), wrap<&TextEditor::increaseFontSize>},
 
-         {KeyBindings::hash(CTRL, GDK_KEY_minus), wrap<&TextEditor::decreaseFontSize>},
-         {KeyBindings::hash(CTRL, GDK_KEY_KP_Subtract), wrap<&TextEditor::decreaseFontSize>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_minus), wrap<&TextEditor::decreaseFontSize>},
+         {KeyBindings::hash(SHORTCUT, GDK_KEY_KP_Subtract), wrap<&TextEditor::decreaseFontSize>},
 
          {KeyBindings::hash(NONE, GDK_KEY_Return), wrap<&TextEditor::linebreak>},
          {KeyBindings::hash(NONE, GDK_KEY_ISO_Enter), wrap<&TextEditor::linebreak>},

@@ -142,7 +142,7 @@ struct ActionProperties<Action::COPY_PAGE_AS_IMAGE> {
 template <>
 struct ActionProperties<Action::COMMAND_PALETTE> {
     // Ctrl+K is the palette of Summa; Ctrl+/ is the key it had here first
-    static constexpr const char* accelerators[] = {"<Ctrl>K", "<Ctrl>slash", nullptr};
+    static constexpr const char* accelerators[] = {"<Primary>K", "<Primary>slash", nullptr};
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getWindow()->openCommandPalette(); }
 };
 
@@ -185,11 +185,7 @@ struct ActionProperties<Action::PRINT> {
 template <>
 struct ActionProperties<Action::QUIT> {
     using app_namespace = std::true_type;
-#ifdef __APPLE__
-    static constexpr const char* accelerators[] = {"<Meta>Q", nullptr};
-#else
-    static constexpr const char* accelerators[] = {"<Ctrl>Q", nullptr};
-#endif
+    static constexpr const char* accelerators[] = {"<Primary>Q", nullptr};
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->quit(); }
 };
 
@@ -197,21 +193,13 @@ struct ActionProperties<Action::QUIT> {
 /** Edit Menu **/
 template <>
 struct ActionProperties<Action::UNDO> {
-#ifdef __APPLE__
-    static constexpr const char* accelerators[] = {"<Meta>Z", nullptr};
-#else
-    static constexpr const char* accelerators[] = {"<Ctrl>Z", nullptr};
-#endif
+    static constexpr const char* accelerators[] = {"<Primary>Z", nullptr};
     static bool initiallyEnabled(Control* ctrl) { return ctrl->undoRedo->canUndo(); }
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { UndoRedoController::undo(ctrl); }
 };
 template <>
 struct ActionProperties<Action::REDO> {
-#ifdef __APPLE__
-    static constexpr const char* accelerators[] = {"<Meta><Shift>Z", "<Meta>Y", nullptr};
-#else
-    static constexpr const char* accelerators[] = {"<Ctrl><Shift>Z", "<Ctrl>Y", nullptr};
-#endif
+    static constexpr const char* accelerators[] = {"<Primary><Shift>Z", "<Primary>Y", nullptr};
     static bool initiallyEnabled(Control* ctrl) { return ctrl->undoRedo->canRedo(); }
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
         ctrl->clearSelectionEndText();
@@ -220,29 +208,17 @@ struct ActionProperties<Action::REDO> {
 };
 template <>
 struct ActionProperties<Action::CUT> {
-#ifdef __APPLE__
-    static constexpr const char* accelerators[] = {"<Meta>X", "Cut", nullptr};
-#else
-    static constexpr const char* accelerators[] = {"<Ctrl>X", "Cut", nullptr};
-#endif
+    static constexpr const char* accelerators[] = {"<Primary>X", "Cut", nullptr};
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->cut(); }
 };
 template <>
 struct ActionProperties<Action::COPY> {
-#ifdef __APPLE__
-    static constexpr const char* accelerators[] = {"<Meta>C", "Copy", nullptr};
-#else
-    static constexpr const char* accelerators[] = {"<Ctrl>C", "Copy", nullptr};
-#endif
+    static constexpr const char* accelerators[] = {"<Primary>C", "Copy", nullptr};
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->copy(); }
 };
 template <>
 struct ActionProperties<Action::PASTE> {
-#ifdef __APPLE__
-    static constexpr const char* accelerators[] = {"<Meta>V", "Paste", nullptr};
-#else
-    static constexpr const char* accelerators[] = {"<Ctrl>V", "Paste", nullptr};
-#endif
+    static constexpr const char* accelerators[] = {"<Primary>V", "Paste", nullptr};
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->paste(); }
 };
 template <>
@@ -321,11 +297,7 @@ struct ActionProperties<Action::GRID_SNAPPING> {
 template <>
 struct ActionProperties<Action::PREFERENCES> {
     using app_namespace = std::true_type;
-#ifdef __APPLE__
-    static constexpr const char* accelerators[] = {"<Meta>comma", nullptr};
-#else
-    static constexpr const char* accelerators[] = {"<Ctrl>comma", nullptr};
-#endif
+    static constexpr const char* accelerators[] = {"<Primary>comma", nullptr};
     // Ambitus: the settings card; the dialog of Xournal++ is "Advanced" in it, and what opens with no window to put
     // the card in
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
@@ -475,11 +447,7 @@ struct ActionProperties<Action::SHOW_MENUBAR> {
  */
 template <>
 struct ActionProperties<Action::ZOOM_IN> {
-#ifdef __APPLE__
-    static constexpr const char* accelerators[] = {"<Meta>plus", "<Meta>KP_Add", "<Meta>equal", nullptr};
-#else
-    static constexpr const char* accelerators[] = {"<Ctrl>plus", "<Ctrl>KP_Add", "<Ctrl>equal", nullptr};
-#endif
+    static constexpr const char* accelerators[] = {"<Primary>plus", "<Primary>KP_Add", "<Primary>equal", nullptr};
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
         Util::execInUiThread([zoom = ctrl->getZoomControl()]() { zoom->zoomOneStep(ZOOM_IN); });
     }
@@ -487,11 +455,7 @@ struct ActionProperties<Action::ZOOM_IN> {
 
 template <>
 struct ActionProperties<Action::ZOOM_OUT> {
-#ifdef __APPLE__
-    static constexpr const char* accelerators[] = {"<Meta>minus", "<Meta>KP_Subtract", nullptr};
-#else
-    static constexpr const char* accelerators[] = {"<Ctrl>minus", "<Ctrl>KP_Subtract", nullptr};
-#endif
+    static constexpr const char* accelerators[] = {"<Primary>minus", "<Primary>KP_Subtract", nullptr};
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) {
         Util::execInUiThread([zoom = ctrl->getZoomControl()]() { zoom->zoomOneStep(ZOOM_OUT); });
     }

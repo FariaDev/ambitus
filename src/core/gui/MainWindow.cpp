@@ -276,8 +276,20 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
                      G_CALLBACK(+[](GSimpleAction*, GVariant*, MainWindow* self) { self->newDraft(); }), this);
     g_action_map_add_action(G_ACTION_MAP(this->window), G_ACTION(newDraftAction));
     g_object_unref(newDraftAction);
-    const char* newDraftAccels[] = {"<Ctrl><Shift>N", nullptr};
+    const char* newDraftAccels[] = {"<Primary><Shift>N", nullptr};
     gtk_application_set_accels_for_action(GTK_APPLICATION(parent), "win.new-draft", newDraftAccels);
+
+#ifdef __APPLE__
+    // Ambitus: Cmd+W closes the tab in the window. Only on macOS: Linux keeps Ctrl+W unbound, as it was.
+    GSimpleAction* closeActiveTabAction = g_simple_action_new("close-active-tab", nullptr);
+    g_signal_connect(closeActiveTabAction, "activate",
+                     G_CALLBACK(+[](GSimpleAction*, GVariant*, MainWindow* self) { self->control->closeActiveTab(); }),
+                     this);
+    g_action_map_add_action(G_ACTION_MAP(this->window), G_ACTION(closeActiveTabAction));
+    g_object_unref(closeActiveTabAction);
+    const char* closeActiveTabAccels[] = {"<Primary>w", nullptr};
+    gtk_application_set_accels_for_action(GTK_APPLICATION(parent), "win.close-active-tab", closeActiveTabAccels);
+#endif
 }
 
 void MainWindow::populate(GladeSearchpath* gladeSearchPath) {
