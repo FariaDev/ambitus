@@ -1238,6 +1238,8 @@ void Control::growBoardToFit() {
         if ((shift.width > 0 || shift.height > 0) && ambitus::board::mayMoveContent(busy, ctrl->undoRedo->canRedo())) {
             ctrl->zoom->setZoomFitMode(false);
             ambitus::board::moveAndRecord(*ctrl->undoRedo, *ctrl->doc, page, shift.width, shift.height, ctrl);
+            // Ambitus: the move may have wrapped the history: the title and the tabs show it as saved again
+            ctrl->updateWindowTitle();
         }
         if (ctrl->win) {
             ctrl->win->boardContentChanged();
@@ -1326,6 +1328,8 @@ void Control::growBoardAhead() {
     if ((room.width > 0 || room.height > 0) && ambitus::board::mayMoveContent(busy, undoRedo->canRedo())) {
         zoom->setZoomFitMode(false);  // Ambitus: see growBoardToFit
         ambitus::board::moveAndRecord(*undoRedo, *doc, page, room.width, room.height, this);
+        // Ambitus: the move may have wrapped the history: the title and the tabs show it as saved again
+        updateWindowTitle();
         changed = true;
     }
     if (changed) {

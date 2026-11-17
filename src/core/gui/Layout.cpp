@@ -412,20 +412,19 @@ void Layout::recomputeCenteringPadding(int allocWidth, int allocHeight) {
     auto width = getTotalPixelWidthUnsafe();
     auto height = getTotalPixelHeightUnsafe();
     g.unlock();
-    programmatic = true;  // Ambitus: the scroll this may clamp is not a pan
+    // Ambitus: the scroll this may clamp is not a pan. A guard, not a flag: the caller may hold one (zoomChanged)
+    ProgrammaticScroll relayout(*this);
     gtk_adjustment_set_upper(scrollHandling->getHorizontal(), width);
     gtk_adjustment_set_upper(scrollHandling->getVertical(), height);
     seenScrollRange = currentScrollRange();
-    programmatic = false;
 }
 
 void Layout::recalculate() {
     computePrecalculated();
-    programmatic = true;  // Ambitus: see recomputeCenteringPadding
+    ProgrammaticScroll relayout(*this);  // Ambitus: see recomputeCenteringPadding
     gtk_adjustment_set_upper(scrollHandling->getHorizontal(), getTotalPixelWidth());
     gtk_adjustment_set_upper(scrollHandling->getVertical(), getTotalPixelHeight());
     seenScrollRange = currentScrollRange();
-    programmatic = false;
     gtk_widget_queue_draw(view->getWidget());
 }
 
