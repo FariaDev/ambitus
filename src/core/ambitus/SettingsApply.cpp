@@ -116,6 +116,15 @@ void applyTheme(Control* ctrl, int index) {
     }
 }
 
+int iconsIndex(Control* ctrl) { return ctrl->getSettings()->getIconTheme() == ICON_THEME_LUCIDE ? 1 : 0; }
+
+void applyIcons(Control* ctrl, int index) {
+    ctrl->getSettings()->setIconTheme(index == 1 ? ICON_THEME_LUCIDE : ICON_THEME_COLOR);
+    if (auto* win = ctrl->getWindow()) {
+        win->updateColorscheme();  // puts the chosen icons first in the search path
+    }
+}
+
 void applyLanguage(Control* ctrl, int index) {
     Settings* s = ctrl->getSettings();
     s->setPreferredLocale(index == 0 ? "pt_BR" : "en");

@@ -5973,3 +5973,12 @@ msgstr "O que está na tela"
 
 msgid "The whole page"
 msgstr "A página inteira"
+
+msgid "Icons"
+msgstr "Ícones"
+
+msgid "Coloured"
+msgstr "Coloridos"
+
+msgid "Neutral"
+msgstr "Neutros"

@@ -38,6 +38,9 @@ bool summaInstalled();
 GtkWidget* makeAccentDots(const std::string& accent = "graphite");
 
 void applyTheme(Control* ctrl, int index);
+/// The icons: 0 coloured, 1 neutral (Lucide); applied at once
+int iconsIndex(Control* ctrl);
+void applyIcons(Control* ctrl, int index);
 /// Xournal++ keeps the locale and reads it when it starts: this applies the next time the program opens
 void applyLanguage(Control* ctrl, int index);
 /// The touchscreen, the tools of the buttons and the view follow, as the end of SettingsDialog::save

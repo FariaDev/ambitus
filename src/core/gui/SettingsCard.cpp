@@ -565,6 +565,10 @@ void SettingsCard::buildAppearance() {
            makeSegmented({_("System"), _("Light"), _("Dark")}, settingsapply::themeIndex(ctrl),
                          [this](int i) { settingsapply::applyTheme(ctrl, i); }));
 
+    addRow(APPEARANCE, _("Icons"), "",
+           makeSegmented({_("Coloured"), _("Neutral")}, settingsapply::iconsIndex(ctrl),
+                         [this](int i) { settingsapply::applyIcons(ctrl, i); }));
+
     // the accent of Summa lives in the state of that app: Ambitus shows the one chosen there (library/SummaState.h)
     GtkWidget* dots = settingsapply::makeAccentDots(library::loadSummaState().accent);
     addRow(APPEARANCE, _("Accent color"), _("the same as Summa; change it there"), dots);

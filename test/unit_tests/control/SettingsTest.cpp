@@ -120,3 +120,20 @@ TEST(SettingsTest, theSummaSendChoiceIsRememberedAndTheScreenByDefault) {
 
     fs::remove(outPath);
 }
+
+TEST(SettingsTest, theIconsAreColouredByDefaultAndTheChoiceIsRemembered) {
+    const fs::path outPath = fs::temp_directory_path() / "xournalpp-test-units_Settings_icons.xml";
+    if (fs::exists(outPath)) {
+        fs::remove(outPath);
+    }
+
+    Settings settings(outPath);
+    EXPECT_EQ(settings.getIconTheme(), ICON_THEME_COLOR);
+    settings.setIconTheme(ICON_THEME_LUCIDE);  // calls save()
+
+    Settings loaded(outPath);
+    loaded.load();
+    EXPECT_EQ(loaded.getIconTheme(), ICON_THEME_LUCIDE);
+
+    fs::remove(outPath);
+}
