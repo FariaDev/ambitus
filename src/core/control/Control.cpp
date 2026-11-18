@@ -2472,7 +2472,10 @@ void Control::resetSavedStatus() {
 void Control::quit(bool allowCancel) {
     // Ambitus: remember the tabs as they are before the save questions change them, and write them once the quit goes
     // through (a cancelled quit keeps the session as it was).
-    const std::string tabsAtQuit = ambitus::restoretabs::serialize(tabsForRestore());
+    // quit() comes back here after each question, with one tab less: only the first pass counts.
+    if (!tabsAtQuit) {
+        tabsAtQuit = ambitus::restoretabs::serialize(tabsForRestore());
+    }
     // Ambitus: tabs with changes, and the drafts, kept aside, are asked about first, one at a time
     for (size_t i = 0; i < tabs.size(); i++) {
         if (i != activeTab && (tabs[i].undo.isChanged() || ambitus::drafts::isDraft(tabs[i].path))) {
@@ -2480,6 +2483,7 @@ void Control::quit(bool allowCancel) {
             this->close(
                     [this, allowCancel](bool closed) {
                         if (!closed) {
+                            tabsAtQuit.reset();
                             if (!allowCancel) {
                                 emergencySave();
                             }
@@ -2496,8 +2500,9 @@ void Control::quit(bool allowCancel) {
     }
 
     g_message("Quitting");
-    auto afterClosed = [this, allowCancel, tabsAtQuit](bool closed) {
+    auto afterClosed = [this, allowCancel](bool closed) {
         if (!closed) {
+            tabsAtQuit.reset();
             g_message("Closing document failed or cancelled");
             if (!allowCancel) {
                 // Cancel is not allowed, and the user close or did not save
@@ -2516,7 +2521,7 @@ void Control::quit(bool allowCancel) {
             this->scheduler->unlock();
             this->scheduler->stop();  // Finish current task. Must be called to finish pending saves.
             this->closeDocument();    // Must be done after all jobs has finished (Segfault on save/export)
-            settings->setAmbitusOpenTabs(tabsAtQuit);
+            settings->setAmbitusOpenTabs(*tabsAtQuit);
             settings->save();
             g_application_quit(G_APPLICATION(gtkApp));
         }

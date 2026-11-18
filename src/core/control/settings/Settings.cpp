@@ -772,7 +772,7 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusOpenTabs")) == 0) {
         this->ambitusOpenTabs = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSideRatio")) == 0) {
-        this->ambitusSideRatio = tempg_ascii_strtod(reinterpret_cast<const char*>(value), nullptr);
+        setAmbitusSideRatio(tempg_ascii_strtod(reinterpret_cast<const char*>(value), nullptr));
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewPaper")) == 0) {
         this->ambitusNewPaper = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewSize")) == 0) {

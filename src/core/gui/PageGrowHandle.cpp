@@ -90,6 +90,13 @@ PageGrowHandle::~PageGrowHandle() {
     gtk_container_remove(GTK_CONTAINER(overlay), newPagePill.get());
 }
 
+int PageGrowHandle::visibleWidth() const {
+    const int width = gtk_widget_get_allocated_width(xournal->getWidget());
+    // Ambitus: the part on screen ends at the divider when a notebook is beside: nothing here goes over it
+    const auto visible = static_cast<int>(gtk_adjustment_get_page_size(xournal->getScrollHandling()->getHorizontal()));
+    return visible > 0 ? std::min(width, visible) : width;
+}
+
 void PageGrowHandle::hide() {
     edge = Edge::NONE;
     page.reset();
@@ -190,7 +197,7 @@ void PageGrowHandle::place() {
     double w = view->getDisplayWidthDouble();
     double h = view->getDisplayHeightDouble();
     double g = Control::GROW_STEP * xournal->getZoom();
-    int vw = gtk_widget_get_allocated_width(xournal->getWidget());
+    int vw = visibleWidth();
     int vh = gtk_widget_get_allocated_height(xournal->getWidget());
 
     GtkRequisition nat;

@@ -44,7 +44,6 @@ struct TabInfo {
     bool modified = false;
     /// the notebook shown beside the one in the window (read only)
     bool beside = false;
-    unsigned serial = 0;
 };
 
 /// What the side pane shows: the notebook beside the one in the window. `doc` is owned by its tab; null when none.

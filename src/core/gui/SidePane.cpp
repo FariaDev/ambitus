@@ -37,6 +37,7 @@ constexpr double WHEEL_ZOOM_STEP = 1.1;
 /// the divider is set once the window has its width (a pane narrower than this is not a split)
 constexpr int MIN_SPLIT_WIDTH = 100;
 constexpr int RATIO_TRIES = 200;
+constexpr double MIN_SIDE_SHARE = 0.2;
 
 void addClass(GtkWidget* w, const char* c) { gtk_style_context_add_class(gtk_widget_get_style_context(w), c); }
 
@@ -100,24 +101,28 @@ SidePane::SidePane(Control* control, GtkWidget* split): control(control), split(
                      this);
     g_signal_connect(pages, "size-allocate",
                      G_CALLBACK(+[](GtkWidget*, GdkRectangle*, SidePane* self) { self->applyPendingPage(); }), this);
-    g_signal_connect(pages, "scroll-event", G_CALLBACK(+[](GtkWidget*, GdkEventScroll* e, SidePane* self) -> gboolean {
-                         if (!(e->state & (GDK_CONTROL_MASK | GDK_META_MASK))) {
-                             return FALSE;  // the wheel alone scrolls the pages
-                         }
-                         double dy = 0;
-                         if (e->direction == GDK_SCROLL_UP) {
-                             dy = -1;
-                         } else if (e->direction == GDK_SCROLL_DOWN) {
-                             dy = 1;
-                         } else if (e->direction == GDK_SCROLL_SMOOTH) {
-                             dy = e->delta_y;
-                         }
-                         if (dy != 0) {
-                             self->zoomBy(dy < 0 ? WHEEL_ZOOM_STEP : 1 / WHEEL_ZOOM_STEP);
-                         }
-                         return TRUE;
-                     }),
-                     this);
+    g_signal_connect(
+            pages, "scroll-event", G_CALLBACK(+[](GtkWidget* w, GdkEventScroll* e, SidePane* self) -> gboolean {
+                // Cmd on the Mac, where GDK reports it as its own modifier
+                const GdkModifierType primary = gdk_keymap_get_modifier_mask(
+                        gdk_keymap_get_for_display(gtk_widget_get_display(w)), GDK_MODIFIER_INTENT_PRIMARY_ACCELERATOR);
+                if (!(e->state & (GDK_CONTROL_MASK | primary))) {
+                    return FALSE;  // the wheel alone scrolls the pages
+                }
+                double dy = 0;
+                if (e->direction == GDK_SCROLL_UP) {
+                    dy = -1;
+                } else if (e->direction == GDK_SCROLL_DOWN) {
+                    dy = 1;
+                } else if (e->direction == GDK_SCROLL_SMOOTH) {
+                    dy = e->delta_y;
+                }
+                if (dy != 0) {
+                    self->zoomBy(std::pow(WHEEL_ZOOM_STEP, -dy));  // a trackpad sends many small steps
+                }
+                return TRUE;
+            }),
+            this);
     gtk_container_add(GTK_CONTAINER(stage), pages);
     gtk_box_pack_start(GTK_BOX(panel), stage, true, true, 0);
     vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(stage));
@@ -176,6 +181,13 @@ SidePane::SidePane(Control* control, GtkWidget* split): control(control), split(
                     return;
                 }
                 const int left = gtk_paned_get_position(paned);
+                // neither side goes below a fifth of the width, the bounds of the setting
+                const int lowest = static_cast<int>(std::lround(width * MIN_SIDE_SHARE));
+                const int kept = std::clamp(left, lowest, width - lowest);
+                if (kept != left) {
+                    gtk_paned_set_position(paned, kept);
+                    return;
+                }
                 self->control->getSettings()->setAmbitusSideRatio(static_cast<double>(width - left) / width);
             }),
             this);

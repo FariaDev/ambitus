@@ -1288,7 +1288,8 @@ void MainWindow::initXournalWidget() {
     // Ambitus: the pages on the left, and on the right the notebook beside them, read only (SidePane)
     sideSplit = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_style_context_add_class(gtk_widget_get_style_context(sideSplit), "amb-split");
-    gtk_paned_pack1(GTK_PANED(sideSplit), pageRow, true, false);
+    gtk_paned_set_wide_handle(GTK_PANED(sideSplit), true);  // the pointer grabs all of its width
+    gtk_paned_pack1(GTK_PANED(sideSplit), pageRow, true, true);  // the pages ask for their whole width: they may get less
     gtk_box_pack_start(GTK_BOX(content), sideSplit, true, true, 0);
     gtk_widget_show(sideSplit);
 

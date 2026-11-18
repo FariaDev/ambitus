@@ -278,8 +278,7 @@ void Control::closeTab(size_t index) {
         return;
     }
     if (index == sideTab) {
-        closeSideTab();  // Ambitus: the side pane closes, its notebook stays a tab
-        return;
+        closeSideTab();  // Ambitus: the pane goes first, then the tab closes like any other
     }
     activateTab(index);
     fs::path path;
@@ -318,7 +317,6 @@ auto Control::getTabs() const -> std::vector<ambitus::TabInfo> {
         ambitus::TabInfo info;
         info.active = i == activeTab;
         info.beside = i == sideTab;
-        info.serial = tabs[i].serial;
         if (info.active) {
             doc->lock_shared();
             info.path = doc->getFilepath();

@@ -594,6 +594,8 @@ private:
     /// Ambitus: answers the "Check" of Summa with the page on screen (ambitus/SummaPoll.h)
     std::unique_ptr<ambitus::SummaPoller> summaPoller;
     size_t activeTab = ambitus::NO_TAB;
+    /// the tabs as they were when the quit began, written once it goes through (see quit)
+    std::optional<std::string> tabsAtQuit;
     /// the tab shown beside the one in the window (read only, see ambitus/SideTab.h); NO_TAB when none
     size_t sideTab = ambitus::NO_TAB;
     /// the tab next to which the file being opened by openInTab goes

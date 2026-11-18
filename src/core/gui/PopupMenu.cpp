@@ -139,6 +139,8 @@ GtkWidget* PopupMenu::begin(GtkWidget* relativeTo, GtkPositionType position, int
         submenu = nullptr;
     }
     pop = newPopover(relativeTo, position);
+    // it goes away with the widget it hangs from (a tab of the strip, rebuilt): nothing is left to destroy later
+    g_signal_connect(pop, "destroy", G_CALLBACK(gtk_widget_destroyed), &pop);
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_set_size_request(box, width, -1);
     gtk_container_add(GTK_CONTAINER(pop), box);
@@ -148,7 +150,9 @@ GtkWidget* PopupMenu::begin(GtkWidget* relativeTo, GtkPositionType position, int
                                  if (self->submenu) {
                                      gtk_popover_popdown(GTK_POPOVER(self->submenu));
                                  }
-                                 self->setActive(columnOf(self->pop), nullptr);
+                                 if (self->pop) {
+                                     self->setActive(columnOf(self->pop), nullptr);
+                                 }
                                  if (self->onClosed) {
                                      self->onClosed();
                                  }
@@ -282,6 +286,7 @@ void PopupMenu::addSubmenuItem(GtkWidget* box, const char* iconName, const char*
                      this);
 
     submenu = newPopover(b, GTK_POS_RIGHT);
+    g_signal_connect(submenu, "destroy", G_CALLBACK(gtk_widget_destroyed), &submenu);
     GtkWidget* sub = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(submenu), sub);
     fill(sub);
