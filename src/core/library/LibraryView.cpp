@@ -10,7 +10,8 @@
 
 #include "ambitus/Drafts.h"                    // for folder, isDraft
 #include "control/settings/MetadataManager.h"  // for MetadataManager
-#include "util/PathUtil.h"                     // for fromGFilename, toGFilename
+#include "gui/PopupMenu.h"                     // for PopupMenu, the menu of a cover
+#include "util/PathUtil.h"                     // for fromGFilename, toGFilename, toUri
 #include "util/StringUtils.h"          // for char_cast, StringUtils
 #include "util/XojPreviewExtractor.h"  // for XojPreviewExtractor
 #include "util/i18n.h"                 // for _
@@ -33,7 +34,46 @@ constexpr int RESUME_DPI = 60;  ///< enough for the thumbnail, also on a sharp s
 constexpr const char* SWATCHES[] = {"#5b4a86", "#2f5d6b", "#8a5a3a", "#4d6b45",
                                     "#8a7232", "#9b3a5a", "#3d3d3d", "#d9d2c3"};
 
+constexpr int COVER_MENU_W = 232;  ///< the menu of a cover: a column, as the menus of the window
+
 auto utf8(const fs::path& p) -> std::string { return std::string(char_cast(p.u8string())); }
+
+/// A widget that a menu item may ask for after the library has redrawn it: the item gets null when it is gone
+std::shared_ptr<GWeakRef> weakRef(GtkWidget* w) {
+    auto* ref = new GWeakRef;
+    g_weak_ref_init(ref, G_OBJECT(w));
+    return std::shared_ptr<GWeakRef>(ref, [](GWeakRef* r) {
+        g_weak_ref_clear(r);
+        delete r;
+    });
+}
+
+/// Shows the notebook in its folder: on macOS the file is selected in Finder; elsewhere the folder opens
+void showInFolder(GtkWidget* from, const fs::path& file) {
+#ifdef __APPLE__
+    (void)from;
+    const std::string path = Util::toGFilename(file);
+    const char* argv[] = {"open", "-R", path.c_str(), nullptr};
+    GError* err = nullptr;
+    if (!g_spawn_async(nullptr, const_cast<gchar**>(argv), nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr,
+                       &err)) {
+        g_warning("Show in folder: %s", err->message);
+        g_error_free(err);
+    }
+#else
+    auto uri = Util::toUri(file.parent_path());
+    if (!uri) {
+        return;
+    }
+    g_debug("Show in folder: %s", uri->c_str());
+    GtkWidget* top = gtk_widget_get_toplevel(from);
+    GError* err = nullptr;
+    if (!gtk_show_uri_on_window(GTK_IS_WINDOW(top) ? GTK_WINDOW(top) : nullptr, uri->c_str(), GDK_CURRENT_TIME, &err)) {
+        g_warning("Show in folder: %s", err ? err->message : "unknown error");
+        g_clear_error(&err);
+    }
+#endif
+}
 
 auto label(const std::string& text, const char* cssClass = nullptr) -> GtkWidget* {
     GtkWidget* l = gtk_label_new(text.c_str());
@@ -183,6 +223,11 @@ LibraryView::LibraryView(fs::path storeFile, fs::path indexFile, Actions a):
     gtk_container_add(GTK_CONTAINER(root), pathLabel);
     gtk_widget_show_all(root);
 
+    coverMenu = std::make_unique<PopupMenu>([this]() -> GtkWindow* {
+        GtkWidget* top = gtk_widget_get_toplevel(root);
+        return GTK_IS_WINDOW(top) ? GTK_WINDOW(top) : nullptr;
+    });
+
     refresh();
 }
 
@@ -275,6 +320,21 @@ void LibraryView::refresh() {
     fillSide();
     fillGrid();
     reindex();
+}
+
+void LibraryView::notebookMoved(const fs::path& from, const fs::path& to) {
+    store.moveCover(from, to);
+    store.save();
+    // the thumbnails kept under the old name are not for the new one: read again on the next draw
+    for (auto* cache: {&previews, &images}) {
+        if (auto it = cache->find(from); it != cache->end()) {
+            if (it->second) {
+                g_object_unref(it->second);
+            }
+            cache->erase(it);
+        }
+    }
+    refresh();
 }
 
 void LibraryView::focusSearch() { gtk_widget_grab_focus(search); }
@@ -943,7 +1003,27 @@ void LibraryView::addTiles(const std::vector<const Entry*>& entries) {
         gtk_widget_set_valign(grid, GTK_ALIGN_START);
         addClass(grid, "amb-grid");
         for (auto* e: *list) {
-            gtk_container_add(GTK_CONTAINER(grid), makeTile(*e));
+            GtkWidget* tile = makeTile(*e);
+            gtk_container_add(GTK_CONTAINER(grid), tile);
+            // the flow box gives the focus to the child that holds the cover, and a key goes up from the focused widget
+            g_signal_connect(gtk_widget_get_parent(tile), "key-press-event",
+                             G_CALLBACK(+[](GtkWidget*, GdkEventKey* ev, gpointer data) -> gboolean {
+                                 // F2 on the focused cover renames it, as in the menu (a draft is named when it is
+                                 // kept)
+                                 auto* b = static_cast<GtkWidget*>(data);
+                                 if (ev->keyval != GDK_KEY_F2) {
+                                     return false;
+                                 }
+                                 auto* self = static_cast<LibraryView*>(g_object_get_data(G_OBJECT(b), "amb-self"));
+                                 const fs::path& file =
+                                         static_cast<Entry*>(g_object_get_data(G_OBJECT(b), "amb-entry"))->nb.path;
+                                 if (!self->actions.rename || ambitus::drafts::isDraft(file)) {
+                                     return false;
+                                 }
+                                 self->actions.rename(file);
+                                 return true;
+                             }),
+                             tile);
         }
         gtk_container_add(GTK_CONTAINER(body), grid);
     }
@@ -1022,13 +1102,13 @@ auto LibraryView::makeTile(const Entry& e) -> GtkWidget* {
                              return false;
                          }
                          auto* self = static_cast<LibraryView*>(g_object_get_data(G_OBJECT(b), "amb-self"));
-                         self->openCoverPopover(b, *static_cast<Entry*>(g_object_get_data(G_OBJECT(b), "amb-entry")));
+                         self->openCoverMenu(b, *static_cast<Entry*>(g_object_get_data(G_OBJECT(b), "amb-entry")));
                          return true;
                      }),
                      nullptr);
     g_signal_connect(button, "popup-menu", G_CALLBACK(+[](GtkWidget* b, gpointer) -> gboolean {
                          auto* self = static_cast<LibraryView*>(g_object_get_data(G_OBJECT(b), "amb-self"));
-                         self->openCoverPopover(b, *static_cast<Entry*>(g_object_get_data(G_OBJECT(b), "amb-entry")));
+                         self->openCoverMenu(b, *static_cast<Entry*>(g_object_get_data(G_OBJECT(b), "amb-entry")));
                          return true;
                      }),
                      nullptr);
@@ -1243,6 +1323,34 @@ void LibraryView::resumeReady(const ResumeKey& key, size_t total, const std::str
         gtk_label_set_text(GTK_LABEL(resumeMeta), resumeText(r).c_str());
         gtk_widget_queue_draw(resumeThumb);
     }
+}
+
+void LibraryView::openCoverMenu(GtkWidget* tile, const Entry& e) {
+    const fs::path path = e.nb.path;
+    GtkWidget* box = coverMenu->begin(tile, GTK_POS_RIGHT, COVER_MENU_W);
+    // a draft has no name until it is kept: it gets none here
+    if (!ambitus::drafts::isDraft(path)) {
+        coverMenu->addCallItem(
+                box, "xopp-tool-pencil", _("Rename"),
+                [this, path] {
+                    if (actions.rename) {
+                        actions.rename(path);
+                    }
+                },
+                "F2");
+    }
+    // the cover may be redrawn before the item is picked, so the item looks for the tile again
+    auto tileRef = weakRef(tile);
+    coverMenu->addCallItem(box, "xopp-tool-image", _("Change cover…"), [this, tileRef, entry = e] {
+        auto* t = static_cast<GtkWidget*>(g_weak_ref_get(tileRef.get()));
+        if (t) {
+            openCoverPopover(t, entry);
+            g_object_unref(t);
+        }
+    });
+    coverMenu->addSeparator(box);
+    coverMenu->addCallItem(box, "xopp-folder", _("Show in folder"), [this, path] { showInFolder(root, path); });
+    coverMenu->popup();
 }
 
 void LibraryView::openCoverPopover(GtkWidget* tile, const Entry& e) {

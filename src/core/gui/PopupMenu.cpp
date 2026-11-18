@@ -220,6 +220,46 @@ GtkWidget* PopupMenu::addItem(GtkWidget* box, const char* iconName, const char* 
     return b;
 }
 
+GtkWidget* PopupMenu::addCallItem(GtkWidget* box, const char* iconName, const char* text, std::function<void()> run,
+                                  const char* key) {
+    GtkWidget* b = gtk_button_new();
+    gtk_widget_set_can_focus(b, false);
+    addClass(b, ITEM_CLASS);
+    GtkWidget* row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    gtk_box_pack_start(GTK_BOX(row), icon(iconName), false, false, 0);
+    GtkWidget* l = gtk_label_new(text);
+    gtk_label_set_xalign(GTK_LABEL(l), 0);
+    gtk_box_pack_start(GTK_BOX(row), l, true, true, 0);
+    if (key && *key) {
+        GtkWidget* k = gtk_label_new(key);
+        addClass(k, "amb-selpop-key");
+        gtk_box_pack_end(GTK_BOX(row), k, false, false, 0);
+    }
+    gtk_container_add(GTK_CONTAINER(b), row);
+
+    auto* action = new std::function<void()>(std::move(run));
+    g_object_set_data_full(
+            G_OBJECT(b), "amb-run", action, +[](gpointer p) { delete static_cast<std::function<void()>*>(p); });
+    g_signal_connect(b, "clicked", G_CALLBACK(+[](GtkButton* button, PopupMenu* self) {
+                         // the menu goes first; the function is copied, as running it may rebuild the menu
+                         self->close();
+                         auto* fn = static_cast<std::function<void()>*>(g_object_get_data(G_OBJECT(button), "amb-run"));
+                         if (fn && *fn) {
+                             auto run = *fn;
+                             run();
+                         }
+                     }),
+                     this);
+    g_signal_connect(b, "enter-notify-event",
+                     G_CALLBACK(+[](GtkWidget* w, GdkEventCrossing*, PopupMenu* self) -> gboolean {
+                         self->setActive(gtk_widget_get_parent(w), w);
+                         return false;
+                     }),
+                     this);
+    gtk_box_pack_start(GTK_BOX(box), b, false, false, 0);
+    return b;
+}
+
 void PopupMenu::addSubmenuItem(GtkWidget* box, const char* iconName, const char* text,
                                const std::function<void(GtkWidget*)>& fill) {
     GtkWidget* b = gtk_button_new();

@@ -41,6 +41,11 @@ void addRecentFileFilename(const fs::path& filename);
 void removeRecentFileFilename(const fs::path& filename);
 
 /**
+ * Ambitus: a file that was renamed keeps its entry, under its new name. False when it had none.
+ */
+bool moveRecentFileFilename(const fs::path& from, const fs::path& to);
+
+/**
  * Remove all supported files from the recent file list
  */
 void clearRecentFiles();
