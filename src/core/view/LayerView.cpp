@@ -28,11 +28,11 @@ void LayerView::draw(const Context& ctx) const {
     double maxY;
     cairo_clip_extents(ctx.cr, &minX, &minY, &maxX, &maxY);
 
-    auto drawPass = [&](bool highlighterPass) {
+    auto drawPass = [&](bool inkPass) {
         for (auto const& e: layer->getElementsView()) {
-            const bool isHighlighter = e->getType() == ELEMENT_STROKE &&
-                                       static_cast<const Stroke*>(e)->getToolType() == StrokeTool::HIGHLIGHTER;
-            if (isHighlighter != highlighterPass) {
+            const bool isInk = e->getType() == ELEMENT_STROKE &&
+                               static_cast<const Stroke*>(e)->getToolType() != StrokeTool::HIGHLIGHTER;
+            if (isInk != inkPass) {
                 continue;
             }
 
@@ -53,9 +53,10 @@ void LayerView::draw(const Context& ctx) const {
         }
     };
 
-    // Ambitus: within a layer, paint the highlighter strokes first so the ink is always on top of them.
-    // The document order is unchanged; only the painting order is.
-    drawPass(true);
+    // Ambitus: within a layer, the pen strokes are painted last, so the ink is always on top of the highlighter.
+    // Images, texts and formulas keep their place among the highlighter strokes: a highlighter over an image stays
+    // visible. The document order is unchanged; only the painting order is.
     drawPass(false);
+    drawPass(true);
     IF_DEBUG_REPAINT(g_message("DBG:LayerView::draw: draw %i / not draw %i", drawn, notDrawn););
 }
