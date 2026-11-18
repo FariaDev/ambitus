@@ -60,6 +60,7 @@ class NewNotebookDialog;
 class KeepDraftCard;
 class RenameCard;
 class VersionsPanel;
+class SidePane;
 enum class EditorMode;
 namespace newnotebook {
 enum class Paper;
@@ -153,7 +154,8 @@ public:
     /// Ambitus: an error card that stays until closed; the technical detail goes to its "Copy the detail" button
     void showToastError(const std::string& text, const std::string& detail);
     /// Ambitus: the command palette (see ambitus::CommandPalette)
-    void openCommandPalette();
+    /// beside: the palette opens to put a notebook beside the one in the window
+    void openCommandPalette(bool beside = false);
     /// Ambitus: the "New notebook" card (see ambitus::NewNotebookDialog). `folder` is where it starts, when the caller
     /// knows (the folder the library shows); else the folder the library shows, else the one of the open notebook.
     void showNewNotebook(const fs::path& folder = {});
@@ -186,6 +188,8 @@ public:
     void boardContentChanged();
     /// Ambitus: the open documents changed (opened, closed, saved, edited)
     void tabsChanged();
+    /// Ambitus: with a notebook beside, the Studio palette is centred over the pages on the left (see SidePane)
+    void placeStudioPalette();
     /// Ambitus: "New draft" opens the card of the new notebook without its name and subject (see ambitus::drafts)
     void newDraft();
     /// Ambitus: makes the draft with the paper and the size chosen in that card; it saves on its own
@@ -344,6 +348,9 @@ private:
     bool draftDiscardOnClose = false;
     /// Ambitus: the versions of the notebook, at the right of the page, and the preview of one over it
     std::unique_ptr<ambitus::VersionsPanel> versionsPanel;
+    /// Ambitus: the pages and, beside them, the notebook shown read only (the split of the editor)
+    GtkWidget* sideSplit = nullptr;
+    std::unique_ptr<ambitus::SidePane> sidePane;
     /// Ambitus: minimap and zoom of a board
     std::unique_ptr<ambitus::BoardNavigator> boardNavigator;
     /// Ambitus: client side title bar

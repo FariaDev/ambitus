@@ -6038,3 +6038,19 @@ msgstr "Reabrir aba fechada"
 
 msgid "Open with the tabs from last time"
 msgstr "Abrir com as abas da última vez"
+
+msgid "Open beside"
+msgstr "Abrir ao lado"
+
+msgctxt "Title bar menu"
+msgid "Open beside…"
+msgstr "Abrir ao lado…"
+
+msgid "Notebook to open beside…"
+msgstr "Caderno para abrir ao lado…"
+
+msgid "Write here"
+msgstr "Escrever aqui"
+
+msgid "Page {1} of {2}"
+msgstr "Página {1} de {2}"

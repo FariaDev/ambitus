@@ -114,6 +114,10 @@ bool overWidget(GtkWidget* from, GtkWidget* target, double x, double y) {
 
 void TitleBar::openTabMenu(GtkWidget* tab, size_t index) {
     GtkWidget* box = moreMenu.begin(tab, GTK_POS_BOTTOM, MENU_WIDTH);
+    // the notebook in the window is not beside itself, and one beside is there already
+    if (onBeside && index < items.size() && !items[index].active && !items[index].beside) {
+        moreMenu.addCallItem(box, "xopp-columns-2", _("Open beside"), [this, index] { onBeside(index); });
+    }
     moreMenu.addItem(box, "xopp-x", _("Close"), "close-tab", g_variant_new_uint64(index));
     moreMenu.popup();
 }
@@ -145,6 +149,7 @@ void TitleBar::openMenu() {
                                   "earlier-versions", nullptr));
     moreMenu.addSeparator(box);
     moreMenu.addItem(box, "xopp-search", C_("Title bar menu", "Commands and notebooks"), "command-palette", nullptr);
+    onlyInEditor(moreMenu.addItem(box, "xopp-columns-2", C_("Title bar menu", "Open beside…"), "open-beside", nullptr));
     moreMenu.addItem(box, "xopp-settings", C_("Title bar menu", "Settings"), "app.preferences", nullptr);
     moreMenu.addSeparator(box);
     moreMenu.addItem(box, "xopp-book", C_("Title bar menu", "About Ambitus"), "app.about", nullptr);
@@ -179,6 +184,8 @@ void TitleBar::setTabCallbacks(std::function<void(size_t)> activate, std::functi
 }
 
 void TitleBar::setRenameCallback(std::function<void(size_t)> rename) { onRename = std::move(rename); }
+
+void TitleBar::setBesideCallback(std::function<void(size_t)> beside) { onBeside = std::move(beside); }
 
 void TitleBar::closeLater(size_t index) {
     if (!onClose) {
@@ -255,6 +262,10 @@ void TitleBar::rebuildTabs() {
                          }),
                          nullptr);
         gtk_container_add(GTK_CONTAINER(box), dot);
+        if (it.beside) {
+            // the notebook beside the one in the window: the same mark as on its pane
+            gtk_container_add(GTK_CONTAINER(box), gtk_image_new_from_icon_name("xopp-columns-2", GTK_ICON_SIZE_MENU));
+        }
 
         GtkWidget* label = gtk_label_new((it.modified ? it.title + " •" : it.title).c_str());
         gtk_label_set_ellipsize(GTK_LABEL(label), PANGO_ELLIPSIZE_END);

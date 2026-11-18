@@ -1348,6 +1348,13 @@ void LibraryView::openCoverMenu(GtkWidget* tile, const Entry& e) {
             g_object_unref(t);
         }
     });
+    if (actions.openBeside && actions.hasNotebookInWindow && actions.hasNotebookInWindow()) {
+        coverMenu->addCallItem(box, "xopp-columns-2", _("Open beside"), [this, path] {
+            if (actions.openBeside) {
+                actions.openBeside(path);
+            }
+        });
+    }
     coverMenu->addSeparator(box);
     coverMenu->addCallItem(box, "xopp-folder", _("Show in folder"), [this, path] { showInFolder(root, path); });
     coverMenu->popup();

@@ -2018,6 +2018,11 @@ void StudioPalette::setVisible(bool visible) {
     }
 }
 
+void StudioPalette::setSpan(int start, int end) {
+    gtk_widget_set_margin_start(root, start);
+    gtk_widget_set_margin_end(root, end);
+}
+
 void StudioPalette::openPanel() {
     if (gtk_widget_get_visible(root) && !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(state->more))) {
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(state->more), true);

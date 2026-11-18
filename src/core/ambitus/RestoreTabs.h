@@ -4,6 +4,8 @@
  * The list of tabs to open at startup, saved as one setting. Paths may hold any
  * character but NUL: backslash, tab, newline and carriage return are escaped,
  * so a name with spaces, quotes, accents or even a newline survives the trip.
+ * The last field of a line is 1 for the tab in the window, 2 for the tab shown
+ * beside it, 0 for the others. Lists saved before the side pane only have 0 and 1.
  *
  * @license GNU GPLv2 or later
  */
@@ -22,8 +24,12 @@ struct SavedTab {
     fs::path path;
     int page = 0;
     bool active = false;
+    /// the notebook shown beside the one in the window
+    bool beside = false;
 
-    bool operator==(const SavedTab& o) const { return path == o.path && page == o.page && active == o.active; }
+    bool operator==(const SavedTab& o) const {
+        return path == o.path && page == o.page && active == o.active && beside == o.beside;
+    }
 };
 
 namespace detail {
@@ -78,7 +84,7 @@ inline std::string unescape(std::string_view text) {
 }
 }  // namespace detail
 
-/// One tab per line: escaped path, page, and whether it was the active one, separated by tabs.
+/// One tab per line: escaped path, page, and whether it was the active one (or the one beside), separated by tabs.
 inline std::string serialize(const std::vector<SavedTab>& tabs) {
     std::string out;
     for (auto const& tab: tabs) {
@@ -86,7 +92,7 @@ inline std::string serialize(const std::vector<SavedTab>& tabs) {
         out += '\t';
         out += std::to_string(tab.page);
         out += '\t';
-        out += tab.active ? '1' : '0';
+        out += tab.beside ? '2' : (tab.active ? '1' : '0');
         out += '\n';
     }
     return out;
@@ -117,7 +123,8 @@ inline std::vector<SavedTab> deserialize(std::string_view text) {
         } catch (...) {
             page = 0;
         }
-        out.push_back({fs::path(detail::unescape(line.substr(0, first))), page, line.substr(second + 1) == "1"});
+        const std::string_view flag = line.substr(second + 1);
+        out.push_back({fs::path(detail::unescape(line.substr(0, first))), page, flag == "1", flag == "2"});
     }
     return out;
 }

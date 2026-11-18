@@ -225,7 +225,7 @@ CommandPalette::CommandPalette(GtkOverlay* overlay, GtkWindow* window, std::func
                          switch (e->keyval) {
                              case GDK_KEY_Return:
                              case GDK_KEY_KP_Enter:
-                                 self->runSelected();
+                                 self->runSelected((e->state & GDK_MOD1_MASK) != 0);  // Alt+Enter: beside
                                  return TRUE;
                              case GDK_KEY_Escape:
                                  self->close();
@@ -281,7 +281,7 @@ CommandPalette::CommandPalette(GtkOverlay* overlay, GtkWindow* window, std::func
                      this);
     g_signal_connect(list, "row-activated", G_CALLBACK(+[](GtkListBox*, GtkListBoxRow* row, CommandPalette* self) {
                          gtk_list_box_select_row(GTK_LIST_BOX(self->list), row);
-                         self->runSelected();
+                         self->runSelected(false);
                      }),
                      this);
     // once faded out, the revealer goes away, so it takes no clicks from the page
@@ -341,8 +341,11 @@ std::string CommandPalette::shortcutOf(const Command& c) const {
     return out;
 }
 
-void CommandPalette::open() {
+void CommandPalette::open(bool beside) {
+    besideMode = beside;
+    gtk_label_set_text(GTK_LABEL(hint), beside ? _("Notebook to open beside…") : _("Command or notebook…"));
     if (isOpen()) {
+        refresh();
         gtk_widget_grab_focus(entry);
         gtk_editable_select_region(GTK_EDITABLE(entry), 0, -1);
         return;
@@ -482,7 +485,9 @@ void CommandPalette::refresh() {
     gtk_widget_set_visible(hint, shownQuery.empty());
     std::vector<Candidate> cmdCandidates, bookCandidates;
     for (auto const& c: commands) {
-        cmdCandidates.push_back({c.label, c.path});
+        if (!besideMode) {  // the box that opens beside shows the notebooks only
+            cmdCandidates.push_back({c.label, c.path});
+        }
     }
     for (auto const& b: books) {
         bookCandidates.push_back({b.name, b.place});
@@ -545,7 +550,7 @@ void CommandPalette::scrollTo(GtkListBoxRow* row) {
     }
 }
 
-void CommandPalette::runSelected() {
+void CommandPalette::runSelected(bool beside) {
     GtkListBoxRow* row = gtk_list_box_get_selected_row(GTK_LIST_BOX(list));
     if (!row) {
         return;
@@ -566,7 +571,9 @@ void CommandPalette::runSelected() {
     } else {
         const fs::path path = books[chosen.index].path;
         close();
-        if (notebooks.open) {
+        if ((beside || besideMode) && notebooks.openBeside) {
+            notebooks.openBeside(path);
+        } else if (notebooks.open) {
             notebooks.open(path);
         }
     }

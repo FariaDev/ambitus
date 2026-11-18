@@ -1816,3 +1816,104 @@ label.amb-setup-kbd {
     box-shadow: none;
 }
 #mainWindow.darkMode toolbar.editing { border-color: @amb_dk_border_strong; }
+
+/* ---------- lado a lado (ladoalado.html; SidePane.cpp) ----------
+   À direita do editor, o caderno de referência: cabeçalho de 34 px (o ícone de colunas, o nome, "Escrever aqui" e ✕),
+   as páginas sobre o fundo "palco" (@amb_layer) e um rodapé de 30 px (página, passos, zoom). O divisor tem 6 px, com a
+   pegada de 2×28 no meio. */
+
+paned.amb-split > separator {
+    min-width: 6px;
+    min-height: 6px;
+    border: none;
+    background-color: @amb_border;
+    background-image: linear-gradient(@amb_border_strong, @amb_border_strong);
+    background-size: 2px 28px;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.amb-side {
+    background: @amb_bg;
+    color: @amb_text;
+    font-size: 13px;
+}
+.amb-side .amb-side-head {
+    min-height: 34px;
+    padding: 0 6px 0 10px;
+    border-bottom: 1px solid @amb_border;
+    color: @amb_text2;
+}
+.amb-side .amb-side-title { font-weight: 600; color: @amb_text; }
+.amb-side button.amb-side-swap {
+    background-image: none;
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid @amb_border_strong;
+    border-radius: 6px;
+    min-height: 0;
+    padding: 2px 8px;
+    color: @amb_text;
+    font-size: 12.5px;
+}
+.amb-side button.amb-side-swap:hover { background: @amb_hover; }
+.amb-side button.amb-side-swap:active { background: @amb_active; }
+.amb-side button.amb-side-close,
+.amb-side button.amb-side-step,
+.amb-side button.amb-side-zoom {
+    background-image: none;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    border-radius: 4px;
+    min-width: 26px;
+    min-height: 26px;
+    padding: 0;
+    color: @amb_text2;
+}
+.amb-side button.amb-side-close:hover,
+.amb-side button.amb-side-step:hover,
+.amb-side button.amb-side-zoom:hover { background: @amb_hover; color: @amb_text; }
+.amb-side button.amb-side-close:active,
+.amb-side button.amb-side-step:active,
+.amb-side button.amb-side-zoom:active { background: @amb_active; color: @amb_text; }
+.amb-side button.amb-side-step:disabled,
+.amb-side button.amb-side-step:disabled:hover { color: @amb_border_strong; background: transparent; }
+.amb-side scrolledwindow.amb-side-stage,
+.amb-side scrolledwindow.amb-side-stage viewport { background: transparent; outline: none; }
+.amb-side .amb-side-pages { background: @amb_layer; }
+.amb-side .amb-side-foot {
+    min-height: 30px;
+    padding: 0 10px;
+    border-top: 1px solid @amb_border;
+    color: @amb_text3;
+    font-size: 12.5px;
+}
+.amb-side .amb-side-page { color: @amb_text; font-weight: 500; }
+.amb-side .amb-side-zoom-value { color: @amb_text; font-weight: 500; min-width: 44px; }
+
+#mainWindow.darkMode paned.amb-split > separator {
+    background-color: @amb_dk_border;
+    background-image: linear-gradient(@amb_dk_border_strong, @amb_dk_border_strong);
+}
+#mainWindow.darkMode .amb-side { background: @amb_dk_bg; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-side .amb-side-head { border-bottom-color: @amb_dk_border; color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-side .amb-side-title { color: @amb_dk_text; }
+#mainWindow.darkMode .amb-side button.amb-side-swap { border-color: @amb_dk_border_strong; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-side button.amb-side-swap:hover { background: @amb_dk_hover; }
+#mainWindow.darkMode .amb-side button.amb-side-swap:active { background: @amb_dk_active; }
+#mainWindow.darkMode .amb-side button.amb-side-close,
+#mainWindow.darkMode .amb-side button.amb-side-step,
+#mainWindow.darkMode .amb-side button.amb-side-zoom { color: @amb_dk_text2; }
+#mainWindow.darkMode .amb-side button.amb-side-close:hover,
+#mainWindow.darkMode .amb-side button.amb-side-step:hover,
+#mainWindow.darkMode .amb-side button.amb-side-zoom:hover { background: @amb_dk_hover; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-side button.amb-side-close:active,
+#mainWindow.darkMode .amb-side button.amb-side-step:active,
+#mainWindow.darkMode .amb-side button.amb-side-zoom:active { background: @amb_dk_active; color: @amb_dk_text; }
+#mainWindow.darkMode .amb-side button.amb-side-step:disabled,
+#mainWindow.darkMode .amb-side button.amb-side-step:disabled:hover { color: @amb_dk_border_strong; }
+#mainWindow.darkMode .amb-side .amb-side-pages { background: @amb_dk_layer; }
+#mainWindow.darkMode .amb-side .amb-side-foot { border-top-color: @amb_dk_border; color: @amb_dk_text3; }
+#mainWindow.darkMode .amb-side .amb-side-page,
+#mainWindow.darkMode .amb-side .amb-side-zoom-value { color: @amb_dk_text; }

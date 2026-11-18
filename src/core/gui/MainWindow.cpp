@@ -70,6 +70,7 @@
 #include "SelectionBar.h"  // for SelectionBar
 #include "SettingsCard.h"
 #include "SetupCard.h"
+#include "SidePane.h"
 #include "StudioPalette.h"       // for StudioPalette
 #include "TitleBar.h"            // for TitleBar
 #include "Toast.h"               // for Toast
@@ -137,6 +138,8 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
         ambitus::library::LibraryView::Actions actions;
         actions.open = [control](const fs::path& p) { control->openInTab(p); };
         actions.openAt = [control](const fs::path& p, size_t page) { control->openInTab(p, static_cast<int>(page)); };
+        actions.openBeside = [control](const fs::path& p) { control->openBeside(p); };
+        actions.hasNotebookInWindow = [control] { return control->hasNotebookInWindow(); };
         actions.searchInk = [control] {
             auto* s = control->getSettings();
             return s->getAmbitusSummaBridge() && s->getAmbitusSearchInk();
@@ -192,11 +195,20 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
     // before the notices, so they go over the preview of a version
     this->versionsPanel = std::make_unique<ambitus::VersionsPanel>(control, overlay, winXournal, xournal->getWidget());
     gtk_box_pack_end(GTK_BOX(gtk_widget_get_parent(winXournal)), versionsPanel->getWidget(), false, false, 0);
+    // Ambitus: the notebook beside the one in the window, in the other half of the split (starts hidden)
+    this->sidePane = std::make_unique<ambitus::SidePane>(control, sideSplit);
+    // the palette of the Studio follows the pages on the left while the divider moves and the window is resized
+    g_signal_connect(sideSplit, "notify::position",
+                     G_CALLBACK(+[](GtkWidget*, GParamSpec*, MainWindow* self) { self->placeStudioPalette(); }), this);
+    g_signal_connect_after(sideSplit, "size-allocate",
+                           G_CALLBACK(+[](GtkWidget*, GdkRectangle*, MainWindow* self) { self->placeStudioPalette(); }),
+                           this);
     this->toast = std::make_unique<ambitus::Toast>(overlay, winXournal);
     ambitus::CommandPalette::Notebooks paletteBooks;
     paletteBooks.all = [this] { return library->allNotebooks(); };
     paletteBooks.recent = [this] { return library->recentNotebooks(); };
     paletteBooks.open = [control](const fs::path& p) { control->openInTab(p); };  // as the library opens one
+    paletteBooks.openBeside = [control](const fs::path& p) { control->openBeside(p); };
     this->commandPalette = std::make_unique<ambitus::CommandPalette>(
             overlay, GTK_WINDOW(this->window), [this] { return getMenuModel(); }, xournal->getWidget(),
             std::move(paletteBooks));
@@ -328,6 +340,7 @@ void MainWindow::populate(GladeSearchpath* gladeSearchPath) {
                 }
             },
             [this](size_t i) { control->closeTab(i); });
+    titleBar->setBesideCallback([this](size_t i) { control->openBesideTab(i); });
     titleBar->setRenameCallback([this](size_t i) {
         const auto tabs = control->getTabs();
         if (i < tabs.size()) {
@@ -338,7 +351,27 @@ void MainWindow::populate(GladeSearchpath* gladeSearchPath) {
     titleBar->setEditorShown(!isLibraryShown());
 }
 
+void MainWindow::placeStudioPalette() {
+    if (!studioPalette) {
+        return;
+    }
+    GtkWidget* editorOverlay = get("mainOverlay");
+    int left = 0;
+    int top = 0;
+    if (!sidePane || !sidePane->isShown() ||
+        !gtk_widget_translate_coordinates(winXournal, editorOverlay, 0, 0, &left, &top)) {
+        studioPalette->setSpan(0, 0);
+        return;
+    }
+    const int right = gtk_widget_get_allocated_width(editorOverlay) - left - gtk_widget_get_allocated_width(winXournal);
+    studioPalette->setSpan(left, std::max(0, right));
+}
+
 void MainWindow::tabsChanged() {
+    if (sidePane) {
+        sidePane->show(control->getSideNotebook());
+        placeStudioPalette();
+    }
     if (!titleBar) {
         return;
     }
@@ -354,6 +387,7 @@ void MainWindow::tabsChanged() {
         }
         it.color = library ? library->colorOf(t.path) : "";
         it.active = t.active;
+        it.beside = t.beside;
         it.modified = t.modified;
         // a draft is named when it is kept (see KeepDraftCard), an untitled notebook has no file yet
         it.renamable = !t.path.empty() && !ambitus::drafts::isDraft(t.path);
@@ -503,12 +537,12 @@ void MainWindow::versionsRestored() {
     }
 }
 
-void MainWindow::openCommandPalette() {
+void MainWindow::openCommandPalette(bool beside) {
     if (isLibraryShown()) {
         // the box lives over the page; in the library, Ctrl+K goes on putting the keyboard in its search
         library->focusSearch();
     } else if (commandPalette) {
-        commandPalette->open();
+        commandPalette->open(beside);
     }
 }
 
@@ -1250,8 +1284,13 @@ void MainWindow::initXournalWidget() {
     gtk_widget_set_hexpand(winXournal, true);
     gtk_widget_set_vexpand(winXournal, true);
     gtk_box_pack_start(GTK_BOX(pageRow), winXournal, true, true, 0);
-    gtk_box_pack_start(GTK_BOX(content), pageRow, true, true, 0);
     gtk_widget_show(pageRow);
+    // Ambitus: the pages on the left, and on the right the notebook beside them, read only (SidePane)
+    sideSplit = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_style_context_add_class(gtk_widget_get_style_context(sideSplit), "amb-split");
+    gtk_paned_pack1(GTK_PANED(sideSplit), pageRow, true, false);
+    gtk_box_pack_start(GTK_BOX(content), sideSplit, true, true, 0);
+    gtk_widget_show(sideSplit);
 
     scrollHandling = std::make_unique<ScrollHandling>(GTK_SCROLLED_WINDOW(winXournal));
 

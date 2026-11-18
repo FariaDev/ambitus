@@ -25,6 +25,7 @@
 #include "util/PathUtil.h"
 #include "util/Util.h"
 
+#include "SideTab.h"
 #include "Tabs.h"
 
 namespace ambitus::tabs {
@@ -83,6 +84,7 @@ void Control::ensureActiveTab() {
     const size_t at = ambitus::tabs::insertAt(tabs.size(), newTabAfter);
     newTabAfter = ambitus::NO_TAB;
     tabs.insert(tabs.begin() + static_cast<std::ptrdiff_t>(at), ambitus::Tab{path, nullptr, {}, {}, nextTabSerial++});
+    sideTab = ambitus::sidetab::afterInsert(sideTab, at);
     activeTab = at;
 }
 
@@ -100,6 +102,7 @@ void Control::parkActiveTab() {
     metadata->documentChanged();
 
     auto& tab = tabs[activeTab];
+    tab.page = static_cast<int>(getCurrentPageNo());
     tab.doc = std::make_unique<Document>(quietHandler());
     tab.doc->lock();
     doc->lock_shared();
@@ -186,7 +189,13 @@ void Control::activateTab(size_t index) {
         }
         return;
     }
+    const size_t previous = activeTab;
     parkActiveTab();
+    if (index == sideTab) {
+        flushSidePage();  // the notebook comes into the window at the page the pane had
+    }
+    // Ambitus: the side tab swaps with the one that was in the window: that one goes beside, at its page
+    sideTab = ambitus::sidetab::afterSwap(sideTab, index, previous);
 
     auto& tab = tabs[index];
     activeTab = index;
@@ -206,7 +215,7 @@ void Control::activateTab(size_t index) {
     tabsChanged();
 }
 
-void Control::openInTab(fs::path filepath, int scrollToPage) {
+void Control::openInTab(fs::path filepath, int scrollToPage, bool beside) {
     for (size_t i = 0; i < tabs.size(); i++) {
         fs::path path = tabs[i].path;
         if (i == activeTab) {
@@ -215,6 +224,10 @@ void Control::openInTab(fs::path filepath, int scrollToPage) {
             doc->unlock_shared();
         }
         if (!path.empty() && path == filepath) {
+            if (beside && activeTab != ambitus::NO_TAB) {
+                openBesideTab(i);
+                return;
+            }
             activateTab(i);
             if (scrollToPage >= 0) {
                 scrollHandler->scrollToPage(static_cast<size_t>(scrollToPage));
@@ -229,13 +242,22 @@ void Control::openInTab(fs::path filepath, int scrollToPage) {
     startNewTab();
     const size_t previous = newTabAfter;  // the tab put aside, to come back to if the file does not open
     // the new document gets its tab when it is loaded (fileLoaded → updateWindowTitle → ensureActiveTab)
-    openFileWithoutSavingTheCurrentDocument(std::move(filepath), false, scrollToPage, [ctrl = this, previous](bool ok) {
-        ctrl->newTabAfter = ambitus::NO_TAB;
-        if (!ok && ctrl->activeTab == ambitus::NO_TAB && previous != ambitus::NO_TAB) {
-            ctrl->activateTab(previous);
-        }
-        ctrl->tabsChanged();
-    });
+    openFileWithoutSavingTheCurrentDocument(
+            std::move(filepath), false, scrollToPage, [ctrl = this, previous, beside](bool ok) {
+                ctrl->newTabAfter = ambitus::NO_TAB;
+                if (ok && beside && previous != ambitus::NO_TAB && ctrl->activeTab != ambitus::NO_TAB &&
+                    ctrl->activeTab != previous) {
+                    // Ambitus: the notebook opened goes beside the one that stayed in the window
+                    const size_t opened = ctrl->activeTab;
+                    ctrl->activateTab(previous);
+                    ctrl->flushSidePage();
+                    ctrl->sideTab = opened;
+                }
+                if (!ok && ctrl->activeTab == ambitus::NO_TAB && previous != ambitus::NO_TAB) {
+                    ctrl->activateTab(previous);
+                }
+                ctrl->tabsChanged();
+            });
 }
 
 void Control::startNewTab() {
@@ -255,6 +277,10 @@ void Control::closeTab(size_t index) {
     if (index >= tabs.size()) {
         return;
     }
+    if (index == sideTab) {
+        closeSideTab();  // Ambitus: the side pane closes, its notebook stays a tab
+        return;
+    }
     activateTab(index);
     fs::path path;
     doc->lock_shared();
@@ -272,6 +298,7 @@ void Control::closeTab(size_t index) {
                 const size_t closedTab = ctrl->activeTab;
                 const size_t next = ambitus::tabs::afterClose(ctrl->tabs.size(), closedTab, closedTab);
                 ctrl->tabs.erase(ctrl->tabs.begin() + static_cast<std::ptrdiff_t>(closedTab));
+                ctrl->sideTab = ambitus::sidetab::afterErase(ctrl->sideTab, closedTab);
                 ctrl->activeTab = ambitus::NO_TAB;
                 if (next != ambitus::NO_TAB) {
                     ctrl->activateTab(next);
@@ -290,6 +317,8 @@ auto Control::getTabs() const -> std::vector<ambitus::TabInfo> {
     for (size_t i = 0; i < tabs.size(); i++) {
         ambitus::TabInfo info;
         info.active = i == activeTab;
+        info.beside = i == sideTab;
+        info.serial = tabs[i].serial;
         if (info.active) {
             doc->lock_shared();
             info.path = doc->getFilepath();
@@ -383,10 +412,12 @@ std::vector<ambitus::restoretabs::SavedTab> Control::tabsForRestore() const {
         int page = 0;
         if (info.active) {
             page = static_cast<int>(getCurrentPageNo());
+        } else if (info.beside) {
+            page = getSideNotebook().page;  // the page the side pane is on, not yet written with the metadata
         } else if (auto metadata = MetadataManager::getForFile(info.path)) {
             page = metadata->page;
         }
-        tabs.push_back({info.path, page, info.active});
+        tabs.push_back({info.path, page, info.active, info.beside});
     }
     return tabs;
 }
@@ -410,28 +441,102 @@ bool Control::restoreTabsFromLastTime() {
         return false;
     }
     size_t active = 0;
+    fs::path beside;  // Ambitus: the notebook that was shown beside the one in the window, and its page
+    int besidePage = 0;
     for (size_t i = 0; i < tabs.size(); i++) {
         if (tabs[i].active) {
             active = i;
-            break;
+        }
+        if (tabs[i].beside) {
+            beside = tabs[i].path;
+            besidePage = tabs[i].page;
         }
     }
     for (auto const& tab: tabs) {
         openInTab(tab.path, tab.page);
     }
     activateTab(active);
+    if (!beside.empty() && beside != tabs[active].path) {
+        for (size_t i = 0; i < this->tabs.size(); i++) {
+            if (i != activeTab && this->tabs[i].path == beside) {
+                sideTab = i;
+                break;
+            }
+        }
+    }
     // Every load queues a metadata callback on the main loop. A tab parked before its callback runs would remember
     // page one instead of the page it was saved at. Once those callbacks have gone, put the pages back and show the
-    // active notebook at its own page.
-    Util::execInUiThread([ctrl = this, tabs = std::move(tabs), active]() {
+    // active notebook at its own page, and the one beside at its page too.
+    Util::execInUiThread([ctrl = this, tabs = std::move(tabs), active, besidePage]() {
         for (auto const& tab: tabs) {
             ctrl->metadata->storeMetadata(tab.path, tab.page, ctrl->zoom->getZoomReal());
             ctrl->metadata->documentChanged();
         }
         ctrl->scrollHandler->scrollToPage(static_cast<size_t>(tabs[active].page));
+        if (ctrl->sideTab != ambitus::NO_TAB) {
+            ctrl->storeSidePage(besidePage);
+            ctrl->flushSidePage();
+        }
+        ctrl->tabsChanged();
     });
     tabsChanged();
     return true;
+}
+
+void Control::openBeside(fs::path filepath) { openInTab(std::move(filepath), -1, true); }
+
+void Control::openBesideTab(size_t index) {
+    if (index >= tabs.size() || index == activeTab) {
+        return;  // the notebook in the window is already there
+    }
+    if (activeTab == ambitus::NO_TAB) {
+        activateTab(index);  // nothing in the window to keep: the notebook goes there
+        return;
+    }
+    flushSidePage();
+    sideTab = index;
+    if (win) {
+        win->showEditor();
+    }
+    tabsChanged();
+}
+
+void Control::closeSideTab() {
+    flushSidePage();
+    sideTab = ambitus::NO_TAB;
+    tabsChanged();
+}
+
+ambitus::SideNotebook Control::getSideNotebook() const {
+    ambitus::SideNotebook side;
+    if (sideTab == ambitus::NO_TAB || sideTab >= tabs.size() || !tabs[sideTab].doc) {
+        return side;
+    }
+    side.doc = tabs[sideTab].doc.get();
+    side.serial = tabs[sideTab].serial;
+    side.path = tabs[sideTab].path;
+    side.page = tabs[sideTab].page;
+    return side;
+}
+
+void Control::storeSidePage(int page) {
+    if (sideTab != ambitus::NO_TAB && sideTab < tabs.size()) {
+        tabs[sideTab].page = page;
+    }
+}
+
+void Control::flushSidePage() {
+    if (sideTab == ambitus::NO_TAB || sideTab >= tabs.size()) {
+        return;
+    }
+    const auto& tab = tabs[sideTab];
+    if (tab.path.empty()) {
+        return;  // a notebook without a file has no place to keep its page
+    }
+    // the editor opens the notebook at the page kept with it when it is put in the window
+    const auto entry = MetadataManager::getForFile(tab.path);
+    metadata->storeMetadata(tab.path, tab.page, entry ? entry->zoom : zoom->getZoomReal());
+    metadata->documentChanged();
 }
 
 void Control::tabsChanged() {

@@ -1,3 +1,4 @@
+#include <cmath>
 #include <set>
 #include <string>
 #include <vector>
@@ -72,6 +73,63 @@ TEST(RestoreTabsTest, roundTripsAwkwardNamesAndPages) {
     EXPECT_NE(saved.find('\t'), std::string::npos);
     EXPECT_EQ(restoretabs::deserialize(saved), tabs);
     EXPECT_TRUE(restoretabs::deserialize("").empty());
+}
+
+TEST(RestoreTabsTest, theTabBesideRoundTripsWithItsOwnFlag) {
+    const std::vector<restoretabs::SavedTab> tabs = {
+            {fs::path("/vault/in window.xopp"), 3, true, false},
+            {fs::path("/vault/beside.xopp"), 5, false, true},
+            {fs::path("/vault/aside.xopp"), 0, false, false},
+    };
+    const std::string saved = restoretabs::serialize(tabs);
+    EXPECT_NE(saved.find("\t2\n"), std::string::npos);
+    EXPECT_EQ(restoretabs::deserialize(saved), tabs);
+}
+
+TEST(RestoreTabsTest, listsSavedBeforeTheSideTabStillLoad) {
+    // the lines of the sessions before the side tab: 1 for the tab in the window, 0 for the others
+    const auto tabs = restoretabs::deserialize("/vault/A.xopp\t3\t1\n/vault/B.xopp\t0\t0\n");
+    ASSERT_EQ(tabs.size(), 2u);
+    EXPECT_TRUE(tabs[0].active);
+    EXPECT_FALSE(tabs[0].beside);
+    EXPECT_FALSE(tabs[1].active);
+    EXPECT_FALSE(tabs[1].beside);
+    EXPECT_EQ(tabs[0].page, 3);
+}
+
+TEST(RestoreTabsTest, theTabBesideIsNotTheActiveOne) {
+    const auto tabs = restoretabs::deserialize("/vault/A.xopp\t1\t1\n/vault/B.xopp\t4\t2\n");
+    ASSERT_EQ(tabs.size(), 2u);
+    EXPECT_TRUE(tabs[0].active);
+    EXPECT_FALSE(tabs[0].beside);
+    EXPECT_FALSE(tabs[1].active);
+    EXPECT_TRUE(tabs[1].beside);
+    EXPECT_EQ(tabs[1].page, 4);
+}
+
+TEST(SettingsTest, sideRatioIsKeptWithinBoundsAndSurvivesASave) {
+    const fs::path outPath = fs::temp_directory_path() / "xournalpp-test-units_Settings_sideRatio.xml";
+    if (fs::exists(outPath)) {
+        fs::remove(outPath);
+    }
+
+    Settings settings(outPath);
+    EXPECT_DOUBLE_EQ(settings.getAmbitusSideRatio(), 0.4);
+    settings.setAmbitusSideRatio(0.55);
+    settings.save();
+
+    Settings loaded(outPath);
+    loaded.load();
+    EXPECT_DOUBLE_EQ(loaded.getAmbitusSideRatio(), 0.55);
+
+    loaded.setAmbitusSideRatio(3.0);
+    EXPECT_DOUBLE_EQ(loaded.getAmbitusSideRatio(), 0.8);
+    loaded.setAmbitusSideRatio(0.01);
+    EXPECT_DOUBLE_EQ(loaded.getAmbitusSideRatio(), 0.2);
+    loaded.setAmbitusSideRatio(std::nan(""));
+    EXPECT_DOUBLE_EQ(loaded.getAmbitusSideRatio(), 0.4);
+
+    fs::remove(outPath);
 }
 
 TEST(SettingsTest, openTabsFromLastTimeIsOnByDefaultAndRemembered) {

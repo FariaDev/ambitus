@@ -69,6 +69,9 @@ public:
         std::function<void(const fs::path&)> rename;
         /// whether the search may read the handwriting through Summa (the settings); unset: it may
         std::function<bool()> searchInk;
+        /// a notebook beside the one in the window (its cover menu says "Open beside" while there is one in the window)
+        std::function<void(const fs::path&)> openBeside;
+        std::function<bool()> hasNotebookInWindow;
     };
 
     /// storeFile: covers and folders (config); indexFile: the search index (cache)

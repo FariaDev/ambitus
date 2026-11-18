@@ -37,6 +37,7 @@ public:
         std::function<std::vector<library::NotebookRef>()> all;     ///< every notebook, newest first
         std::function<std::vector<library::NotebookRef>()> recent;  ///< the ones opened last, newest first
         std::function<void(const fs::path&)> open;                  ///< as the library opens one
+        std::function<void(const fs::path&)> openBeside;            ///< beside the notebook in the window
     };
 
     CommandPalette(GtkOverlay* overlay, GtkWindow* window, std::function<GMenuModel*()> menu, GtkWidget* focusBack,
@@ -45,7 +46,9 @@ public:
     CommandPalette(const CommandPalette&) = delete;
     CommandPalette& operator=(const CommandPalette&) = delete;
 
-    void open();
+    /// beside: the palette is for the notebook to open beside the one in the window, and shows only notebooks;
+    /// Alt+Enter opens beside in any case
+    void open(bool beside = false);
     void close();
     bool isOpen() const;
 
@@ -54,7 +57,7 @@ private:
     void select(int index);
     void move(int delta);
     void scrollTo(GtkListBoxRow* row);
-    void runSelected();
+    void runSelected(bool beside);
     GtkWidget* makeRow(const PaletteRow& row, const std::string& query);
     std::string shortcutOf(const Command& c) const;
     GActionGroup* groupOf(const std::string& action, std::string& name) const;
@@ -76,6 +79,7 @@ private:
     std::vector<PaletteRow> shown;            ///< in the order of the rows
     std::string shownQuery;                   ///< the text the rows are for
     bool opening = false;                     ///< the text is being cleared: no new search for it
+    bool besideMode = false;                  ///< opened to put a notebook beside the one in the window
     guint closeIdle = 0;                      ///< the close after a focus out, waiting for a click on a row
 };
 

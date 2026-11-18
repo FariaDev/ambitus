@@ -15,6 +15,7 @@
 #include "ambitus/BoardShift.h"                                  // for ShiftUndoAction
 #include "ambitus/Drafts.h"                                      // for isDraft
 #include "ambitus/RestoreTabs.h"                                 // for restoretabs::serialize
+#include "ambitus/SideTab.h"                                     // for sidetab::afterErase
 #include "ambitus/SummaPoll.h"                                   // for SummaPoller
 #include "ambitus/Versions.h"                                    // for followMove
 #include "control/AudioController.h"                             // for Audi...
@@ -2485,6 +2486,7 @@ void Control::quit(bool allowCancel) {
                             return;
                         }
                         tabs.erase(tabs.begin() + static_cast<std::ptrdiff_t>(activeTab));
+                        sideTab = ambitus::sidetab::afterErase(sideTab, activeTab);
                         activeTab = ambitus::NO_TAB;
                         quit(allowCancel);
                     },
