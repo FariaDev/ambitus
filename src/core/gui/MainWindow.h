@@ -58,6 +58,7 @@ class Toast;
 class CommandPalette;
 class NewNotebookDialog;
 class KeepDraftCard;
+class RenameCard;
 class VersionsPanel;
 enum class EditorMode;
 namespace newnotebook {
@@ -228,6 +229,12 @@ private:
     void openKeepDraftCard(std::function<void(bool)> after = {});
     void keepDraft(const fs::path& draft, const fs::path& folder, const std::string& name,
                    std::function<void(bool)> after);
+    /// Ambitus: the "Rename" card of a notebook or board (the library, a tab, the "⋯" menu)
+    void openRenameCard(const fs::path& file);
+    /// Ambitus: moves the file of an open or closed notebook to the new name (see ambitus::rename)
+    void renameNotebook(const fs::path& file, const std::string& name);
+    /// Ambitus: saves the notebook when it is open with changes (its tab comes to the front); done(true) otherwise
+    void saveOpenNotebook(const fs::path& file, std::function<void(bool)> done);
 
     void createToolbar();
 
@@ -321,6 +328,8 @@ private:
     std::unique_ptr<ambitus::NewNotebookDialog> newNotebookDialog;
     /// Ambitus: the "Keep draft" card (see ambitus::KeepDraftCard)
     std::unique_ptr<ambitus::KeepDraftCard> keepDraftCard;
+    /// Ambitus: the "Rename" card (see ambitus::RenameCard)
+    std::unique_ptr<ambitus::RenameCard> renameCard;
     /// Ambitus: the pill over the page while a draft is open
     GtkWidget* draftPillRevealer = nullptr;
     GtkWidget* draftPill = nullptr;

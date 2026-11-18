@@ -292,6 +292,49 @@ auto Control::getTabs() const -> std::vector<ambitus::TabInfo> {
     return infos;
 }
 
+void Control::followRenamedFile(const fs::path& from, const fs::path& to) {
+    // the autosave beside the file moved with it (drafts::moveWithSideFiles): what is there under the new name is kept
+    auto followAutosave = [](fs::path& autosave, const fs::path& was, const fs::path& now) {
+        if (autosave.empty() || autosave != ambitus::tabs::autosavePath(was, {}, 0, 0)) {
+            return;
+        }
+        const fs::path moved = ambitus::tabs::autosavePath(now, {}, 0, 0);
+        autosave = fs::exists(moved) ? moved : fs::path{};
+    };
+
+    // the position of the open document is written under the old name first, then its entry is copied to the new one
+    metadata->documentChanged();
+    if (auto entry = MetadataManager::getForFile(from)) {
+        metadata->storeMetadata(to, entry->page, entry->zoom);
+        metadata->documentChanged();
+    }
+
+    doc->lock();
+    const bool onScreen = doc->getFilepath() == from;
+    if (onScreen) {
+        doc->setFilepath(to);
+    }
+    doc->unlock();
+    if (onScreen) {
+        followAutosave(lastAutosaveFilename, from, to);
+        updateWindowTitle();  // the title shows the name of the file
+    }
+
+    for (auto& tab: tabs) {
+        if (tab.path != from) {
+            continue;
+        }
+        tab.path = to;
+        if (tab.doc) {
+            tab.doc->lock();
+            tab.doc->setFilepath(to);
+            tab.doc->unlock();
+        }
+        followAutosave(tab.autosave, from, to);
+    }
+    tabsChanged();
+}
+
 void Control::tabsChanged() {
     if (win) {
         win->tabsChanged();

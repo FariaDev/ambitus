@@ -117,6 +117,9 @@ public:
     /// Ambitus: closes the tab in the window (Cmd+W on macOS); nothing when the library is shown
     void closeActiveTab();
     std::vector<ambitus::TabInfo> getTabs() const;
+    /// Ambitus: a notebook was renamed, its file is at `to` now. The document on screen and the tabs aside that show
+    /// it, their autosaves and the page where it was left (the metadata) follow the file.
+    void followRenamedFile(const fs::path& from, const fs::path& to);
 
     /// Ambitus: the open document is a draft (see ambitus/Drafts.h)
     bool isDraftOpen() const;

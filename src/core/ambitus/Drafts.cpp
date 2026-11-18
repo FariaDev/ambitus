@@ -214,6 +214,23 @@ std::string displayName(const std::string& stem) {
     return draft + " · " + dayMonth + ", " + time.substr(0, 2) + ":" + time.substr(3, 2);
 }
 
+bool moveWithSideFiles(const fs::path& from, const fs::path& to) {
+    if (!moveFile(from, to)) {
+        return false;
+    }
+    const std::vector<fs::path> fromSide = sideFiles(from);
+    const std::vector<fs::path> toSide = sideFiles(to);
+    std::error_code ec;
+    for (size_t i = 0; i < fromSide.size(); i++) {
+        if (fs::is_regular_file(fromSide[i], ec) && !fs::exists(toSide[i], ec)) {
+            ec.clear();
+            moveFile(fromSide[i], toSide[i]);
+        }
+        ec.clear();
+    }
+    return true;
+}
+
 std::optional<fs::path> keep(const fs::path& draft, const fs::path& subjectFolder, const std::string& name) {
     if (draft.empty() || subjectFolder.empty() || name.empty()) {
         return std::nullopt;
@@ -233,17 +250,8 @@ std::optional<fs::path> keep(const fs::path& draft, const fs::path& subjectFolde
     if (fs::exists(target, ec)) {
         return std::nullopt;
     }
-    if (!moveFile(draft, target)) {
+    if (!moveWithSideFiles(draft, target)) {
         return std::nullopt;
-    }
-    const std::vector<fs::path> from = sideFiles(draft);
-    const std::vector<fs::path> to = sideFiles(target);
-    for (size_t i = 0; i < from.size(); i++) {
-        if (fs::is_regular_file(from[i], ec) && !fs::exists(to[i], ec)) {
-            ec.clear();
-            moveFile(from[i], to[i]);
-        }
-        ec.clear();
     }
     return target;
 }

@@ -31,10 +31,12 @@ struct TabItem {
     bool active = false;
     bool modified = false;
     bool closable = true;
+    /// A notebook that has a name to change: not a draft (it is named when kept) and not an untitled one
+    bool renamable = false;
 
     bool operator==(const TabItem& o) const {
         return title == o.title && color == o.color && active == o.active && modified == o.modified &&
-               closable == o.closable;
+               closable == o.closable && renamable == o.renamable;
     }
 };
 
@@ -56,6 +58,9 @@ public:
     void setTabs(std::vector<TabItem> items);
     /// index in the list given to setTabs
     void setTabCallbacks(std::function<void(size_t)> activate, std::function<void(size_t)> close);
+    /// Renames the notebook of a tab: a double click on the name of the tab, or "Renomear…" of the "⋯" menu for the
+    /// active one. Only for the tabs that are renamable.
+    void setRenameCallback(std::function<void(size_t)> rename);
 
 private:
     static constexpr int MENU_WIDTH = 292;  ///< px of the column of the "⋯" menu (300 with the padding, as in the r6)
@@ -73,6 +78,7 @@ private:
     std::vector<TabItem> items;
     std::function<void(size_t)> onActivate;
     std::function<void(size_t)> onClose;
+    std::function<void(size_t)> onRename;
     GtkWidget* modes = nullptr;
     GtkWidget* undo = nullptr;
     GtkWidget* more = nullptr;

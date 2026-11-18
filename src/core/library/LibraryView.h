@@ -31,6 +31,10 @@
 #include "SummaCourses.h"
 #include "filesystem.h"
 
+namespace ambitus {
+class PopupMenu;
+}
+
 namespace ambitus::library {
 
 /// A notebook as the command box lists it
@@ -61,6 +65,8 @@ public:
         std::function<void(const fs::path& folder)> newBoard;
         /// a quick draft, with no name and no subject, saved on its own
         std::function<void()> newDraft;
+        /// rename a notebook or a board: the card of the window asks for the new name (not for drafts)
+        std::function<void(const fs::path&)> rename;
         /// whether the search may read the handwriting through Summa (the settings); unset: it may
         std::function<bool()> searchInk;
     };
@@ -94,6 +100,10 @@ public:
     /// Puts a folder in the library, as "Add folder" does (the library then shows it); false if it was already there.
     /// `replacing`, when it is one of the folders added by hand, goes out of the library.
     bool setFolder(const fs::path& folder, const fs::path& replacing = {});
+    /// Whether the file is a board (a page that grows), as the index knows it
+    bool isBoard(const fs::path& p) const;
+    /// A notebook was renamed (its file is at `to` now): its cover goes with it, and the library lists it again
+    void notebookMoved(const fs::path& from, const fs::path& to);
 
 private:
     enum class SourceKind { Recent, All, Drafts, Course, Folder };
@@ -130,9 +140,10 @@ private:
     GtkWidget* makeTile(const Entry& e);
     /// Adds the tiles to the body: boards (wide cards) in a grid of their own, then the notebooks
     void addTiles(const std::vector<const Entry*>& entries);
-    bool isBoard(const fs::path& p) const;
     void addTextHits(const std::vector<Entry>& everywhere);
     GtkWidget* makeHit(const SearchHit& hit, const Entry& e);
+    /// The menu of a cover (right button, Menu key): Rename, Change cover, Show in folder
+    void openCoverMenu(GtkWidget* tile, const Entry& e);
     void openCoverPopover(GtkWidget* tile, const Entry& e);
     /// The "Continue where you left off" card for the first recent notebook
     GtkWidget* makeResumeCard(const Entry& e);
@@ -154,6 +165,7 @@ private:
 
     LibraryStore store;
     Actions actions;
+    std::unique_ptr<PopupMenu> coverMenu;  ///< one at a time; anchored to the cover it was opened on
     std::vector<Course> courses;
     std::vector<std::vector<Notebook>> courseBooks;
     std::vector<std::vector<Notebook>> folderBooks;

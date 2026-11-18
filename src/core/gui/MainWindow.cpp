@@ -10,11 +10,13 @@
 
 #include "ambitus/Drafts.h"
 #include "ambitus/NewNotebook.h"
+#include "ambitus/Rename.h"
 #include "ambitus/SettingsRows.h"
 #include "ambitus/Versions.h"
 #include "control/AudioController.h"                    // for AudioController
 #include "control/Control.h"                            // for Control
 #include "control/DeviceListHelper.h"                   // for getSourceMapping
+#include "control/RecentManager.h"                      // for moveRecentFileFilename
 #include "control/ScrollHandler.h"                      // for ScrollHandler
 #include "control/actions/ActionDatabase.h"             // for ActionDatabase
 #include "control/jobs/XournalScheduler.h"              // for XournalScheduler
@@ -64,7 +66,8 @@
 #include "PageGrowHandle.h"  // for PageGrowHandle
 #include "PageMenu.h"        // for PageMenu
 #include "RadialMenu.h"      // for RadialMenu
-#include "SelectionBar.h"    // for SelectionBar
+#include "RenameCard.h"
+#include "SelectionBar.h"  // for SelectionBar
 #include "SettingsCard.h"
 #include "SetupCard.h"
 #include "StudioPalette.h"       // for StudioPalette
@@ -140,6 +143,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
         };
         actions.newNotebook = [this](const fs::path& folder) { showNewNotebook(folder); };
         actions.newDraft = [this] { newDraft(); };
+        actions.rename = [this](const fs::path& p) { openRenameCard(p); };
         actions.newBoard = [this, control](const fs::path& folder) {
             fs::path file;
             if (!folder.empty()) {
@@ -201,6 +205,7 @@ MainWindow::MainWindow(GladeSearchpath* gladeSearchPath, Control* control, GtkAp
             std::make_unique<ambitus::NewNotebookDialog>(GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
     this->keepDraftCard =
             std::make_unique<ambitus::KeepDraftCard>(GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
+    this->renameCard = std::make_unique<ambitus::RenameCard>(GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
 
     // the first time the program opens: the setup, over the whole window
     ambitus::SetupCard::openIfFirstTime(control, GTK_OVERLAY(windowOverlay), GTK_WINDOW(this->window));
@@ -323,6 +328,12 @@ void MainWindow::populate(GladeSearchpath* gladeSearchPath) {
                 }
             },
             [this](size_t i) { control->closeTab(i); });
+    titleBar->setRenameCallback([this](size_t i) {
+        const auto tabs = control->getTabs();
+        if (i < tabs.size()) {
+            openRenameCard(tabs[i].path);
+        }
+    });
     tabsChanged();
     titleBar->setEditorShown(!isLibraryShown());
 }
@@ -344,6 +355,8 @@ void MainWindow::tabsChanged() {
         it.color = library ? library->colorOf(t.path) : "";
         it.active = t.active;
         it.modified = t.modified;
+        // a draft is named when it is kept (see KeepDraftCard), an untitled notebook has no file yet
+        it.renamable = !t.path.empty() && !ambitus::drafts::isDraft(t.path);
         anyActive = anyActive || t.active;
         items.push_back(std::move(it));
     }
@@ -970,6 +983,54 @@ void MainWindow::keepDraft(const fs::path& draft, const fs::path& folder, const 
             after(true);
         }
     });
+}
+
+void MainWindow::openRenameCard(const fs::path& file) {
+    if (!renameCard || renameCard->isOpen()) {
+        return;
+    }
+    const bool board = library && library->isBoard(file);
+    renameCard->open(file, board, [this, file](const std::string& name) { renameNotebook(file, name); });
+}
+
+void MainWindow::renameNotebook(const fs::path& file, const std::string& name) {
+    const bool board = library && library->isBoard(file);
+    saveOpenNotebook(file, [this, file, name, board](bool saved) {
+        std::optional<fs::path> to;
+        if (saved) {
+            to = ambitus::rename::moveNotebook(file, name, ambitus::versions::defaultRoot());
+        }
+        if (!to) {
+            showToastError(board ? _("Could not rename the board.") : _("Could not rename the notebook."),
+                           std::string());
+            return;
+        }
+        // the recent entry goes with the file; renamed, it is the newest one, as a notebook that was just worked on
+        if (RecentManager::moveRecentFileFilename(file, *to)) {
+            RecentManager::addRecentFileFilename(*to);
+        }
+        if (library) {
+            library->notebookMoved(file, *to);
+        }
+        control->followRenamedFile(file, *to);
+    });
+}
+
+void MainWindow::saveOpenNotebook(const fs::path& file, std::function<void(bool)> done) {
+    const auto tabs = control->getTabs();
+    for (size_t i = 0; i < tabs.size(); i++) {
+        if (tabs[i].path != file) {
+            continue;
+        }
+        if (!tabs[i].modified) {
+            break;
+        }
+        // a tab put aside is saved where it is shown: it comes to the front first
+        control->activateTab(i);
+        control->save(std::move(done));
+        return;
+    }
+    done(true);
 }
 
 void MainWindow::showSettingsCard() {

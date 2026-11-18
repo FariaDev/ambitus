@@ -49,6 +49,10 @@ public:
     /// "app.". `icon` may be null (an empty space of its size). Disabled when the action is
     GtkWidget* addItem(GtkWidget* box, const char* icon, const char* text, const char* action, GVariant* target,
                        bool danger = false);
+    /// An item that runs `run` when it is clicked (a menu whose items are not actions of the window). `key` is the
+    /// shortcut shown on the right, when there is one; the item is always enabled
+    GtkWidget* addCallItem(GtkWidget* box, const char* icon, const char* text, std::function<void()> run,
+                           const char* key = nullptr);
     /// An item that opens a submenu beside it; `fill` puts the items of the submenu in the box it gets
     void addSubmenuItem(GtkWidget* box, const char* icon, const char* text,
                         const std::function<void(GtkWidget*)>& fill);

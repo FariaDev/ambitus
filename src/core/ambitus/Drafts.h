@@ -46,6 +46,11 @@ std::string tabLabel(const std::string& fileName);
 /// by the locale; the name of the file does not change
 std::string displayName(const std::string& stem);
 
+/// Moves a notebook file to `to` with the backup and autosave files that are beside it (the side files that the
+/// destination already has are left where they are). Copies and removes when the rename crosses disks. False when the
+/// file itself did not move; nothing moves then.
+bool moveWithSideFiles(const fs::path& from, const fs::path& to);
+
 /// Moves the draft to subjectFolder/name.xopp (with the backup and autosave files that are beside it). Refuses when
 /// the destination exists; copies and removes when the rename crosses disks. The new path, or nothing.
 std::optional<fs::path> keep(const fs::path& draft, const fs::path& subjectFolder, const std::string& name);

@@ -134,6 +134,12 @@ void TitleBar::openMenu() {
     onlyInEditor(
             moreMenu.addItem(box, "xopp-file-down", C_("Title bar menu", "Export as PDF…"), "export-as-pdf", nullptr));
     moreMenu.addItem(box, "xopp-tool-image", C_("Title bar menu", "Annotate a PDF…"), "annotate-pdf", nullptr);
+    // the notebook of the window: only in the editor, and only when it has a name to change
+    for (size_t i = 0; i < items.size(); i++) {
+        if (items[i].active && items[i].renamable && editorShown && onRename) {
+            moreMenu.addCallItem(box, "xopp-tool-pencil", C_("Title bar menu", "Rename…"), [this, i] { onRename(i); });
+        }
+    }
     onlyInEditor(moreMenu.addItem(box, "xopp-history", C_("Title bar menu", "Versions of this notebook"),
                                   "earlier-versions", nullptr));
     moreMenu.addSeparator(box);
@@ -145,10 +151,14 @@ void TitleBar::openMenu() {
 }
 
 void TitleBar::setEditorShown(bool editor) {
+    const bool changed = editor != editorShown;
     editorShown = editor;
     gtk_widget_set_visible(modes, editor && modesShown);
     gtk_widget_set_visible(undo, editor);
-    rebuildTabs();
+    // a click on the active tab comes here too: rebuilding then would take the tab away before its double click
+    if (changed) {
+        rebuildTabs();
+    }
 }
 
 void TitleBar::setModesShown(bool shown) {
@@ -166,6 +176,8 @@ void TitleBar::setTabCallbacks(std::function<void(size_t)> activate, std::functi
     onActivate = std::move(activate);
     onClose = std::move(close);
 }
+
+void TitleBar::setRenameCallback(std::function<void(size_t)> rename) { onRename = std::move(rename); }
 
 void TitleBar::closeLater(size_t index) {
     if (!onClose) {
@@ -247,6 +259,7 @@ void TitleBar::rebuildTabs() {
         gtk_label_set_ellipsize(GTK_LABEL(label), PANGO_ELLIPSIZE_END);
         gtk_label_set_max_width_chars(GTK_LABEL(label), 24);
         gtk_container_add(GTK_CONTAINER(box), label);
+        g_object_set_data(G_OBJECT(tab), "amb-name", label);
 
         if (it.closable) {
             GtkWidget* x = gtk_button_new_from_icon_name("window-close-symbolic", GTK_ICON_SIZE_MENU);
@@ -295,6 +308,22 @@ void TitleBar::rebuildTabs() {
                              if (i < self->items.size() && self->items[i].closable) {
                                  self->openTabMenu(w, i);
                              }
+                             return true;
+                         }),
+                         this);
+        // a double click on the name of a notebook's tab renames it (the first click has made the tab the active one)
+        g_signal_connect(tab, "button-press-event",
+                         G_CALLBACK(+[](GtkWidget* w, GdkEventButton* e, TitleBar* self) -> gboolean {
+                             if (e->type != GDK_2BUTTON_PRESS || e->button != GDK_BUTTON_PRIMARY) {
+                                 return false;
+                             }
+                             size_t i = GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(w), "amb-index"));
+                             auto* name = static_cast<GtkWidget*>(g_object_get_data(G_OBJECT(w), "amb-name"));
+                             if (!self->onRename || i >= self->items.size() || !self->items[i].renamable || !name ||
+                                 !overWidget(w, name, e->x, e->y)) {
+                                 return false;
+                             }
+                             self->onRename(i);
                              return true;
                          }),
                          this);

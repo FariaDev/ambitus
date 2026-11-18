@@ -98,6 +98,15 @@ void RecentManager::removeRecentFileFilename(const fs::path& filename) {
     gtk_recent_manager_remove_item(recentManager, uri->c_str(), nullptr);
 }
 
+bool RecentManager::moveRecentFileFilename(const fs::path& from, const fs::path& to) {
+    auto fromUri = Util::toUri(from);
+    auto toUri = Util::toUri(to);
+    if (!fromUri || !toUri) {
+        return false;
+    }
+    return gtk_recent_manager_move_item(gtk_recent_manager_get_default(), fromUri->c_str(), toUri->c_str(), nullptr);
+}
+
 auto RecentManager::getMostRecent() -> GtkRecentInfoSPtr {
     auto recent_items = gtk_recent_manager_get_items(gtk_recent_manager_get_default());
     // Todo (cpp20): replace with std::ranges::max_element

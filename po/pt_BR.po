@@ -5988,3 +5988,43 @@ msgstr "Novo rascunho"
 
 msgid "Stays in the drafts until you keep it in a subject."
 msgstr "Fica nos rascunhos até você guardar numa matéria."
+
+msgid "Rename"
+msgstr "Renomear"
+
+msgid "Rename notebook"
+msgstr "Renomear caderno"
+
+msgid "Rename board"
+msgstr "Renomear quadro"
+
+msgid "In {1}"
+msgstr "Em {1}"
+
+msgid "Give the board a name."
+msgstr "Dê um nome ao quadro."
+
+msgid "Use a name without /, \\ or :, and not starting with a dot."
+msgstr "Use um nome sem /, \\ nem : e que não comece com ponto."
+
+msgid "A notebook with that name already exists in {1}."
+msgstr "Já existe um caderno com esse nome em {1}."
+
+msgid "A board with that name already exists in {1}."
+msgstr "Já existe um quadro com esse nome em {1}."
+
+msgid "Change cover…"
+msgstr "Mudar capa…"
+
+msgid "Show in folder"
+msgstr "Mostrar na pasta"
+
+msgid "Could not rename the notebook."
+msgstr "Não foi possível renomear o caderno."
+
+msgid "Could not rename the board."
+msgstr "Não foi possível renomear o quadro."
+
+msgctxt "Title bar menu"
+msgid "Rename…"
+msgstr "Renomear…"
