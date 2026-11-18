@@ -52,7 +52,7 @@ std::shared_ptr<GWeakRef> weakRef(GtkWidget* w) {
 void showInFolder(GtkWidget* from, const fs::path& file) {
 #ifdef __APPLE__
     (void)from;
-    const std::string path = Util::toGFilename(file);
+    const auto path = Util::toGFilename(file);
     const char* argv[] = {"open", "-R", path.c_str(), nullptr};
     GError* err = nullptr;
     if (!g_spawn_async(nullptr, const_cast<gchar**>(argv), nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr,
