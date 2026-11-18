@@ -7,6 +7,7 @@
 constexpr const char* ACTION_NAMES[] = {  // Action to string conversion map
         "new-file",
         "open",
+        "reopen-closed-tab",
         "annotate-pdf",
         "save",
         "save-as",

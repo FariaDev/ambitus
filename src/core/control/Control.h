@@ -23,6 +23,8 @@
 #include <glib.h>                   // for guint
 #include <gtk/gtk.h>                // for GtkLabel
 
+#include "ambitus/ClosedTabs.h"                     // for ClosedTabs
+#include "ambitus/RestoreTabs.h"                    // for restoretabs::SavedTab
 #include "ambitus/Tabs.h"                           // for Tab, TabInfo
 #include "control/ToolEnums.h"                      // for ToolSize, ToolType
 #include "control/jobs/ProgressListener.h"          // for ProgressListener
@@ -117,6 +119,11 @@ public:
     /// Ambitus: closes the tab in the window (Cmd+W on macOS); nothing when the library is shown
     void closeActiveTab();
     std::vector<ambitus::TabInfo> getTabs() const;
+    /// Ambitus: bring back the notebook closed most recently (Ctrl+Shift+T)
+    void reopenClosedTab();
+    bool canReopenClosedTab() const;
+    /// Ambitus: open the tabs saved from last time; false when there was nothing to open (the library shows)
+    bool restoreTabsFromLastTime();
 
     /// Ambitus: the open document is a draft (see ambitus/Drafts.h)
     bool isDraftOpen() const;
@@ -561,6 +568,8 @@ private:
     void growBoardAhead();
     bool boardOpen = false;
     std::vector<ambitus::Tab> tabs;
+    /// Ambitus: notebooks closed in this session, oldest first to fall off past the capacity
+    ambitus::ClosedTabs closedTabs;
     /// Ambitus: answers the "Check" of Summa with the page on screen (ambitus/SummaPoll.h)
     std::unique_ptr<ambitus::SummaPoller> summaPoller;
     size_t activeTab = ambitus::NO_TAB;
@@ -577,6 +586,10 @@ private:
     void ensureActiveTab();
     /// Puts the document in the window aside; the next one loaded gets a new tab next to it
     void startNewTab();
+    /// Keeps the "reopen closed tab" action in step with the stack of closed notebooks
+    void updateReopenAction();
+    /// The tabs of this session as paths, pages and which one was active
+    std::vector<ambitus::restoretabs::SavedTab> tabsForRestore() const;
     void tabsChanged();
     void setBoardOpen(bool board);  ///< Ambitus: growBoardToFit() already queued
 

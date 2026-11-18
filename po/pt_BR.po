@@ -5413,6 +5413,10 @@ msgid "Open…"
 msgstr "Abrir…"
 
 msgctxt "Title bar menu"
+msgid "Reopen closed tab"
+msgstr "Reabrir aba fechada"
+
+msgctxt "Title bar menu"
 msgid "Save a copy as…"
 msgstr "Salvar uma cópia como…"
 
@@ -5988,3 +5992,9 @@ msgstr "Novo rascunho"
 
 msgid "Stays in the drafts until you keep it in a subject."
 msgstr "Fica nos rascunhos até você guardar numa matéria."
+
+msgid "Reopen closed tab"
+msgstr "Reabrir aba fechada"
+
+msgid "Open with the tabs from last time"
+msgstr "Abrir com as abas da última vez"

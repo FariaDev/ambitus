@@ -6,12 +6,16 @@
  * @license GNU GPLv2 or later
  */
 
+#include <algorithm>
+#include <string>
 #include <utility>
 
 #include "control/Control.h"
 #include "control/CrashHandler.h"
 #include "control/ScrollHandler.h"
+#include "control/actions/ActionDatabase.h"
 #include "control/settings/MetadataManager.h"
+#include "control/settings/Settings.h"
 #include "control/xojfile/SaveHandler.h"
 #include "control/zoom/ZoomControl.h"
 #include "gui/MainWindow.h"
@@ -252,8 +256,16 @@ void Control::closeTab(size_t index) {
         return;
     }
     activateTab(index);
+    fs::path path;
+    doc->lock_shared();
+    path = doc->getFilepath();
+    doc->unlock_shared();
+    const int page = static_cast<int>(getCurrentPageNo());
     this->close(
-            [ctrl = this](bool closed) {
+            [ctrl = this, path, page](bool closed) {
+                if (closed) {
+                    ctrl->closedTabs.push(path, page);  // unsaved new files (no path) are skipped
+                }
                 if (!closed || ctrl->activeTab == ambitus::NO_TAB) {
                     return;
                 }
@@ -292,7 +304,95 @@ auto Control::getTabs() const -> std::vector<ambitus::TabInfo> {
     return infos;
 }
 
+void Control::updateReopenAction() {
+    if (actionDB) {
+        actionDB->enableAction(Action::REOPEN_CLOSED_TAB, !closedTabs.empty());
+    }
+}
+
+bool Control::canReopenClosedTab() const { return !closedTabs.empty(); }
+
+void Control::reopenClosedTab() {
+    std::vector<fs::path> open;
+    for (auto const& tab: getTabs()) {
+        if (!tab.path.empty()) {
+            open.push_back(tab.path);
+        }
+    }
+    auto found = closedTabs.pop(
+            [&open](const fs::path& path) { return std::find(open.begin(), open.end(), path) != open.end(); },
+            [](const fs::path& path) {
+                std::error_code err;
+                return fs::exists(path, err);
+            });
+    if (found) {
+        openInTab(found->path, found->page);
+    }
+    updateReopenAction();
+}
+
+std::vector<ambitus::restoretabs::SavedTab> Control::tabsForRestore() const {
+    std::vector<ambitus::restoretabs::SavedTab> tabs;
+    for (auto const& info: getTabs()) {
+        if (info.path.empty()) {
+            continue;
+        }
+        int page = 0;
+        if (info.active) {
+            page = static_cast<int>(getCurrentPageNo());
+        } else if (auto metadata = MetadataManager::getForFile(info.path)) {
+            page = metadata->page;
+        }
+        tabs.push_back({info.path, page, info.active});
+    }
+    return tabs;
+}
+
+bool Control::restoreTabsFromLastTime() {
+    Settings* settings = getSettings();
+    if (!settings->getAmbitusOpenTabsFromLastTime()) {
+        return false;
+    }
+    std::vector<ambitus::restoretabs::SavedTab> tabs;
+    for (auto& tab: ambitus::restoretabs::deserialize(settings->getAmbitusOpenTabs())) {
+        if (tab.path.empty()) {
+            continue;
+        }
+        if (std::error_code err; !fs::exists(tab.path, err)) {
+            continue;
+        }
+        tabs.push_back(std::move(tab));
+    }
+    if (tabs.empty()) {
+        return false;
+    }
+    size_t active = 0;
+    for (size_t i = 0; i < tabs.size(); i++) {
+        if (tabs[i].active) {
+            active = i;
+            break;
+        }
+    }
+    for (auto const& tab: tabs) {
+        openInTab(tab.path, tab.page);
+    }
+    activateTab(active);
+    // Every load queues a metadata callback on the main loop. A tab parked before its callback runs would remember
+    // page one instead of the page it was saved at. Once those callbacks have gone, put the pages back and show the
+    // active notebook at its own page.
+    Util::execInUiThread([ctrl = this, tabs = std::move(tabs), active]() {
+        for (auto const& tab: tabs) {
+            ctrl->metadata->storeMetadata(tab.path, tab.page, ctrl->zoom->getZoomReal());
+            ctrl->metadata->documentChanged();
+        }
+        ctrl->scrollHandler->scrollToPage(static_cast<size_t>(tabs[active].page));
+    });
+    tabsChanged();
+    return true;
+}
+
 void Control::tabsChanged() {
+    updateReopenAction();
     if (win) {
         win->tabsChanged();
     }

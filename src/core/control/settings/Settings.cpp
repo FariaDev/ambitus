@@ -257,6 +257,8 @@ void Settings::loadDefault() {
     this->ambitusSummaBridge = true;
     this->ambitusSearchInk = false;
     this->ambitusStudioPages = false;
+    this->ambitusOpenTabsFromLastTime = true;
+    this->ambitusOpenTabs.clear();
     this->ambitusNewPaper = "summa";
     this->ambitusNewSize = "a4";
     this->ambitusDraftPaper = "summa";
@@ -763,6 +765,10 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->ambitusSearchInk = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusStudioPages")) == 0) {
         this->ambitusStudioPages = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusOpenTabsFromLastTime")) == 0) {
+        this->ambitusOpenTabsFromLastTime = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusOpenTabs")) == 0) {
+        this->ambitusOpenTabs = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewPaper")) == 0) {
         this->ambitusNewPaper = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewSize")) == 0) {
@@ -1301,6 +1307,8 @@ void Settings::save() {
     SAVE_BOOL_PROP(ambitusSummaBridge);
     SAVE_BOOL_PROP(ambitusSearchInk);
     SAVE_BOOL_PROP(ambitusStudioPages);
+    SAVE_BOOL_PROP(ambitusOpenTabsFromLastTime);
+    SAVE_STRING_PROP(ambitusOpenTabs);
     SAVE_STRING_PROP(ambitusNewPaper);
     SAVE_STRING_PROP(ambitusNewSize);
     SAVE_STRING_PROP(ambitusDraftPaper);
@@ -2519,7 +2527,18 @@ AMBITUS_BOOL_SETTING(KeepVersions, ambitusKeepVersions)
 AMBITUS_BOOL_SETTING(SummaBridge, ambitusSummaBridge)
 AMBITUS_BOOL_SETTING(SearchInk, ambitusSearchInk)
 AMBITUS_BOOL_SETTING(StudioPages, ambitusStudioPages)
+AMBITUS_BOOL_SETTING(OpenTabsFromLastTime, ambitusOpenTabsFromLastTime)
 #undef AMBITUS_BOOL_SETTING
+
+void Settings::setAmbitusOpenTabs(const std::string& tabs) {
+    if (this->ambitusOpenTabs == tabs) {
+        return;
+    }
+    this->ambitusOpenTabs = tabs;
+    save();
+}
+
+auto Settings::getAmbitusOpenTabs() const -> const std::string& { return this->ambitusOpenTabs; }
 
 void Settings::setAmbitusNewPaper(const std::string& paper) {
     if (this->ambitusNewPaper == paper) {

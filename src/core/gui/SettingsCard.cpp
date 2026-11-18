@@ -450,6 +450,9 @@ void SettingsCard::buildNotebooks() {
     addSwitch(NOTEBOOKS, _("Keep earlier versions"), _("one per ten minutes of work; the 30 newest"),
               settings->getAmbitusKeepVersions(), [this](bool on) { ctrl->getSettings()->setAmbitusKeepVersions(on); });
 
+    addSwitch(NOTEBOOKS, _("Open with the tabs from last time"), "", settings->getAmbitusOpenTabsFromLastTime(),
+              [this](bool on) { ctrl->getSettings()->setAmbitusOpenTabsFromLastTime(on); });
+
     // the paper a new notebook starts with: three at hand and the others under "…"
     const auto saved = settingsrows::paperFromId(settings->getAmbitusNewPaper()).value_or(newnotebook::DEFAULT_PAPER);
     const Paper at[3] = {Paper::SUMMA, Paper::GRID, Paper::PLAIN};
