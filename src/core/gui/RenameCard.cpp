@@ -86,7 +86,8 @@ RenameCard::RenameCard(GtkOverlay* overlay, GtkWindow* window): window(window) {
     gtk_label_set_line_wrap(GTK_LABEL(problem), true);
     gtk_box_pack_start(GTK_BOX(card), problem, false, false, 0);
 
-    where = label("", "amb-dlg-note");
+    where = label("", "amb-dlg-problem");  // the grey note under the field, as the line under a new draft's title
+    addClass(where, "amb-dlg-note");
     gtk_box_pack_start(GTK_BOX(card), where, false, false, 0);
 
     GtkWidget* foot = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -250,6 +251,9 @@ void RenameCard::refresh() {
             break;
     }
     gtk_label_set_text(GTK_LABEL(problem), text.c_str());
+    // one line under the field: the problem when there is one, else the folder of the notebook
+    gtk_widget_set_visible(problem, !text.empty());
+    gtk_widget_set_visible(where, text.empty());
     gtk_widget_set_sensitive(renameButton, valid);
     auto* ctx = gtk_widget_get_style_context(entry);
     if (valid || check == rename::NameCheck::SAME) {
