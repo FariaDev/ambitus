@@ -34,6 +34,7 @@ enum class Action : size_t {
     // Menu file
     NEW_FILE,
     OPEN,
+    REOPEN_CLOSED_TAB,  ///< Ambitus: bring back the notebook closed most recently
     ANNOTATE_PDF,
     SAVE,
     SAVE_AS,

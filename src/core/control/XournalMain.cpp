@@ -536,7 +536,7 @@ void on_startup(GApplication* application, XMPtr app_data) {
             std::move(p), app_data->attachMode, app_data->openAtPageNumber - 1,
             [ctrl = app_data->control.get(), app = GTK_APPLICATION(application), startInLibrary](bool) {
                 ctrl->getScheduler()->start();
-                if (startInLibrary) {
+                if (startInLibrary && !ctrl->restoreTabsFromLastTime()) {
                     ctrl->getWindow()->showLibrary();
                 }
 

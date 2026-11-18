@@ -609,6 +609,13 @@ public:
     bool getAmbitusStylusRadial() const;
     void setAmbitusStylusRadial(bool radial);
 
+    /// Ambitus: open the tabs of the last session at startup (on by default); the list is always saved either way
+    void setAmbitusOpenTabsFromLastTime(bool enabled);
+    bool getAmbitusOpenTabsFromLastTime() const;
+    /// Ambitus: the tabs of the last session, escaped paths, pages and the active one as one string
+    void setAmbitusOpenTabs(const std::string& tabs);
+    const std::string& getAmbitusOpenTabs() const;
+
     /// Ambitus: screen mode of the editor (0 classic, 1 studio, 2 focus)
     void setEditorMode(int mode);
     int getEditorMode() const;
@@ -1235,6 +1242,8 @@ private:
     bool ambitusSearchInk{};
     /// Ambitus: the column of the pages beside the Studio is open (the "Pages" button of the bottom bar)
     bool ambitusStudioPages{};
+    bool ambitusOpenTabsFromLastTime{};
+    std::string ambitusOpenTabs;
     std::string ambitusNewPaper;
     std::string ambitusNewSize;
     std::string ambitusDraftPaper;

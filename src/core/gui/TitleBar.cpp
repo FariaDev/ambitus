@@ -129,6 +129,7 @@ void TitleBar::openMenu() {
     GtkWidget* box = moreMenu.begin(more, GTK_POS_BOTTOM, MENU_WIDTH);
     moreMenu.addItem(box, "xopp-file-plus", C_("Title bar menu", "New notebook"), "new-file", nullptr);
     moreMenu.addItem(box, "xopp-folder", C_("Title bar menu", "Open…"), "open", nullptr);
+    moreMenu.addItem(box, "xopp-edit-undo", C_("Title bar menu", "Reopen closed tab"), "reopen-closed-tab", nullptr);
     onlyInEditor(moreMenu.addItem(box, "xopp-edit-copy", C_("Title bar menu", "Save a copy as…"), "save-as", nullptr));
     moreMenu.addSeparator(box);
     onlyInEditor(

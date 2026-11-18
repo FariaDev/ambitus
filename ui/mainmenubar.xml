@@ -23,6 +23,11 @@
      <attribute name="action">win.open</attribute>
      <attribute name="accel">&lt;Primary&gt;o</attribute>
     </item>
+    <item>
+     <attribute name="label" translatable="yes">Reopen closed tab</attribute>
+     <attribute name="action">win.reopen-closed-tab</attribute>
+     <attribute name="accel">&lt;Primary&gt;&lt;Shift&gt;t</attribute>
+    </item>
     <submenu id="menuFileRecent">
      <!-- Filled dynamically -->
      <attribute name="label" translatable="yes">Recent _Documents</attribute>

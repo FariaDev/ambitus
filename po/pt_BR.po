@@ -5413,6 +5413,10 @@ msgid "Open…"
 msgstr "Abrir…"
 
 msgctxt "Title bar menu"
+msgid "Reopen closed tab"
+msgstr "Reabrir aba fechada"
+
+msgctxt "Title bar menu"
 msgid "Save a copy as…"
 msgstr "Salvar uma cópia como…"
 
@@ -6028,3 +6032,9 @@ msgstr "Não foi possível renomear o quadro."
 msgctxt "Title bar menu"
 msgid "Rename…"
 msgstr "Renomear…"
+
+msgid "Reopen closed tab"
+msgstr "Reabrir aba fechada"
+
+msgid "Open with the tabs from last time"
+msgstr "Abrir com as abas da última vez"

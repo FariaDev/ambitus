@@ -93,6 +93,13 @@ struct ActionProperties<Action::OPEN> {
 };
 
 template <>
+struct ActionProperties<Action::REOPEN_CLOSED_TAB> {
+    static constexpr const char* accelerators[] = {"<Primary><Shift>t", nullptr};
+    static bool initiallyEnabled(Control* ctrl) { return ctrl->canReopenClosedTab(); }
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->reopenClosedTab(); }
+};
+
+template <>
 struct ActionProperties<Action::LIBRARY> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getWindow()->showLibrary(); }
 };
