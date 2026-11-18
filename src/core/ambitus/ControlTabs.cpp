@@ -198,6 +198,8 @@ void Control::activateTab(size_t index) {
     sideTab = ambitus::sidetab::afterSwap(sideTab, index, previous);
 
     auto& tab = tabs[index];
+    const bool noFile = tab.path.empty();
+    const int page = tab.page;
     activeTab = index;
     doc->lock();
     *doc = *tab.doc;  // fires DOCUMENT_CHANGE_COMPLETE
@@ -209,6 +211,10 @@ void Control::activateTab(size_t index) {
 
     setEmergencyDocument(doc);
     fileLoaded();
+    if (noFile) {
+        // Ambitus: a notebook without a file has no metadata to bring it back at its page
+        Util::execInUiThread([ctrl = this, page]() { ctrl->scrollHandler->scrollToPage(static_cast<size_t>(page)); });
+    }
     if (win) {
         win->showEditor();
     }
@@ -277,8 +283,11 @@ void Control::closeTab(size_t index) {
     if (index >= tabs.size()) {
         return;
     }
-    if (index == sideTab) {
-        closeSideTab();  // Ambitus: the pane goes first, then the tab closes like any other
+    // Ambitus: closing a tab that is not in the window keeps you in the notebook you were in
+    const size_t previous = activeTab;
+    const bool wasBeside = index == sideTab;
+    if (wasBeside) {
+        closeSideTab();  // the pane goes first, then the tab closes like any other
     }
     activateTab(index);
     fs::path path;
@@ -287,15 +296,23 @@ void Control::closeTab(size_t index) {
     doc->unlock_shared();
     const int page = static_cast<int>(getCurrentPageNo());
     this->close(
-            [ctrl = this, path, page](bool closed) {
+            [ctrl = this, path, page, index, previous, wasBeside](bool closed) {
                 if (closed) {
                     ctrl->closedTabs.push(path, page);  // unsaved new files (no path) are skipped
+                }
+                if (!closed && previous != ambitus::NO_TAB && previous != index && ctrl->activeTab == index) {
+                    ctrl->activateTab(previous);  // cancelled: everything goes back to where it was
+                    if (wasBeside) {
+                        ctrl->sideTab = index;
+                        ctrl->tabsChanged();
+                    }
                 }
                 if (!closed || ctrl->activeTab == ambitus::NO_TAB) {
                     return;
                 }
                 const size_t closedTab = ctrl->activeTab;
-                const size_t next = ambitus::tabs::afterClose(ctrl->tabs.size(), closedTab, closedTab);
+                const size_t stay = previous == ambitus::NO_TAB ? closedTab : previous;
+                const size_t next = ambitus::tabs::afterClose(ctrl->tabs.size(), stay, closedTab);
                 ctrl->tabs.erase(ctrl->tabs.begin() + static_cast<std::ptrdiff_t>(closedTab));
                 ctrl->sideTab = ambitus::sidetab::afterErase(ctrl->sideTab, closedTab);
                 ctrl->activeTab = ambitus::NO_TAB;

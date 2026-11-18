@@ -18,6 +18,7 @@ namespace {
 constexpr int EDGE_INSIDE = 28;  ///< px inside the page where the handle already shows
 constexpr int PILL_GAP = 8;      ///< px between the strip and the pill
 constexpr int ZONE_AFTER = 120;  ///< px after the strip where the handle stays
+constexpr guint WATCH_MS = 150;  ///< how often the pointer is looked for while the handle is shown
 
 XojPageView* findView(XournalView* xournal, const PageRef& page) {
     if (!page) {
@@ -80,6 +81,9 @@ PageGrowHandle::PageGrowHandle(Control* control, XournalView* xournal, GtkOverla
 }
 
 PageGrowHandle::~PageGrowHandle() {
+    if (watchId) {
+        g_source_remove(watchId);
+    }
     g_signal_remove_emission_hook(g_signal_lookup("event", GTK_TYPE_WIDGET), hookId);
     auto* scroll = xournal->getScrollHandling();
     g_signal_handler_disconnect(scroll->getHorizontal(), scrollIds[0]);
@@ -97,7 +101,38 @@ int PageGrowHandle::visibleWidth() const {
     return visible > 0 ? std::min(width, visible) : width;
 }
 
+bool PageGrowHandle::pointerIsHere() const {
+    // Ambitus: the pages get no motion once the pointer is over the pane beside, the bottom bar or another window, and
+    // the overlays shown here make crossing events useless to tell these apart
+    GdkSeat* seat = gdk_display_get_default_seat(gtk_widget_get_display(xournal->getWidget()));
+    GdkWindow* at = gdk_device_get_window_at_position(gdk_seat_get_pointer(seat), nullptr, nullptr);
+    gpointer data = nullptr;
+    if (at) {
+        gdk_window_get_user_data(at, &data);
+    }
+    auto* widget = static_cast<GtkWidget*>(data);
+    if (!widget) {
+        return false;
+    }
+    return widget == xournal->getWidget() || widget == pill.get() || widget == newPagePill.get() ||
+           gtk_widget_is_ancestor(widget, pill.get()) || gtk_widget_is_ancestor(widget, newPagePill.get());
+}
+
+gboolean PageGrowHandle::onWatchPointer(gpointer data) {
+    auto* self = static_cast<PageGrowHandle*>(data);
+    if (self->pointerIsHere()) {
+        return G_SOURCE_CONTINUE;
+    }
+    self->watchId = 0;
+    self->hide();
+    return G_SOURCE_REMOVE;
+}
+
 void PageGrowHandle::hide() {
+    if (watchId) {
+        g_source_remove(watchId);
+        watchId = 0;
+    }
     edge = Edge::NONE;
     page.reset();
     gtk_widget_hide(strip.get());
@@ -281,6 +316,9 @@ void PageGrowHandle::place() {
     }
     gtk_widget_show(pill.get());
     gtk_widget_queue_resize(pill.get());
+    if (!watchId) {
+        watchId = g_timeout_add(WATCH_MS, onWatchPointer, this);
+    }
 }
 
 void PageGrowHandle::grow() {

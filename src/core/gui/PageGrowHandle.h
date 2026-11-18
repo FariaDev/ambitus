@@ -41,8 +41,11 @@ private:
     /// Recomputes where the strip and the pill go for the current page and edge
     void place();
     void grow();
+    /// Whether the pointer is still on the pages or on the handle itself
+    bool pointerIsHere() const;
 
     static gboolean onEvent(GSignalInvocationHint*, guint n, const GValue* params, gpointer self);
+    static gboolean onWatchPointer(gpointer self);
     static gboolean onChildPosition(GtkOverlay*, GtkWidget* w, GdkRectangle* alloc, PageGrowHandle* self);
     static gboolean onDrawStrip(GtkWidget* w, cairo_t* cr, PageGrowHandle* self);
 
@@ -57,6 +60,7 @@ private:
     gulong hookId = 0;
     gulong positionId = 0;
     gulong scrollIds[2] = {0, 0};
+    guint watchId = 0;  ///< timer that looks for the pointer leaving, only while the handle is shown
 
     Edge edge = Edge::NONE;
     PageRef page;
