@@ -104,6 +104,10 @@ public:
     bool isBoard(const fs::path& p) const;
     /// A notebook was renamed (its file is at `to` now): its cover goes with it, and the library lists it again
     void notebookMoved(const fs::path& from, const fs::path& to);
+    /// Id of the default paper of a notebook, as stored next to its cover; nothing when it has none
+    std::optional<std::string> notebookPaper(const fs::path& file) const;
+    /// Stores the id of the default paper of a notebook and saves the library
+    void setNotebookPaper(const fs::path& file, const std::string& id);
 
 private:
     enum class SourceKind { Recent, All, Drafts, Course, Folder };

@@ -1,9 +1,10 @@
 /*
  * Ambitus
  *
- * What the library keeps on its own: the folders added by hand and the cover
- * of each notebook. Stored as a key file (library.ini) in the config folder,
- * never inside the .xopp, so the notebooks stay plain Xournal++ files.
+ * What the library keeps on its own: the folders added by hand, the cover of
+ * each notebook and the paper a new page of it gets. Stored as a key file
+ * (library.ini) in the config folder, never inside the .xopp, so the notebooks
+ * stay plain Xournal++ files.
  *
  * @license GNU GPLv2 or later
  */
@@ -77,8 +78,14 @@ public:
     /// Cover of a notebook, default cover when none was chosen.
     Cover cover(const fs::path& notebook) const;
     void setCover(const fs::path& notebook, const Cover& cover);
-    /// Keeps the cover when a notebook is renamed or moved inside the library.
+    /// Keeps the cover when a notebook is renamed or moved inside the library. The default paper goes with it.
     void moveCover(const fs::path& from, const fs::path& to);
+
+    /// Id of the paper ("summa", "ruled", "grid", "dotted", "plain") a new page of the notebook gets; nothing when the
+    /// notebook has no choice of its own (the notebookpaper rule then decides).
+    std::optional<std::string> paper(const fs::path& notebook) const;
+    /// Stores that id; an empty id removes the choice.
+    void setPaper(const fs::path& notebook, const std::string& paper);
 
     /// Writes the file atomically (g_file_set_contents). Returns false on failure.
     bool save() const;
@@ -87,6 +94,7 @@ private:
     fs::path file;
     std::vector<Folder> folderList;
     std::map<fs::path, Cover> covers;
+    std::map<fs::path, std::string> papers;
 };
 
 }  // namespace ambitus::library

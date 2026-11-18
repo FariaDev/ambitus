@@ -10,6 +10,7 @@
 
 #include "ambitus/Drafts.h"
 #include "ambitus/NewNotebook.h"
+#include "ambitus/NotebookPaper.h"
 #include "ambitus/Rename.h"
 #include "ambitus/SettingsRows.h"
 #include "ambitus/Versions.h"
@@ -30,7 +31,9 @@
 #include "gui/FloatingToolbox.h"                        // for FloatingToolbox
 #include "gui/GladeGui.h"                               // for GladeGui
 #include "gui/IconNameHelper.h"                         // for IconNameHelper
+#include "gui/NewNotebookDialog.h"                      // for paperThumbnailName
 #include "gui/PdfFloatingToolbox.h"                     // for PdfFloatingToolbox
+#include "gui/PopupMenu.h"                              // for PopupMenu
 #include "gui/SearchBar.h"                              // for SearchBar
 #include "gui/ToolitemDragDrop.h"                       // for ToolitemDragDrop
 #include "gui/inputdevices/InputEvents.h"               // for INPUT_DEVICE_TOUC...
@@ -550,6 +553,9 @@ void MainWindow::showNewNotebook(const fs::path& folder) {
             control->newFile(r.file, page);
             setEditorMode(ambitus::EditorMode::STUDIO);
         }
+        if (!r.file.empty() && r.size != PageSize::INFINITE && library) {
+            library->setNotebookPaper(r.file, ambitus::settingsrows::paperId(r.paper));  // the paper of new pages
+        }
         if (!r.file.empty()) {
             control->save([](bool) {});  // in the folder of the subject: the first version is kept from the start
         }
@@ -604,6 +610,9 @@ void MainWindow::makeDraft(ambitus::newnotebook::Paper paper, ambitus::newnotebo
         control->newFile(file,
                          ambitus::drafts::pageTemplate(control->getSettings()->getPageTemplateSettings(), paper, size));
         setEditorMode(ambitus::EditorMode::STUDIO);
+        if (library && size != ambitus::newnotebook::PageSize::INFINITE) {
+            library->setNotebookPaper(file, ambitus::settingsrows::paperId(paper));  // the paper of new pages
+        }
     }
     draftDirty = false;
     draftPendingPath.clear();
@@ -621,6 +630,15 @@ void MainWindow::makeDraft(ambitus::newnotebook::Paper paper, ambitus::newnotebo
     tabsChanged();
 }
 
+namespace {
+/// The colour of the paper of a page added after `source`: its own, or white after a PDF or image page, as a new
+/// notebook is
+Color newPageColor(const PageRef& source) {
+    const PageType bg = source->getBackgroundType();
+    return bg.isPdfPage() || bg.isImagePage() ? Colors::white : source->getBackgroundColor();
+}
+}  // namespace
+
 void MainWindow::appendPageAtEnd() {
     Document* doc = control->getDocument();
     doc->lock_shared();
@@ -631,20 +649,123 @@ void MainWindow::appendPageAtEnd() {
         return;
     }
 
-    // the paper of the last page, as copyBackgroundFromOtherPage copies it (the page type chosen for the new pages is
-    // not used here); insertPage keeps the undo and scrolls to the page
+    // Ambitus: a plain new page at the end gets the notebook's default paper, not a copy of the last page's
+    // PDF/image background; insertPage keeps the undo and scrolls to the page
     control->clearSelectionEndText();
     auto page = std::make_shared<XojPage>(last->getWidth(), last->getHeight());
-    const PageType bg = last->getBackgroundType();
-    page->setBackgroundType(bg);
-    if (bg.isPdfPage()) {
-        page->setBackgroundPdfPageNr(last->getPdfPageNr());
-    } else if (bg.isImagePage()) {
-        page->setBackgroundImage(last->getBackgroundImage());
-    } else {
-        page->setBackgroundColor(last->getBackgroundColor());
-    }
+    giveNewPagePaper(page, last);
     control->insertPage(page, count);
+}
+
+auto MainWindow::paperForNewPage(const PageRef& source) const -> std::optional<ambitus::newnotebook::Paper> {
+    std::vector<PageType> pages;
+    Document* doc = control->getDocument();
+    doc->lock_shared();
+    const size_t count = doc->getPageCount();
+    for (size_t i = 0; i < count; i++) {
+        if (PageRef p = doc->getPage(i)) {
+            pages.push_back(p->getBackgroundType());
+        }
+    }
+    doc->unlock_shared();
+    std::optional<std::string> stored;
+    if (library) {
+        stored = library->notebookPaper(activeFilePath());
+    }
+    return ambitus::notebookpaper::paperForNewPage(stored, source->getBackgroundType(), pages,
+                                                   control->getSettings()->getAmbitusNewPaper());
+}
+
+void MainWindow::giveNewPagePaper(const PageRef& page, const PageRef& source) const {
+    const PageType bg = source->getBackgroundType();
+    const auto paper = paperForNewPage(source);
+    page->setBackgroundType(paper ? ambitus::newnotebook::paperType(*paper) : bg);
+    page->setBackgroundColor(newPageColor(source));
+}
+
+void MainWindow::setNotebookDefaultPaper(ambitus::newnotebook::Paper paper) {
+    if (const fs::path file = activeFilePath(); library && !file.empty()) {
+        library->setNotebookPaper(file, ambitus::settingsrows::paperId(paper));
+    }
+}
+
+void MainWindow::insertNewPageWithPaper(ambitus::newnotebook::Paper paper) {
+    PageRef current = control->getCurrentPage();
+    if (!current) {
+        return;
+    }
+    const size_t at = control->getCurrentPageNo();
+    control->clearSelectionEndText();
+    auto page = std::make_shared<XojPage>(current->getWidth(), current->getHeight());
+    page->setBackgroundType(ambitus::newnotebook::paperType(paper));
+    page->setBackgroundColor(newPageColor(current));
+    control->insertPage(page, at + 1, true);
+}
+
+void MainWindow::repeatCurrentPdfPage() {
+    PageRef current = control->getCurrentPage();
+    if (!current) {
+        return;
+    }
+    const size_t at = control->getCurrentPageNo();
+    control->clearSelectionEndText();
+    auto page = std::make_shared<XojPage>(current->getWidth(), current->getHeight());
+    const PageType bg = current->getBackgroundType();
+    page->setBackgroundType(bg);
+    page->setSize(current->getWidth(), current->getHeight());
+    page->setBackgroundPdfPageNr(current->getPdfPageNr());
+    control->insertPage(page, at + 1, true);
+}
+
+void MainWindow::openNewPageMenu(GtkWidget* anchor) {
+    if (!newPageMenu) {
+        newPageMenu = std::make_unique<ambitus::PopupMenu>([this] { return control->getGtkWindow(); });
+    }
+    GtkWidget* box = newPageMenu->begin(anchor, GTK_POS_BOTTOM, 250);
+
+    const size_t current = control->getCurrentPageNo();
+    GtkWidget* head = gtk_label_new(FS(_F("New page after p. {1}") % (current + 1)).c_str());
+    gtk_label_set_xalign(GTK_LABEL(head), 0);
+    gtk_style_context_add_class(gtk_widget_get_style_context(head), "amb-newpage-head");
+    gtk_box_pack_start(GTK_BOX(box), head, false, false, 0);
+
+    // the mark is on what the main part of the button adds now
+    PageRef page = control->getCurrentPage();
+    std::optional<ambitus::newnotebook::Paper> def;
+    if (page) {
+        def = paperForNewPage(page);
+        if (!def) {
+            def = ambitus::notebookpaper::paperFromBackground(page->getBackgroundType());
+        }
+    }
+    for (auto paper: ambitus::newnotebook::allPapers()) {
+        const char* marker = paper == def ? _("default ✓") : nullptr;
+        newPageMenu->addCallItem(
+                box, nullptr, ambitus::paperThumbnailName(paper),
+                [this, paper] {
+                    if (newPageUseAsDefault) {
+                        setNotebookDefaultPaper(paper);
+                    }
+                    newPageUseAsDefault = false;  // the check is for this choice only
+                    insertNewPageWithPaper(paper);
+                },
+                marker);
+    }
+
+    newPageMenu->addSeparator(box);
+    if (page && page->getBackgroundType().isPdfPage()) {
+        newPageMenu->addCallItem(box, nullptr, _("Repeat this page of the PDF"), [this] { repeatCurrentPdfPage(); });
+        newPageMenu->addSeparator(box);
+    }
+    GtkWidget* check = gtk_check_button_new_with_label(_("Use the choice as this notebook's default"));
+    gtk_style_context_add_class(gtk_widget_get_style_context(check), "amb-newpage-check");
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check), newPageUseAsDefault);
+    g_signal_connect(check, "toggled", G_CALLBACK(+[](GtkToggleButton* b, MainWindow* self) {
+                         self->newPageUseAsDefault = gtk_toggle_button_get_active(b);
+                     }),
+                     this);
+    gtk_box_pack_start(GTK_BOX(box), check, false, false, 0);
+    newPageMenu->popup();
 }
 
 void MainWindow::initDraftPill() {
@@ -973,7 +1094,7 @@ void MainWindow::keepDraft(const fs::path& draft, const fs::path& folder, const 
         doc->setFilepath(*target);
         doc->unlock();
         if (library) {
-            library->refresh();
+            library->notebookMoved(draft, *target);  // its paper and cover go with it, and the library lists it again
         }
         control->updateWindowTitle();
         draftDirty = false;
@@ -1813,15 +1934,27 @@ void MainWindow::updateStudioPageItems() {
     gtk_toolbar_insert(GTK_TOOLBAR(bottom), toggle, 0);
     gtk_toolbar_insert(GTK_TOOLBAR(bottom), separator, 1);
 
-    // "+ Page" right after "Page n of m": the page after the current one, as the New page after action makes it
+    // "+ Page" right after "Page n of m": the main part adds a page in the notebook's default paper right after the
+    // current one; the ▾ picks another paper for that one page
+    GtkWidget* addBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_style_context_add_class(gtk_widget_get_style_context(addBox), "amb-addpage");
     GtkWidget* addButton = gtk_button_new_with_label(_("+ Page"));
+    gtk_style_context_add_class(gtk_widget_get_style_context(addButton), "amb-addpage-main");
     gtk_widget_set_tooltip_text(addButton, _("New page after"));
     g_signal_connect_swapped(addButton, "clicked", G_CALLBACK(+[](MainWindow* self) {
                                  self->control->insertNewPage(self->control->getCurrentPageNo() + 1);
                              }),
                              this);
+    GtkWidget* arrowButton = gtk_button_new_with_label("▾");
+    gtk_style_context_add_class(gtk_widget_get_style_context(arrowButton), "amb-addpage-arrow");
+    gtk_widget_set_tooltip_text(arrowButton, _("Choose the paper of the new page"));
+    g_signal_connect(
+            arrowButton, "clicked",
+            G_CALLBACK(+[](GtkButton* button, MainWindow* self) { self->openNewPageMenu(GTK_WIDGET(button)); }), this);
+    gtk_box_pack_start(GTK_BOX(addBox), addButton, false, false, 0);
+    gtk_box_pack_start(GTK_BOX(addBox), arrowButton, false, false, 0);
     GtkToolItem* add = gtk_tool_item_new();
-    gtk_container_add(GTK_CONTAINER(add), addButton);
+    gtk_container_add(GTK_CONTAINER(add), addBox);
     gtk_widget_show_all(GTK_WIDGET(add));
     int spinnerIndex = -1;
     for (int i = 0; i < gtk_toolbar_get_n_items(GTK_TOOLBAR(bottom)); i++) {

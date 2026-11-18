@@ -14,6 +14,7 @@ namespace {
 constexpr auto FOLDERS_GROUP = "folders";
 constexpr auto FOLDERS_KEY = "paths";
 constexpr auto COVER_PREFIX = "cover ";
+constexpr auto PAPER_PREFIX = "paper ";
 
 auto utf8(const fs::path& p) -> std::string { return std::string(char_cast(p.u8string())); }
 auto fromUtf8(const std::string& s) -> fs::path { return fs::path(std::u8string(s.begin(), s.end())); }
@@ -116,20 +117,24 @@ LibraryStore::LibraryStore(fs::path f): file(std::move(f)) {
     gchar** groups = g_key_file_get_groups(k.kf, &n);
     for (gsize i = 0; i < n; i++) {
         std::string group = groups[i];
-        if (group.rfind(COVER_PREFIX, 0) != 0) {
-            continue;
-        }
-        Cover c;
-        if (auto style = coverStyleFromString(k.str(groups[i], "style"))) {
-            c.style = *style;
-        }
-        if (auto color = k.str(groups[i], "color"); validColor(color)) {
-            c.color = color;
-        }
-        c.seed = static_cast<unsigned>(g_key_file_get_uint64(k.kf, groups[i], "seed", nullptr));
-        c.image = fromUtf8(k.str(groups[i], "image"));
-        if (auto path = k.str(groups[i], "path"); !path.empty()) {
-            covers[fromUtf8(path)] = c;
+        const fs::path path = fromUtf8(k.str(groups[i], "path"));
+        if (group.rfind(COVER_PREFIX, 0) == 0) {
+            Cover c;
+            if (auto style = coverStyleFromString(k.str(groups[i], "style"))) {
+                c.style = *style;
+            }
+            if (auto color = k.str(groups[i], "color"); validColor(color)) {
+                c.color = color;
+            }
+            c.seed = static_cast<unsigned>(g_key_file_get_uint64(k.kf, groups[i], "seed", nullptr));
+            c.image = fromUtf8(k.str(groups[i], "image"));
+            if (!path.empty()) {
+                covers[path] = c;
+            }
+        } else if (group.rfind(PAPER_PREFIX, 0) == 0) {
+            if (auto id = k.str(groups[i], "paper"); !path.empty() && !id.empty()) {
+                papers[path] = id;
+            }
         }
     }
     g_strfreev(groups);
@@ -166,11 +171,27 @@ void LibraryStore::setCover(const fs::path& notebook, const Cover& c) {
 
 void LibraryStore::moveCover(const fs::path& from, const fs::path& to) {
     auto it = covers.find(from);
-    if (it == covers.end()) {
-        return;
+    if (it != covers.end()) {
+        covers[to] = it->second;
+        covers.erase(from);
     }
-    covers[to] = it->second;
-    covers.erase(from);
+    if (auto p = papers.find(from); p != papers.end()) {
+        papers[to] = p->second;
+        papers.erase(from);
+    }
+}
+
+auto LibraryStore::paper(const fs::path& notebook) const -> std::optional<std::string> {
+    auto it = papers.find(notebook);
+    return it == papers.end() ? std::nullopt : std::make_optional(it->second);
+}
+
+void LibraryStore::setPaper(const fs::path& notebook, const std::string& id) {
+    if (id.empty()) {
+        papers.erase(notebook);
+    } else {
+        papers[notebook] = id;
+    }
 }
 
 auto LibraryStore::save() const -> bool {
@@ -199,6 +220,12 @@ auto LibraryStore::save() const -> bool {
         if (!c.image.empty()) {
             g_key_file_set_string(k.kf, group.c_str(), "image", utf8(c.image).c_str());
         }
+    }
+    n = 0;
+    for (auto& [path, id]: papers) {
+        const auto group = PAPER_PREFIX + std::to_string(++n);
+        g_key_file_set_string(k.kf, group.c_str(), "path", utf8(path).c_str());
+        g_key_file_set_string(k.kf, group.c_str(), "paper", id.c_str());
     }
     gsize len = 0;
     gchar* data = g_key_file_to_data(k.kf, &len, nullptr);

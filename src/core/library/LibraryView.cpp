@@ -337,6 +337,13 @@ void LibraryView::notebookMoved(const fs::path& from, const fs::path& to) {
     refresh();
 }
 
+auto LibraryView::notebookPaper(const fs::path& file) const -> std::optional<std::string> { return store.paper(file); }
+
+void LibraryView::setNotebookPaper(const fs::path& file, const std::string& id) {
+    store.setPaper(file, id);
+    store.save();
+}
+
 void LibraryView::focusSearch() { gtk_widget_grab_focus(search); }
 
 auto LibraryView::colorOf(const fs::path& file) const -> std::string {

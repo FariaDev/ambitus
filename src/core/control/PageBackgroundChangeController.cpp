@@ -335,7 +335,13 @@ void PageBackgroundChangeController::insertNewPage(size_t position, bool automat
     };
 
     if (!pageTypeForNewPages) {
-        copyBackgroundFromOtherPage(page, current);
+        // Ambitus: a plain new page follows the paper of the notebook and never repeats a PDF/image background by
+        // itself. "Repeat this page of the PDF" in the + Page menu does that on purpose.
+        if (MainWindow* win = control->getWindow()) {
+            win->giveNewPagePaper(page, current);
+        } else {
+            copyBackgroundFromOtherPage(page, current);
+        }
         afterConfigured(std::move(page));
     } else if (pageTypeForNewPages->isImagePage()) {
         askForImageBackground([after = std::move(afterConfigured), page = std::move(page)](BackgroundImage img) {

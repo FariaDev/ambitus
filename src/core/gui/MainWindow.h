@@ -16,6 +16,7 @@
 #include <cstddef>  // for size_t
 #include <functional>
 #include <memory>   // for unique_ptr
+#include <optional>  // for optional
 #include <string>   // for string
 #include <vector>   // for vector
 
@@ -48,6 +49,7 @@ class GladeSearchpath;
 class Menubar;
 namespace ambitus {
 class PageGrowHandle;
+class PopupMenu;
 class TitleBar;
 class StudioPalette;
 class PageMenu;
@@ -177,9 +179,22 @@ public:
     void applyEditorMode();
     /// Ambitus: the "Pages" button of the Studio bottom bar: the column of the page thumbnails opens or closes
     void toggleStudioPages();
-    /// Ambitus: a page after the last one, with the paper of the last one; it scrolls to it (the tile and the pill use
+    /// Ambitus: the ▾ of the "+ Page" split button: picks the paper of the one page it adds
+    void openNewPageMenu(GtkWidget* anchor);
+    /// Ambitus: adds one page in a chosen paper right after the current page
+    void insertNewPageWithPaper(ambitus::newnotebook::Paper paper);
+    /// Ambitus: adds one blank page repeating the PDF background of the current page (the old + Page behaviour)
+    void repeatCurrentPdfPage();
+    /// Ambitus: a page after the last one, with the notebook's default paper; it scrolls to it (the tile and pill use
     /// it)
     void appendPageAtEnd();
+    /// Ambitus: the paper of a plain new page coming after `source` (see notebookpaper::paperForNewPage); nothing means
+    /// the same background as `source`
+    std::optional<ambitus::newnotebook::Paper> paperForNewPage(const PageRef& source) const;
+    /// Ambitus: gives `page` the background a plain new page coming after `source` has
+    void giveNewPagePaper(const PageRef& page, const PageRef& source) const;
+    /// Ambitus: remembers the paper picked in the + Page menu as the default of this notebook
+    void setNotebookDefaultPaper(ambitus::newnotebook::Paper paper);
     /// Ambitus: the selection appeared, changed or went away (the bar over it follows)
     void selectionChanged();
     /// Ambitus: the board was edited (the minimap follows)
@@ -286,6 +301,10 @@ private:
     /// Ambitus: the "Pages" button and its separator, put at the left of the Studio bottom bar
     std::vector<GtkToolItem*> studioPageItems;
     GtkWidget* studioPagesButton = nullptr;
+    /// Ambitus: the ▾ menu of the "+ Page" split button in the Studio bottom bar
+    std::unique_ptr<ambitus::PopupMenu> newPageMenu;
+    /// Ambitus: whether the ▾ menu's "Use the choice as this notebook's default" is checked
+    bool newPageUseAsDefault = false;
     /// Ambitus: true while the state of the button is set from the setting (its "clicked" is not a click)
     bool studioPagesSyncing = false;
     /// Ambitus: the column of the page thumbnails is shown beside the Studio (the Sidebar holds it)

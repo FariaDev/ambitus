@@ -159,6 +159,35 @@ TEST(LibraryStoreTest, moveAndRemove) {
     EXPECT_FALSE(s.removeFolder("/x"));
 }
 
+TEST(LibraryStoreTest, defaultPaperRoundTripsAndFollowsTheCoverOnMove) {
+    TempDir d;
+    const auto file = d.path / "cfg" / "library.ini";
+    const fs::path odd = u8"/cadernos/[rascunho] Cálculo.xopp";
+    {
+        LibraryStore s(file);
+        EXPECT_EQ(s.paper(odd), std::nullopt);
+        s.setCover(odd, Cover{CoverStyle::Linen, "#2f5d6b", 7, {}});
+        s.setPaper(odd, "dotted");
+        s.setPaper("/cadernos/b.xopp", "grid");
+        ASSERT_TRUE(s.save());
+    }
+    {
+        LibraryStore s(file);
+        EXPECT_EQ(s.paper(odd), std::optional<std::string>("dotted"));
+        EXPECT_EQ(s.paper("/cadernos/b.xopp"), std::optional<std::string>("grid"));
+        EXPECT_EQ(s.paper("/cadernos/outro.xopp"), std::nullopt);
+        s.moveCover(odd, "/cadernos/novo.xopp");  // a rename carries the paper with the cover
+        EXPECT_EQ(s.paper(odd), std::nullopt);
+        EXPECT_EQ(s.paper("/cadernos/novo.xopp"), std::optional<std::string>("dotted"));
+        ASSERT_TRUE(s.save());
+    }
+    LibraryStore s(file);
+    EXPECT_EQ(s.cover("/cadernos/novo.xopp").style, CoverStyle::Linen);
+    EXPECT_EQ(s.paper("/cadernos/novo.xopp"), std::optional<std::string>("dotted"));
+    s.setPaper("/cadernos/novo.xopp", "");
+    EXPECT_EQ(s.paper("/cadernos/novo.xopp"), std::nullopt);
+}
+
 TEST(LibraryStoreTest, unreadableFileStartsEmpty) {
     TempDir d;
     std::ofstream(d.path / "library.ini") << "[sem fim\nlixo";

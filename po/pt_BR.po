@@ -6038,3 +6038,23 @@ msgstr "Reabrir aba fechada"
 
 msgid "Open with the tabs from last time"
 msgstr "Abrir com as abas da última vez"
+
+#: ../src/core/gui/MainWindow.cpp
+msgid "Choose the paper of the new page"
+msgstr "Escolher o papel da nova página"
+
+#: ../src/core/gui/MainWindow.cpp
+msgid "New page after p. {1}"
+msgstr "Nova página depois da p. {1}"
+
+#: ../src/core/gui/MainWindow.cpp
+msgid "default ✓"
+msgstr "padrão ✓"
+
+#: ../src/core/gui/MainWindow.cpp
+msgid "Repeat this page of the PDF"
+msgstr "Repetir esta página da apostila"
+
+#: ../src/core/gui/MainWindow.cpp
+msgid "Use the choice as this notebook's default"
+msgstr "Usar a escolha como padrão do caderno"
