@@ -6058,3 +6058,19 @@ msgstr "Repetir esta página da apostila"
 #: ../src/core/gui/MainWindow.cpp
 msgid "Use the choice as this notebook's default"
 msgstr "Usar a escolha como padrão do caderno"
+
+msgid "Open beside"
+msgstr "Abrir ao lado"
+
+msgctxt "Title bar menu"
+msgid "Open beside…"
+msgstr "Abrir ao lado…"
+
+msgid "Notebook to open beside…"
+msgstr "Caderno para abrir ao lado…"
+
+msgid "Write here"
+msgstr "Escrever aqui"
+
+msgid "Page {1} of {2}"
+msgstr "Página {1} de {2}"

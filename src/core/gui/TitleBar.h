@@ -33,10 +33,12 @@ struct TabItem {
     bool closable = true;
     /// A notebook that has a name to change: not a draft (it is named when kept) and not an untitled one
     bool renamable = false;
+    /// the notebook shown beside the one in the window (read only): its tab has the columns mark
+    bool beside = false;
 
     bool operator==(const TabItem& o) const {
         return title == o.title && color == o.color && active == o.active && modified == o.modified &&
-               closable == o.closable && renamable == o.renamable;
+               closable == o.closable && renamable == o.renamable && beside == o.beside;
     }
 };
 
@@ -61,6 +63,8 @@ public:
     /// Renames the notebook of a tab: a double click on the name of the tab, or "Renomear…" of the "⋯" menu for the
     /// active one. Only for the tabs that are renamable.
     void setRenameCallback(std::function<void(size_t)> rename);
+    /// "Open beside" of the menu of a tab: the notebook of the tab is shown beside the one in the window
+    void setBesideCallback(std::function<void(size_t)> beside);
 
 private:
     static constexpr int MENU_WIDTH = 292;  ///< px of the column of the "⋯" menu (300 with the padding, as in the r6)
@@ -77,6 +81,7 @@ private:
     GtkWidget* libraryTab = nullptr;
     std::vector<TabItem> items;
     std::function<void(size_t)> onActivate;
+    std::function<void(size_t)> onBeside;
     std::function<void(size_t)> onClose;
     std::function<void(size_t)> onRename;
     GtkWidget* modes = nullptr;

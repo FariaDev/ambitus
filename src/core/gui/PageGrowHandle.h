@@ -30,6 +30,8 @@ public:
     PageGrowHandle& operator=(const PageGrowHandle&) = delete;
 
     void hide();
+    /// px of the pages on screen, from the left of the widget
+    int visibleWidth() const;
 
 private:
     enum class Edge { NONE, RIGHT, BOTTOM };

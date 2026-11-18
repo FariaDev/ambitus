@@ -135,6 +135,9 @@ public:
     void setRevealOnHover();
     /// Opens the panel with every tool (the "..." button), when the palette is on screen
     void openPanel();
+    /// Ambitus: the palette is centred between `start` and `end` px in from the sides of its overlay (0, 0: all of it),
+    /// so that it sits over the pages on the left while a notebook is beside them
+    void setSpan(int start, int end);
 
 private:
     GtkWidget* root = nullptr;

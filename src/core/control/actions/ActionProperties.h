@@ -159,6 +159,13 @@ struct ActionProperties<Action::COMMAND_PALETTE> {
 };
 
 template <>
+struct ActionProperties<Action::OPEN_BESIDE> {
+    // Ctrl+\ opens the palette for the notebook to put beside the one in the window
+    static constexpr const char* accelerators[] = {"<Primary>backslash", nullptr};
+    static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getWindow()->openCommandPalette(true); }
+};
+
+template <>
 struct ActionProperties<Action::EARLIER_VERSIONS> {
     static void callback(GSimpleAction*, GVariant*, Control* ctrl) { ctrl->getWindow()->toggleVersions(); }
 };

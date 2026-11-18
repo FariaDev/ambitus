@@ -33,6 +33,8 @@ struct Tab {
     fs::path autosave;
     /// tells apart the autosaves of documents without a file
     unsigned serial = 0;
+    /// the page it was left at (kept up to date while it is the side tab, which turns the pages without the window)
+    int page = 0;
 };
 
 /// What the tab strip shows
@@ -40,6 +42,17 @@ struct TabInfo {
     fs::path path;
     bool active = false;
     bool modified = false;
+    /// the notebook shown beside the one in the window (read only)
+    bool beside = false;
+};
+
+/// What the side pane shows: the notebook beside the one in the window. `doc` is owned by its tab; null when none.
+struct SideNotebook {
+    Document* doc = nullptr;
+    /// tells the notebook apart from another one that had the same document in the same place
+    unsigned serial = 0;
+    fs::path path;
+    int page = 0;
 };
 
 namespace tabs {

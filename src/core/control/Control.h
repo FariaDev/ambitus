@@ -112,7 +112,7 @@ public:
 
     /// Ambitus tabs (code in ambitus/ControlTabs.cpp). One document is in the window; the others wait aside with
     /// their pages and undo history. Opens the file in a tab of its own, or goes to the tab that has it.
-    void openInTab(fs::path filepath, int scrollToPage = -1);
+    void openInTab(fs::path filepath, int scrollToPage = -1, bool beside = false);
     void activateTab(size_t index);
     /// Asks to save when needed, like closing a file
     void closeTab(size_t index);
@@ -127,6 +127,24 @@ public:
     bool canReopenClosedTab() const;
     /// Ambitus: open the tabs saved from last time; false when there was nothing to open (the library shows)
     bool restoreTabsFromLastTime();
+
+    /// Ambitus: opens the file beside the notebook in the window, which stays where it is (ambitus/SideTab.h)
+    void openBeside(fs::path filepath);
+    /// Ambitus: shows the tab beside the one in the window; for the one in the window itself, nothing
+    void openBesideTab(size_t index);
+    /// Ambitus: the side pane closes; its notebook stays a tab
+    void closeSideTab();
+    /// Ambitus: the tab shown beside the one in the window, NO_TAB when none
+    size_t getSideTab() const { return sideTab; }
+    /// Ambitus: the notebook beside, for the side pane (its document is owned by its tab)
+    ambitus::SideNotebook getSideNotebook() const;
+    /// Ambitus: the side pane turned to `page` (kept in memory: the notebook is written with its page when it leaves
+    /// the side, see flushSidePage)
+    void storeSidePage(int page);
+    /// Ambitus: writes the page of the side notebook with the metadata, as the notebook in the window has its page
+    void flushSidePage();
+    /// Ambitus: a notebook is in the window
+    bool hasNotebookInWindow() const { return activeTab != ambitus::NO_TAB; }
 
     /// Ambitus: the open document is a draft (see ambitus/Drafts.h)
     bool isDraftOpen() const;
@@ -576,6 +594,10 @@ private:
     /// Ambitus: answers the "Check" of Summa with the page on screen (ambitus/SummaPoll.h)
     std::unique_ptr<ambitus::SummaPoller> summaPoller;
     size_t activeTab = ambitus::NO_TAB;
+    /// the tabs as they were when the quit began, written once it goes through (see quit)
+    std::optional<std::string> tabsAtQuit;
+    /// the tab shown beside the one in the window (read only, see ambitus/SideTab.h); NO_TAB when none
+    size_t sideTab = ambitus::NO_TAB;
     /// the tab next to which the file being opened by openInTab goes
     size_t newTabAfter = ambitus::NO_TAB;
     /// Ambitus tabs: keeps the document in the window aside, in its tab

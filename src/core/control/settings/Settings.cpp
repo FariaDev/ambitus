@@ -1,6 +1,7 @@
 #include "Settings.h"
 
 #include <algorithm>    // for max
+#include <cmath>        // for isfinite
 #include <cstdint>      // for uint32_t, int32_t
 #include <cstdio>       // for sscanf, size_t
 #include <cstdlib>      // for atoi
@@ -259,6 +260,7 @@ void Settings::loadDefault() {
     this->ambitusStudioPages = false;
     this->ambitusOpenTabsFromLastTime = true;
     this->ambitusOpenTabs.clear();
+    this->ambitusSideRatio = 0.4;
     this->ambitusNewPaper = "summa";
     this->ambitusNewSize = "a4";
     this->ambitusDraftPaper = "summa";
@@ -769,6 +771,8 @@ void Settings::parseItem(xmlDocPtr doc, xmlNodePtr cur) {
         this->ambitusOpenTabsFromLastTime = xmlStrcmp(value, reinterpret_cast<const xmlChar*>("true")) == 0;
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusOpenTabs")) == 0) {
         this->ambitusOpenTabs = reinterpret_cast<const char*>(value);
+    } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusSideRatio")) == 0) {
+        setAmbitusSideRatio(tempg_ascii_strtod(reinterpret_cast<const char*>(value), nullptr));
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewPaper")) == 0) {
         this->ambitusNewPaper = reinterpret_cast<const char*>(value);
     } else if (xmlStrcmp(name, reinterpret_cast<const xmlChar*>("ambitusNewSize")) == 0) {
@@ -1309,6 +1313,7 @@ void Settings::save() {
     SAVE_BOOL_PROP(ambitusStudioPages);
     SAVE_BOOL_PROP(ambitusOpenTabsFromLastTime);
     SAVE_STRING_PROP(ambitusOpenTabs);
+    SAVE_DOUBLE_PROP(ambitusSideRatio);
     SAVE_STRING_PROP(ambitusNewPaper);
     SAVE_STRING_PROP(ambitusNewSize);
     SAVE_STRING_PROP(ambitusDraftPaper);
@@ -2539,6 +2544,13 @@ void Settings::setAmbitusOpenTabs(const std::string& tabs) {
 }
 
 auto Settings::getAmbitusOpenTabs() const -> const std::string& { return this->ambitusOpenTabs; }
+
+void Settings::setAmbitusSideRatio(double ratio) {
+    // a NaN from a damaged file would stay in the layout: the default is taken instead
+    this->ambitusSideRatio = std::isfinite(ratio) ? std::clamp(ratio, 0.2, 0.8) : 0.4;
+}
+
+double Settings::getAmbitusSideRatio() const { return this->ambitusSideRatio; }
 
 void Settings::setAmbitusNewPaper(const std::string& paper) {
     if (this->ambitusNewPaper == paper) {

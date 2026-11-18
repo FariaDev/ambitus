@@ -616,6 +616,11 @@ public:
     void setAmbitusOpenTabs(const std::string& tabs);
     const std::string& getAmbitusOpenTabs() const;
 
+    /// Ambitus: the share of the width taken by the notebook beside, when one is open (between 0.2 and 0.8). Kept in
+    /// memory and written with the next save of the settings (the divider is dragged often).
+    void setAmbitusSideRatio(double ratio);
+    double getAmbitusSideRatio() const;
+
     /// Ambitus: screen mode of the editor (0 classic, 1 studio, 2 focus)
     void setEditorMode(int mode);
     int getEditorMode() const;
@@ -1244,6 +1249,7 @@ private:
     bool ambitusStudioPages{};
     bool ambitusOpenTabsFromLastTime{};
     std::string ambitusOpenTabs;
+    double ambitusSideRatio{};
     std::string ambitusNewPaper;
     std::string ambitusNewSize;
     std::string ambitusDraftPaper;
