@@ -7,6 +7,7 @@
 
 #include "model/Element.h"  // for Element
 #include "model/Layer.h"    // for Layer
+#include "model/Stroke.h"   // for Stroke, StrokeTool
 
 #include "DebugShowRepaintBounds.h"  // for IF_DEBUG_REPAINT
 #include "View.h"                    // for Context, ElementView
@@ -27,22 +28,34 @@ void LayerView::draw(const Context& ctx) const {
     double maxY;
     cairo_clip_extents(ctx.cr, &minX, &minY, &maxX, &maxY);
 
-    for (auto const& e: layer->getElementsView()) {
+    auto drawPass = [&](bool highlighterPass) {
+        for (auto const& e: layer->getElementsView()) {
+            const bool isHighlighter = e->getType() == ELEMENT_STROKE &&
+                                       static_cast<const Stroke*>(e)->getToolType() == StrokeTool::HIGHLIGHTER;
+            if (isHighlighter != highlighterPass) {
+                continue;
+            }
 
-        IF_DEBUG_REPAINT({
-            auto cr = ctx.cr;
-            cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-            cairo_set_source_rgb(cr, 0, 1, 0);
-            cairo_set_line_width(cr, 1);
-            cairo_rectangle(cr, e->getX(), e->getY(), e->getElementWidth(), e->getElementHeight());
-            cairo_stroke(cr);
-        });
+            IF_DEBUG_REPAINT({
+                auto cr = ctx.cr;
+                cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+                cairo_set_source_rgb(cr, 0, 1, 0);
+                cairo_set_line_width(cr, 1);
+                cairo_rectangle(cr, e->getX(), e->getY(), e->getElementWidth(), e->getElementHeight());
+                cairo_stroke(cr);
+            });
 
-        if (e->intersectsArea(minX, minY, maxX - minX, maxY - minY)) {
-            ElementView::createFromElement(e)->draw(ctx);
-            IF_DEBUG_REPAINT(drawn++;);
+            if (e->intersectsArea(minX, minY, maxX - minX, maxY - minY)) {
+                ElementView::createFromElement(e)->draw(ctx);
+                IF_DEBUG_REPAINT(drawn++;);
+            }
+            IF_DEBUG_REPAINT(else { notDrawn++; });
         }
-        IF_DEBUG_REPAINT(else { notDrawn++; });
-    }
+    };
+
+    // Ambitus: within a layer, paint the highlighter strokes first so the ink is always on top of them.
+    // The document order is unchanged; only the painting order is.
+    drawPass(true);
+    drawPass(false);
     IF_DEBUG_REPAINT(g_message("DBG:LayerView::draw: draw %i / not draw %i", drawn, notDrawn););
 }
