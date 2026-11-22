@@ -65,7 +65,8 @@ public:
     /**
      * Load document located at `filepath`
      * @param exportPage Optional zero-based page to load for image export only.
-     *                   Other pages keep their dimensions and backgrounds, but not their layer content.
+     *                   Earlier pages keep their dimensions and backgrounds, but not their layer content.
+     *                   Loading stops after this page unless a PDF background up to it is unresolved.
      * @return A valid pointer to a `Document`
      * @exception Throws a `std::runtime_error` if a fatal error is encountered.
      */

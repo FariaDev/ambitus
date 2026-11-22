@@ -167,7 +167,15 @@ void XmlParser::parserEndElement(GMarkupParseContext* context, const gchar* elem
     xoj_assert(!self->hierarchy.empty());
     xoj_assert(TAG_NAMES[self->hierarchy.back()] == xoj::util::utf8(elementName) ||
                self->hierarchy.back() == TagType::UNKNOWN);
+    const bool finishExport = self->hierarchy.back() == TagType::PAGE && self->exportPage &&
+                              self->nextPageIndex - 1 == *self->exportPage &&
+                              (!self->canFinishExport || self->canFinishExport());
     self->closeTopTag();
+    if (finishExport) {
+        self->exportPageComplete = true;
+        // Stop before GMarkup processes trailing data in the same buffer.
+        g_set_error_literal(error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE, "Requested export page complete");
+    }
 }
 
 void XmlParser::parserText(GMarkupParseContext* context, const gchar* text, gsize textLen, gpointer userdata,
@@ -200,8 +208,9 @@ void XmlParser::parserText(GMarkupParseContext* context, const gchar* text, gsiz
 }
 
 
-XmlParser::XmlParser(DocumentBuilderInterface& builder, std::optional<size_t> exportPage):
-        builder(builder), exportPage(exportPage) {}
+XmlParser::XmlParser(DocumentBuilderInterface& builder, std::optional<size_t> exportPage,
+                     std::function<bool()> canFinishExport):
+        builder(builder), exportPage(exportPage), canFinishExport(std::move(canFinishExport)) {}
 
 void XmlParser::closeOpenNodes() {
     while (!this->hierarchy.empty()) {

@@ -605,7 +605,12 @@ XOJ_GIO_GUARD_GENERATOR_TYPE(GMarkupParseContext, g_markup_parse_context_free);
 void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStream, std::optional<size_t> exportPage) {
     xoj_assert(xmlContentStream);
 
-    XmlParser parserInterface{*this, exportPage};
+    XmlParser parserInterface{*this, exportPage, [this] {
+                                  return std::none_of(this->pages.begin(), this->pages.end(), [this](const auto& page) {
+                                      return page->getBackgroundType().isPdfPage() &&
+                                             page->getPdfPageNr() >= this->doc->getPdfPageCount();
+                                  });
+                              }};
     auto context = GMarkupParseContextGuard{g_markup_parse_context_new(
             &XmlParser::interface, static_cast<GMarkupParseFlags>(0), &parserInterface, nullptr)};
 
@@ -628,6 +633,10 @@ void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStr
         }
 
         auto valid = g_markup_parse_context_parse(context.get(), buffer.data(), len, xoj::util::out_ptr(error));
+        if (parserInterface.isExportPageComplete()) {
+            parserInterface.closeOpenNodes();
+            break;
+        }
         handleGError(std::move(error));
         if (!valid) {
             throw std::runtime_error{_("Invalid XML data read")};
@@ -635,7 +644,8 @@ void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStr
     }
 
     // Sanity checks for document validity
-    if (!g_markup_parse_context_end_parse(context.get(), xoj::util::out_ptr(error)) || !this->parsingComplete) {
+    if (!parserInterface.isExportPageComplete() &&
+        (!g_markup_parse_context_end_parse(context.get(), xoj::util::out_ptr(error)) || !this->parsingComplete)) {
         handleGError(std::move(error));
 
         // The end may be cut off. Attempt to recover contents by closing the remaining open nodes.
