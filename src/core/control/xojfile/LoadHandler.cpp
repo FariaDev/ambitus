@@ -558,7 +558,7 @@ auto LoadHandler::openFile(fs::path const& filepath) -> std::unique_ptr<xoj::uti
         std::array<char, MAX_MIMETYPE_LENGTH + 1> mimetype = {};
         // read the mimetype and a few more bytes to make sure we do not only read a subset
         zip_fread(mimetypeFp.get(), mimetype.data(), MAX_MIMETYPE_LENGTH);
-        if (!strcmp(mimetype.data(), "application/xournal++")) {
+        if (StringUtils::trim(mimetype.data()) != "application/xournal++") {
             throw std::runtime_error{FS(_F("The file \"{1}\" is no valid .xopp file (Mimetype wrong): \"{2}\"") %
                                         filepath.u8string() % mimetype.data())};
         }

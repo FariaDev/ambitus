@@ -16,12 +16,15 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
 #include <config-test.h>
 #include <gtest/gtest.h>
+#include <zip.h>
 
 #include "control/xojfile/LoadHandler.h"
 #include "control/xojfile/SaveHandler.h"
@@ -442,6 +445,55 @@ TEST(ControlLoadHandler, testLoadZipped) {
 
     EXPECT_EQ(std::string("12345"), text->getText());
 }
+
+class PackagedXoppMimetypeTest: public ::testing::TestWithParam<std::pair<std::string, bool>> {
+protected:
+    fs::path filepath = Util::getTmpDirSubfolder() / "mimetype-test.xopp";
+
+    void SetUp() override {
+        fs::copy_file(GET_TESTFILE(u8"packaged_xopp/test.xopp"), filepath, fs::copy_options::overwrite_existing);
+        auto* archive = zip_open(char_cast(filepath.u8string().c_str()), 0, nullptr);
+        ASSERT_NE(archive, nullptr);
+        const auto& mimetype = GetParam().first;
+        auto* source = zip_source_buffer(archive, mimetype.data(), mimetype.size(), 0);
+        if (!source) {
+            zip_discard(archive);
+            FAIL() << "Could not create mimetype source";
+        }
+        if (zip_file_add(archive, "mimetype", source, ZIP_FL_OVERWRITE) < 0) {
+            zip_source_free(source);
+            zip_discard(archive);
+            FAIL() << "Could not replace mimetype";
+        }
+        const int result = zip_close(archive);
+        if (result != 0) {
+            zip_discard(archive);
+        }
+        ASSERT_EQ(result, 0);
+    }
+
+    void TearDown() override { fs::remove(filepath); }
+};
+
+TEST_P(PackagedXoppMimetypeTest, validatesMimetype) {
+    if (GetParam().second) {
+        auto doc = loadTestDocument(filepath);
+        ASSERT_TRUE(doc);
+        EXPECT_EQ(doc->getPageCount(), 1U);
+    } else {
+        try {
+            LoadHandler{}.loadDocument(filepath);
+            FAIL() << "Expected rejection of invalid mimetype";
+        } catch (const std::runtime_error& error) {
+            EXPECT_NE(std::string(error.what()).find("Mimetype wrong"), std::string::npos) << error.what();
+        }
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(PackagedXopp, PackagedXoppMimetypeTest,
+                         ::testing::Values(std::make_pair("application/xournal++", true),
+                                           std::make_pair("application/zip", false), std::make_pair("", false),
+                                           std::make_pair(" \tapplication/xournal++\n", true)));
 
 TEST(ControlLoadHandler, testLoadUnzipped) {
     auto doc = loadTestDocument(GET_TESTFILE(u8"test1.unzipped.xoj"));
