@@ -46,8 +46,6 @@ public:
      * for refreshing the view buffer (if you have changed the document) call rerender.
      */
     virtual void repaintArea(double x1, double y1, double x2, double y2) const = 0;
-    [[maybe_unused]] void repaintRect(double x, double y, double width, double height) const;
-    [[maybe_unused]] void repaintElement(const Element* e) const;
 
     /**
      * Call this if you only need to redraw the view, this means the buffer will be painted again,
