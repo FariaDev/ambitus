@@ -31,7 +31,9 @@ function BeamerClean()
     for p=#struct.pages,2,-1 do
         local page = struct.pages[p].pdfBackgroundPageNo
         local prev = struct.pages[p-1].pdfBackgroundPageNo
-        if app.getPageLabel(page) == app.getPageLabel(prev) then
+        local pCurr = app.getPageLabel(page)
+        local pPrev = app.getPageLabel(prev)
+        if pCurr and pPrev and pCurr == pPrev then
             app.setCurrentPage(p)
             app.activateAction("delete-page")
         end
