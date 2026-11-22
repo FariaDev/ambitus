@@ -44,7 +44,6 @@ public:
 
 private:
     bool startPdf(const fs::path& file, bool exportOutline);
-    bool hasLayersToExport(const PageRangeVector& range) const;
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
     /**
      * Populate the outline of the generated PDF using the outline of the

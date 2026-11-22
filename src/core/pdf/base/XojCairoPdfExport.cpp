@@ -1,6 +1,6 @@
 #include "XojCairoPdfExport.h"
 
-#include <algorithm>  // for any_of, min, min_element
+#include <algorithm>  // for any_of, min
 #include <map>        // for map
 #include <memory>     // for __shared_ptr_access
 #include <sstream>    // for ostringstream, operator<<
@@ -196,30 +196,18 @@ size_t XojCairoPdfExport::exportPageLayers(size_t page) {
             ++frameCount;
         }
     }
+    if (frameCount == 0) {
+        exportPage(page, true /* exportPdfBackground */, true /* progressiveMode */);
+        frameCount = 1;
+    }
 
     // We restore the initial visibilities
     for (const auto& layer: layers) layer->setVisible(initialVisibility[layer]);
     return frameCount;
 }
 
-bool XojCairoPdfExport::hasLayersToExport(const PageRangeVector& range) const {
-    const auto first = std::ranges::min_element(*layerRange, {}, &LayerRangeEntry::first);
-    if (first == layerRange->end()) {
-        return false;
-    }
-    return std::ranges::any_of(range, [this, first](PageRangeEntry pages) {
-        const auto lastPage = std::min(pages.last, doc->getPageCount() - 1);
-        for (size_t i = pages.first; i <= lastPage; ++i) {
-            if (doc->getPage(i)->getLayerCount() > first->first) {
-                return true;
-            }
-        }
-        return false;
-    });
-}
-
 auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
-    if (range.empty() || !doc->getPageCount() || (progressiveMode && layerRange && !hasLayersToExport(range))) {
+    if (range.empty()) {
         this->lastError = _("No pages to export!");
         return false;
     }
@@ -254,7 +242,7 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
         for (size_t i = e.first; i <= max; i++) {
             if (progressiveMode) {
                 auto frameCount = exportPageLayers(i);
-                if (remapOutline && frameCount) {
+                if (remapOutline) {
                     outputPages[i] = nextFrame;
                     nextFrame += frameCount;
                 }
@@ -270,14 +258,6 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
 
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
     if (remapOutline) {
-        auto fallbackFrame = nextFrame - 1;
-        for (auto page = outputPages.rbegin(); page != outputPages.rend(); ++page) {
-            if (*page == npos) {
-                *page = fallbackFrame;
-            } else {
-                fallbackFrame = *page;
-            }
-        }
         populatePdfOutline(outputPages);
     }
 #endif

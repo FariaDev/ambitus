@@ -1,5 +1,4 @@
 #include <memory>
-#include <stdexcept>
 #include <utility>
 
 #include <cairo-pdf.h>
@@ -73,10 +72,13 @@ TEST_F(PdfExportTest, ProgressiveLayerRange) {
     EXPECT_FALSE(subset.getPage(0)->findText("SECOND").empty());
 
     const auto emptyOutput = outputDirectory / "progressive-empty.pdf";
-    EXPECT_THROW(ExportHelper::exportPdf(&doc, emptyOutput, nullptr, "3", EXPORT_BACKGROUND_NONE, true,
-                                        PdfExportBackend::CAIRO),
-                 std::runtime_error);
-    EXPECT_FALSE(fs::exists(emptyOutput));
+    ASSERT_NO_THROW(ExportHelper::exportPdf(&doc, emptyOutput, nullptr, "3", EXPORT_BACKGROUND_NONE, true,
+                                            PdfExportBackend::CAIRO));
+    XojPdfDocument empty;
+    ASSERT_TRUE(empty.load(emptyOutput, "", nullptr));
+    ASSERT_EQ(empty.getPageCount(), 1U);
+    EXPECT_TRUE(empty.getPage(0)->findText("FIRST").empty());
+    EXPECT_TRUE(empty.getPage(0)->findText("SECOND").empty());
 }
 
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
@@ -112,7 +114,7 @@ TEST_F(PdfExportTest, ProgressiveLayerRangeRemapsBookmarks) {
                                             PdfExportBackend::CAIRO));
     XojPdfDocument pdf;
     ASSERT_TRUE(pdf.load(output, "", nullptr));
-    ASSERT_EQ(pdf.getPageCount(), 3U);
+    ASSERT_EQ(pdf.getPageCount(), 5U);
 
     auto expectDestination = [](XojPdfBookmarkIterator& item, const char* title, size_t page) {
         std::unique_ptr<XojPdfAction> action(item.getAction());
@@ -125,12 +127,12 @@ TEST_F(PdfExportTest, ProgressiveLayerRangeRemapsBookmarks) {
     expectDestination(*bookmark, "First", 0);
     std::unique_ptr<XojPdfBookmarkIterator> child(bookmark->getChildIter());
     ASSERT_NE(child, nullptr);
-    expectDestination(*child, "Second", 0);
+    expectDestination(*child, "Second", 1);
     EXPECT_FALSE(child->next());
     ASSERT_TRUE(bookmark->next());
-    expectDestination(*bookmark, "Third", 1);
+    expectDestination(*bookmark, "Third", 2);
     ASSERT_TRUE(bookmark->next());
-    expectDestination(*bookmark, "Fourth", 2);
+    expectDestination(*bookmark, "Fourth", 4);
     EXPECT_FALSE(bookmark->next());
 }
 #endif
