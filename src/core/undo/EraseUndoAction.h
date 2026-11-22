@@ -33,7 +33,6 @@ public:
 
     void addOriginal(Layer* layer, Stroke* element, Element::Index pos);
     void addEdited(Layer* layer, Stroke* element, Element::Index pos);
-    [[maybe_unused]] void removeEdited(Stroke* element);
 
     void finalize();
 
