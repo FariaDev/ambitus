@@ -35,11 +35,6 @@ public:
     ~PageTemplateDialog();
 
 public:
-    /**
-     * The dialog was confirmed / saved
-     */
-    bool isSaved() const;
-
     void changeCurrentPageBackground(const PageTypeInfo& info);
 
     inline GtkWindow* getWindow() const { return window.get(); }
@@ -63,11 +58,6 @@ private:
     PageTemplateSettings model;
 
     std::unique_ptr<PageTypeSelectionPopoverGridOnly> pageTypeSelectionMenu;
-
-    /**
-     * The dialog was confirmed / saved
-     */
-    bool saved = false;
 
 private:
     // Sub-widgets, owned by this->window
