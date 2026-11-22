@@ -76,6 +76,7 @@ void XojCairoPdfExport::populatePdfOutline(std::span<const size_t> outputPages) 
     if (tocModel == nullptr)
         return;
 
+    int idCounter = CAIRO_PDF_OUTLINE_ROOT;
     std::stack<std::pair<GtkTreeIter, int>> nodeStack;
 
     GtkTreeIter firstIter = {0};
@@ -84,11 +85,11 @@ void XojCairoPdfExport::populatePdfOutline(std::span<const size_t> outputPages) 
         return;
     }
 
-    nodeStack.push(std::make_pair(firstIter, CAIRO_PDF_OUTLINE_ROOT));
+    nodeStack.push(std::make_pair(firstIter, idCounter));
     while (!nodeStack.empty()) {
         auto [iter, parentId] = nodeStack.top();
         nodeStack.pop();
-        int currentId = parentId;
+        const int currentId = ++idCounter;
         XojLinkDest* link = nullptr;
 
         gtk_tree_model_get(tocModel, &iter, DOCUMENT_LINKS_COLUMN_LINK, &link, -1);
@@ -106,9 +107,8 @@ void XojCairoPdfExport::populatePdfOutline(std::span<const size_t> outputPages) 
             }
             const auto linkAttr = linkAttrBuf.str();
             auto outlineFlags = dest->getExpand() ? CAIRO_PDF_OUTLINE_FLAG_OPEN : 0;
-            currentId = cairo_pdf_surface_add_outline(this->surface, parentId, link->dest->getName().data(),
-                                                       linkAttr.data(),
-                                                       static_cast<cairo_pdf_outline_flags_t>(outlineFlags));
+            cairo_pdf_surface_add_outline(this->surface, parentId, link->dest->getName().data(), linkAttr.data(),
+                                          static_cast<cairo_pdf_outline_flags_t>(outlineFlags));
         }
         g_object_unref(link);
 
@@ -270,6 +270,14 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
 
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
     if (remapOutline) {
+        auto fallbackFrame = nextFrame - 1;
+        for (auto page = outputPages.rbegin(); page != outputPages.rend(); ++page) {
+            if (*page == npos) {
+                *page = fallbackFrame;
+            } else {
+                fallbackFrame = *page;
+            }
+        }
         populatePdfOutline(outputPages);
     }
 #endif

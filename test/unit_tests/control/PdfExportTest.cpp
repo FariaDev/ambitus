@@ -89,8 +89,13 @@ TEST_F(PdfExportTest, ProgressiveLayerRangeRemapsBookmarks) {
         const int first = cairo_pdf_surface_add_outline(surface.get(), CAIRO_PDF_OUTLINE_ROOT, "First", "page=1",
                                                         CAIRO_PDF_OUTLINE_FLAG_OPEN);
         cairo_pdf_surface_add_outline(surface.get(), first, "Second", "page=2", CAIRO_PDF_OUTLINE_FLAG_OPEN);
-        cairo_show_page(cr.get());
-        cairo_show_page(cr.get());
+        cairo_pdf_surface_add_outline(surface.get(), CAIRO_PDF_OUTLINE_ROOT, "Third", "page=3",
+                                      CAIRO_PDF_OUTLINE_FLAG_OPEN);
+        cairo_pdf_surface_add_outline(surface.get(), CAIRO_PDF_OUTLINE_ROOT, "Fourth", "page=4",
+                                      CAIRO_PDF_OUTLINE_FLAG_OPEN);
+        for (int i = 0; i < 4; ++i) {
+            cairo_show_page(cr.get());
+        }
         cairo_surface_finish(surface.get());
         ASSERT_EQ(cairo_surface_status(surface.get()), CAIRO_STATUS_SUCCESS);
     }
@@ -99,20 +104,33 @@ TEST_F(PdfExportTest, ProgressiveLayerRangeRemapsBookmarks) {
     Document doc(&handler);
     ASSERT_TRUE(doc.readPdf(background, true, false));
     doc.getPage(1)->getLayers().push_back(new Layer());
+    doc.getPage(2)->getLayers().push_back(new Layer());
+    doc.getPage(2)->getLayers().push_back(new Layer());
 
     const auto output = outputDirectory / "progressive-bookmarks.pdf";
-    ASSERT_NO_THROW(ExportHelper::exportPdf(&doc, output, nullptr, "2", EXPORT_BACKGROUND_ALL, true,
+    ASSERT_NO_THROW(ExportHelper::exportPdf(&doc, output, nullptr, "2-3", EXPORT_BACKGROUND_ALL, true,
                                             PdfExportBackend::CAIRO));
     XojPdfDocument pdf;
     ASSERT_TRUE(pdf.load(output, "", nullptr));
-    ASSERT_EQ(pdf.getPageCount(), 1U);
+    ASSERT_EQ(pdf.getPageCount(), 3U);
 
+    auto expectDestination = [](XojPdfBookmarkIterator& item, const char* title, size_t page) {
+        std::unique_ptr<XojPdfAction> action(item.getAction());
+        ASSERT_NE(action, nullptr);
+        EXPECT_EQ(action->getTitle(), title);
+        EXPECT_EQ(action->getDestination()->getPdfPage(), page);
+    };
     std::unique_ptr<XojPdfBookmarkIterator> bookmark(pdf.getContentsIter());
     ASSERT_NE(bookmark, nullptr);
-    std::unique_ptr<XojPdfAction> action(bookmark->getAction());
-    ASSERT_NE(action, nullptr);
-    EXPECT_EQ(action->getTitle(), "Second");
-    EXPECT_EQ(action->getDestination()->getPdfPage(), 0U);
+    expectDestination(*bookmark, "First", 0);
+    std::unique_ptr<XojPdfBookmarkIterator> child(bookmark->getChildIter());
+    ASSERT_NE(child, nullptr);
+    expectDestination(*child, "Second", 0);
+    EXPECT_FALSE(child->next());
+    ASSERT_TRUE(bookmark->next());
+    expectDestination(*bookmark, "Third", 1);
+    ASSERT_TRUE(bookmark->next());
+    expectDestination(*bookmark, "Fourth", 2);
     EXPECT_FALSE(bookmark->next());
 }
 #endif
