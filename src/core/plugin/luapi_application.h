@@ -3348,7 +3348,11 @@ static int applib_export(lua_State* L) {
     lua_getfield(L, 1, "progressiveMode");
     lua_getfield(L, 1, "pngDpi");
     lua_getfield(L, 1, "pngWidth");
-    lua_getfield(L, 1, "dpiHeight");
+    lua_getfield(L, 1, "pngHeight");
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_getfield(L, 1, "dpiHeight");
+    }
 
     // stack now has following:
     //    1 = param table
@@ -3360,7 +3364,7 @@ static int applib_export(lua_State* L) {
     //   -4 = progressiveMode
     //   -3 = pngDpi
     //   -2 = pngWidth
-    //   -1 = dpiHeight
+    //   -1 = pngHeight (or legacy dpiHeight)
 
     const char* outputFile = luaL_optstring(L, -8, nullptr);
     const char* range = luaL_optstring(L, -7, nullptr);
