@@ -22,6 +22,20 @@
 
 namespace ExportHelper {
 
+void rejectInputOverwrite(const fs::path& input, const fs::path& output) {
+    if (input.empty()) {
+        return;
+    }
+    try {
+        if ((fs::exists(input) && fs::exists(output) && fs::equivalent(input, output)) ||
+            fs::weakly_canonical(input) == fs::weakly_canonical(output)) {
+            throw std::invalid_argument{_("Do not overwrite the input file!")};
+        }
+    } catch (const fs::filesystem_error& e) {
+        throw std::runtime_error{FS(_F("The check for overwriting the input failed with: {1}") % e.what())};
+    }
+}
+
 void exportImg(Document* doc, fs::path outfile, const char* range, const char* layerRange, int pngDpi, int pngWidth,
                int pngHeight, ExportBackgroundType exportBackground) {
 
@@ -41,6 +55,10 @@ void exportImg(Document* doc, fs::path outfile, const char* range, const char* l
     DummyProgressListener progress;
 
     ImageExport imgExport(doc, std::move(outfile), format, exportBackground, exportRange);
+
+    for (const auto& output: imgExport.getOutputFiles()) {
+        rejectInputOverwrite(doc->getFilepath(), output);
+    }
 
     if (format == EXPORT_GRAPHICS_PNG) {
         if (pngDpi > 0) {
@@ -66,6 +84,7 @@ void exportImg(Document* doc, fs::path outfile, const char* range, const char* l
 
 void exportPdf(Document* doc, const fs::path& output, const char* range, const char* layerRange,
                ExportBackgroundType exportBackground, bool progressiveMode, PdfExportBackend backend) {
+    rejectInputOverwrite(doc->getFilepath(), output);
     std::unique_ptr<XojPdfExport> pdfe = XojPdfExportFactory::createExport(doc, nullptr, backend);
     pdfe->setExportBackground(exportBackground);
 

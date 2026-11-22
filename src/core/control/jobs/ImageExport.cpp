@@ -132,6 +132,26 @@ auto ImageExport::freeSurface(size_t id) -> bool {
     return status == CAIRO_STATUS_SUCCESS;
 }
 
+auto ImageExport::getOutputNumber(size_t pageId) const -> size_t {
+    return exportRange.size() == 1 && exportRange[0].first == exportRange[0].last ? SINGLE_PAGE : pageId + 1;
+}
+
+auto ImageExport::getOutputFiles() const -> std::vector<fs::path> {
+    std::vector<char> selectedPages(doc->getPageCount(), 0);
+    for (const auto& entry: exportRange) {
+        for (size_t page = entry.first; page <= entry.last; ++page) {
+            selectedPages[page] = true;
+        }
+    }
+    std::vector<fs::path> outputs;
+    for (size_t page = 0; page < selectedPages.size(); ++page) {
+        if (selectedPages[page]) {
+            outputs.push_back(getFilenameWithNumber(getOutputNumber(page)));
+        }
+    }
+    return outputs;
+}
+
 /**
  * @brief Get a filename with a (page) number appended
  * @param no The appended number. If no==-1, does not append anything.
@@ -215,8 +235,6 @@ void ImageExport::exportGraphics(ProgressListener* stateListener) {
     // the ui is blocked, so there should be no changes...
     auto count = doc->getPageCount();
 
-    bool onePage = ((this->exportRange.size() == 1) && (this->exportRange[0].first == this->exportRange[0].last));
-
     std::vector<char> selectedPages(count, 0);
     size_t selectedCount = 0;
     for (PageRangeEntry const& e: this->exportRange) {
@@ -240,13 +258,8 @@ void ImageExport::exportGraphics(ProgressListener* stateListener) {
     size_t current = 0;
 
     for (size_t i = 0; i < count; i++) {
-        auto id = i + 1;
-        if (onePage) {
-            id = SINGLE_PAGE;
-        }
-
         if (selectedPages[i]) {
-            exportImagePage(i, id, zoomRatio, format, view);
+            exportImagePage(i, getOutputNumber(i), zoomRatio, format, view);
             stateListener->setCurrentState(++current);
         }
     }

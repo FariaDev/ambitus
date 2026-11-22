@@ -21,6 +21,13 @@ class Document;
 
 namespace ExportHelper {
 /**
+ * @brief Reject an output path that resolves to the input file
+ * @throws std::invalid_argument if the paths identify the same file
+ * @throws std::runtime_error if the filesystem check fails
+ */
+void rejectInputOverwrite(const fs::path& input, const fs::path& output);
+
+/**
  * @brief Export the input file as a bunch of image files (one per page)
  * @param doc Document to export
  * @param output Path to the output file(s)

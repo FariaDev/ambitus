@@ -13,6 +13,7 @@
 
 #include <cstddef>  // for size_t
 #include <string>   // for string
+#include <vector>   // for vector
 
 #include <cairo.h>  // for cairo_surface_t, cairo_t
 
@@ -47,6 +48,11 @@ public:
      * @param stateListener A listener to track the progress
      */
     void exportGraphics(ProgressListener* stateListener);
+
+    /**
+     * @brief Get every output path the export will write
+     */
+    std::vector<fs::path> getOutputFiles() const;
 
     /**
      * @brief Set a quality level for PNG exports
@@ -94,6 +100,8 @@ private:
      * @return The filename
      */
     fs::path getFilenameWithNumber(size_t no) const;
+
+    size_t getOutputNumber(size_t pageId) const;
 
     /**
      * @brief Export a single PNG/SVG page
