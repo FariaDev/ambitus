@@ -1,6 +1,6 @@
 #include "LoadHandler.h"
 
-#include <algorithm>      // for copy
+#include <algorithm>      // for copy, max
 #include <array>          // for array
 #include <cmath>          // for isnan
 #include <cstddef>        // for byte
@@ -50,6 +50,7 @@
 #include "util/raii/GLibGuards.h"       // for GErrorGuard
 #include "util/raii/GObjectSPtr.h"      // for GObjectSPtr
 
+#include "config.h"      // for FILE_FORMAT_VERSION
 #include "filesystem.h"  // for path, is_regular_file
 
 
@@ -80,6 +81,10 @@ auto LoadHandler::isAttachedPdfMissing() const -> bool { return this->attachedPd
 auto LoadHandler::getMissingPdfFilename() const -> const fs::path& { return this->missingPdf; }
 
 auto LoadHandler::getFileVersion() const -> int { return this->fileVersion; }
+
+auto LoadHandler::isFileFormatNewerThanSupported() const -> bool {
+    return std::max(this->fileVersion, this->minimalFileVersion) > FILE_FORMAT_VERSION;
+}
 
 void LoadHandler::addDocument(std::u8string creator, int fileVersion) {
     this->creator = std::move(creator);
@@ -574,7 +579,7 @@ auto LoadHandler::openFile(fs::path const& filepath) -> std::unique_ptr<xoj::uti
         std::array<char, MAX_VERSION_LENGTH + 1> versionString = {};
         const auto length = std::max(zip_fread(versionFp.get(), versionString.data(), MAX_VERSION_LENGTH),
                                      static_cast<zip_int64_t>(0));
-        const std::regex versionRegex{"current=(\\d+?)(?:\n|\r\n)min=(\\d+?)"};
+        const std::regex versionRegex{"current=(\\d+?)(?:\n|\r\n)min=(\\d+)"};
         std::match_results<char*> match;
         if (std::regex_search(versionString.data(), versionString.data() + length, match, versionRegex)) {
             this->fileVersion = std::stoi(match.str(1));

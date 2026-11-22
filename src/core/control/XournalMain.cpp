@@ -169,6 +169,13 @@ auto loadDocumentOrExit(const fs::path& filename, ExportBackgroundType exportBac
         LoadHandler loader;
         auto doc = loader.loadDocument(filename);
 
+        if (loader.isFileFormatNewerThanSupported()) {
+            std::cerr << FS(_F("Warning: the file \"{1}\" has a file format version newer than the one currently "
+                               "supported by this version of Xournal++, so some content may be lost.") %
+                            filename.u8string())
+                      << std::endl;
+        }
+
         if (exportBackground != EXPORT_BACKGROUND_NONE) {
             throwIfMissingPdfFileName(loader);
         }
