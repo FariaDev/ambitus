@@ -1,6 +1,6 @@
 #include "XojCairoPdfExport.h"
 
-#include <algorithm>  // for copy, min
+#include <algorithm>  // for any_of, min
 #include <map>        // for map
 #include <memory>     // for __shared_ptr_access
 #include <sstream>    // for ostringstream, operator<<
@@ -136,7 +136,7 @@ bool XojCairoPdfExport::endPdf() {
     return success;
 }
 
-void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground) {
+void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground, bool progressiveMode) {
     PageRef p = doc->getPage(page);
 
     cairo_pdf_surface_set_size(this->surface, p->getWidth(), p->getHeight());
@@ -160,7 +160,7 @@ void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground) {
     flags.showRuling = exportBackground <= EXPORT_BACKGROUND_UNRULED ? xoj::view::HIDE_RULING_BACKGROUND :
                                                                        xoj::view::SHOW_RULING_BACKGROUND;
 
-    if (layerRange) {
+    if (layerRange && !progressiveMode) {
         view.drawLayersOfPage(*layerRange, p, this->cr, true /* dont render eraseable */, flags);
     } else {
         view.drawPage(p, this->cr, true /* dont render eraseable */, flags);
@@ -174,23 +174,27 @@ void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground) {
 // export layers one by one to produce as many PDF pages as there are layers.
 void XojCairoPdfExport::exportPageLayers(size_t page) {
     PageRef p = doc->getPage(page);
+    const auto& layers = p->getLayers();
 
     // We keep a copy of the layers initial Visible state
     std::map<Layer*, bool> initialVisibility;
-    for (const auto& layer: p->getLayers()) {
+    for (const auto& layer: layers) {
         initialVisibility[layer] = layer->isVisible();
         layer->setVisible(false);
     }
 
-    // We draw as many pages as there are layers. The first page has
-    // only Layer 1 visible, the last has all layers visible.
-    for (const auto& layer: p->getLayers()) {
-        layer->setVisible(true);
-        exportPage(page);
+    // Draw one page per layer, revealing only layers in the requested range.
+    for (size_t i = 0; i < layers.size(); ++i) {
+        if (!layerRange || std::ranges::any_of(*layerRange, [i](LayerRangeEntry range) {
+                return range.first <= i && i <= range.last;
+            })) {
+            layers[i]->setVisible(true);
+        }
+        exportPage(page, true /* exportPdfBackground */, true /* progressiveMode */);
     }
 
     // We restore the initial visibilities
-    for (const auto& layer: p->getLayers()) layer->setVisible(initialVisibility[layer]);
+    for (const auto& layer: layers) layer->setVisible(initialVisibility[layer]);
 }
 
 auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
