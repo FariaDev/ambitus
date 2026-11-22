@@ -52,6 +52,7 @@ auto InsertDeletePageUndoAction::insertPage(Control* control) -> bool {
     control->firePageInserted(this->pagePos);
     control->getCursor()->updateCursor();
     control->getScrollHandler()->scrollToPage(this->pagePos);
+    control->getWindow()->getXournal()->forceUpdatePagenumbers();
 
     return true;
 }
