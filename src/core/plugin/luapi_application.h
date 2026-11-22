@@ -3059,15 +3059,15 @@ static int applib_getPageLabel(lua_State* L) {
     const Control* control = plugin->getControl();
     const XojPdfDocument& doc = control->getDocument()->getPdfDocument();
 
-    const size_t pagenr = static_cast<size_t>(luaL_checkinteger(L, 1)) - 1;
+    const lua_Integer pagenr = luaL_checkinteger(L, 1);
 
-    if (pagenr >= doc.getPageCount()) {
+    if (pagenr < 1 || static_cast<lua_Unsigned>(pagenr) > doc.getPageCount()) {
         lua_pushnil(L);
-        lua_pushfstring(L, "page nr %zu is out of range", pagenr);
+        lua_pushfstring(L, "page nr %I is out of range", pagenr);
         return 2;
     }
 
-    std::string label = doc.getPage(pagenr)->getPageLabel();
+    std::string label = doc.getPage(static_cast<size_t>(pagenr - 1))->getPageLabel();
     lua_pushlstring(L, label.c_str(), label.length());
     return 1;
 }
