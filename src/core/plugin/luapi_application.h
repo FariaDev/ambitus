@@ -3084,10 +3084,10 @@ static int applib_getPageLabel(lua_State* L) {
 static int applib_setCurrentPage(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
     Control* control = plugin->getControl();
-    size_t pageId = as_unsigned(luaL_checkinteger(L, 1));
-    const size_t first = 1;
-    const size_t last = control->getDocument()->getPageCount();
-    control->firePageSelected(std::clamp(pageId, first, last) - 1);
+    const lua_Integer pageNr = luaL_checkinteger(L, 1);
+    const lua_Integer first = 1;
+    const auto last = strict_cast<lua_Integer>(control->getDocument()->getPageCount());
+    control->firePageSelected(strict_cast<size_t>(std::clamp(pageNr, first, last) - 1));
 
     return 0;
 }
