@@ -17,6 +17,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -441,6 +442,32 @@ TEST(ControlLoadHandler, testLoadZipped) {
     EXPECT_NE(text, nullptr);
 
     EXPECT_EQ(std::string("12345"), text->getText());
+}
+
+TEST(ControlLoadHandler, testAudioAttachmentClosesFile) {
+    auto doc = loadTestDocument(GET_TESTFILE(u8"packaged_xopp/audioAttachment/new.xopp"));
+    ASSERT_TRUE(doc);
+    ASSERT_EQ(1u, doc->getPageCount());
+    const auto page = doc->getPage(0);
+    ASSERT_EQ(1u, page->getLayerCount());
+    const auto elements = page->getLayersView()[0]->getElementsView();
+    ASSERT_EQ(1u, elements.size());
+    const auto* stroke = dynamic_cast<const Stroke*>(elements.front());
+    ASSERT_NE(nullptr, stroke);
+
+    const auto& audioPath = stroke->getAudioFilename();
+    ASSERT_TRUE(fs::is_regular_file(audioPath));
+    EXPECT_EQ(fs::file_size(GET_TESTFILE(u8"packaged_xopp/audioAttachment/test.ogg")), fs::file_size(audioPath));
+
+#ifdef __linux__
+    const auto openDescriptors = std::ranges::count_if(fs::directory_iterator{"/proc/self/fd"}, [&](const auto& fd) {
+        std::error_code error;
+        return fs::equivalent(fd.path(), audioPath, error);
+    });
+    EXPECT_EQ(0, openDescriptors) << "The extracted audio file must not remain open";
+#endif
+
+    EXPECT_TRUE(fs::remove(audioPath));
 }
 
 TEST(ControlLoadHandler, testLoadUnzipped) {
