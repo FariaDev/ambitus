@@ -123,9 +123,12 @@ auto ImageExport::freeSurface(size_t id) -> bool {
         auto filepath = getFilenameWithNumber(id);
         status = cairo_surface_write_to_png(surface, char_cast(filepath.u8string().c_str()));
     }
+    cairo_surface_finish(surface);
+    if (status == CAIRO_STATUS_SUCCESS) {
+        status = cairo_surface_status(surface);
+    }
     cairo_surface_destroy(surface);
 
-    // we ignore this problem
     return status == CAIRO_STATUS_SUCCESS;
 }
 
