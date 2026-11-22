@@ -14,7 +14,8 @@ class GladeSearchpath;
 
 constexpr auto UI_FILE = "about.glade";
 constexpr auto UI_DIALOG_NAME = "aboutDialog";
-constexpr auto GIT_REPO = "https://github.com/xournalpp/xournalpp";
+constexpr auto GIT_REPO = "https://github.com/FariaDev/ambitus";
+constexpr auto ISSUES_LINK = "https://github.com/FariaDev/ambitus/issues";
 constexpr auto WEBSITE = "https://xournalpp.github.io";
 constexpr auto AUTHORS_LINK = "https://raw.githubusercontent.com/xournalpp/xournalpp/master/AUTHORS";
 constexpr auto LICENCE_LINK = "https://raw.githubusercontent.com/xournalpp/xournalpp/master/LICENSE";
@@ -55,7 +56,9 @@ static GtkWindow* constructWindow(GladeSearchpath* gladeSearchPath) {
         insertPropertyValue(infoGrid, gitCommitId.c_str(), 3);
     }
 
-    gtk_box_append(GTK_BOX(builder.get("vboxRepo")), gtk_link_button_new(GIT_REPO));
+    auto repoBox = GTK_BOX(builder.get("vboxRepo"));
+    gtk_box_append(repoBox, gtk_link_button_new(GIT_REPO));
+    gtk_box_append(repoBox, gtk_link_button_new(ISSUES_LINK));
     gtk_box_append(GTK_BOX(builder.get("vboxWebsite")), gtk_link_button_new(WEBSITE));
     gtk_box_append(GTK_BOX(builder.get("vboxCommunity")),
                    gtk_link_button_new_with_label(AUTHORS_LINK, _("See the full list of contributors")));
