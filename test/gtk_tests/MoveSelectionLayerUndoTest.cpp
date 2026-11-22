@@ -78,6 +78,7 @@ protected:
         ASSERT_EQ(destination->getElements().size(), 1);
         EXPECT_EQ(destination->getElements().front().get(), movedStroke);
         EXPECT_EQ(page->getSelectedLayerId(), destinationId);
+        g_signal_handlers_disconnect_by_data(gtk_settings_get_default(), &window);
     }
 };
 
