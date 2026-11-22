@@ -174,31 +174,6 @@ auto XojMsgBox::askPluginQuestion(const std::string& pluginName, const std::stri
     return res;
 }
 
-void XojMsgBox::replaceFileQuestion(GtkWindow* win, fs::path file,
-                                    xoj::util::move_only_function<void(const fs::path&)> writeTofile) {
-    if (!fs::exists(file)) {
-        writeTofile(file);
-        return;
-    }
-
-    GtkWidget* dialog = gtk_message_dialog_new(
-            win, GTK_DIALOG_MODAL, GTK_MESSAGE_QUESTION, GTK_BUTTONS_NONE, "%s",
-            FS(_F("The file {1} already exists! Do you want to replace it?") % file.filename().u8string()).c_str());
-    if (win != nullptr) {
-        gtk_window_set_transient_for(GTK_WINDOW(dialog), win);
-    }
-    gtk_dialog_add_button(GTK_DIALOG(dialog), _("Select another name"), GTK_RESPONSE_CANCEL);
-    gtk_dialog_add_button(GTK_DIALOG(dialog), _("Replace"), GTK_RESPONSE_OK);
-
-    xoj::popup::PopupWindowWrapper<XojMsgBox> popup(
-            GTK_DIALOG(dialog), [overwrite = std::move(writeTofile), file = std::move(file)](int response) mutable {
-                if (response == GTK_RESPONSE_OK) {
-                    overwrite(file);
-                }
-            });
-    popup.show(win);
-}
-
 constexpr auto* XOJ_HELP = "https://xournalpp.github.io/community/help/";
 
 void XojMsgBox::showHelp(GtkWindow* win) { openURL(win, XOJ_HELP); }
