@@ -135,12 +135,6 @@ auto Util::readString(fs::path const& path, bool showErrorToUser, std::ios_base:
     return std::nullopt;
 }
 
-auto Util::getEscapedPath(const fs::path& path) -> std::string {
-    std::string escaped = path.string();
-    StringUtils::replaceAllChars(escaped, {replace_pair('\\', "\\\\"), replace_pair('\"', "\\\"")});
-    return escaped;
-}
-
 auto Util::hasXournalFileExt(const fs::path& path) -> bool {
     auto extension = StringUtils::toLowerCase(path.extension().string());
     return extension == ".xoj" || extension == ".xopp";
@@ -438,12 +432,6 @@ auto Util::getConfigFileWithFallback(const fs::path& relativeFileName) -> fs::pa
     return userConfigPath;
 }
 
-auto Util::getCacheFile(const fs::path& relativeFileName) -> fs::path {
-    fs::path p = getCacheSubfolder(relativeFileName.parent_path());
-    p /= relativeFileName.filename();
-    return p;
-}
-
 auto Util::getTmpDirSubfolder(const fs::path& subfolder) -> fs::path {
     auto p = GFilename(g_get_tmp_dir()).toPath().value_or(fs::path());
     p /= FS(_F("xournalpp-{1}") % Util::getPid());
@@ -518,15 +506,6 @@ bool Util::safeRenameFile(fs::path const& from, fs::path const& to) {
         fs::remove(from);
     }
     return true;
-}
-
-void Util::safeReplaceExtension(fs::path& p, const char* newExtension) {
-    try {
-        p.replace_extension(newExtension);
-    } catch (const fs::filesystem_error& fe) {
-        g_warning("Could not replace extension of file \"%s\"! Failed with %s", char_cast(p.u8string().c_str()),
-                  fe.what());
-    }
 }
 
 auto Util::getDataPath() -> fs::path {
