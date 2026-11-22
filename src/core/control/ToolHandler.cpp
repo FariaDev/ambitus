@@ -428,8 +428,6 @@ void ToolHandler::setButtonStrokeType(const LineStyle& lineStyle, Button button)
     tool->setLineStyle(lineStyle);
 }
 
-auto ToolHandler::getTools() const -> std::array<std::unique_ptr<Tool>, TOOL_COUNT> const& { return tools; }
-
 void ToolHandler::saveSettings() const {
     SElement& s = settings->getCustomElement("tools");
     s.clear();
