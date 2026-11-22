@@ -87,10 +87,7 @@ public:
     void setBool(const std::string& name, const bool value);
     void setString(const std::string& name, const std::string& value);
 
-    [[maybe_unused]] void setComment(const std::string& name, const std::string& comment);
-
     bool getInt(const std::string& name, int& value);
-    [[maybe_unused]] bool getDouble(const std::string& name, double& value);
     bool getBool(const std::string& name, bool& value);
     bool getString(const std::string& name, std::string& value);
 
