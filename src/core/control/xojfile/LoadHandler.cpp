@@ -579,7 +579,7 @@ auto LoadHandler::openFile(fs::path const& filepath) -> std::unique_ptr<xoj::uti
         std::array<char, MAX_VERSION_LENGTH + 1> versionString = {};
         const auto length = std::max(zip_fread(versionFp.get(), versionString.data(), MAX_VERSION_LENGTH),
                                      static_cast<zip_int64_t>(0));
-        const std::regex versionRegex{"current=(\\d+?)(?:\n|\r\n)min=(\\d+?)"};
+        const std::regex versionRegex{"current=(\\d+?)(?:\n|\r\n)min=(\\d+)"};
         std::match_results<char*> match;
         if (std::regex_search(versionString.data(), versionString.data() + length, match, versionRegex)) {
             this->fileVersion = std::stoi(match.str(1));

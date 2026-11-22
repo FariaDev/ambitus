@@ -525,7 +525,8 @@ INSTANTIATE_TEST_SUITE_P(
         ::testing::Values(std::make_pair(versionEntry(FILE_FORMAT_VERSION, FILE_FORMAT_VERSION), false),
                           std::make_pair(versionEntry(FILE_FORMAT_VERSION + 1, FILE_FORMAT_VERSION), true),
                           std::make_pair(versionEntry(FILE_FORMAT_VERSION + 1, FILE_FORMAT_VERSION + 1), true),
-                          std::make_pair(versionEntry(FILE_FORMAT_VERSION, 999), true)));
+                          std::make_pair(versionEntry(FILE_FORMAT_VERSION, 999), true),
+                          std::make_pair(versionEntry(FILE_FORMAT_VERSION, 10), true)));
 
 TEST(ControlLoadHandler, testAudioAttachmentClosesFile) {
     auto doc = loadTestDocument(GET_TESTFILE(u8"packaged_xopp/audioAttachment/new.xopp"));
