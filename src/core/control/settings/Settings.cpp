@@ -2519,11 +2519,6 @@ void SElement::clear() {
 
 auto SElement::child(const string& name) -> SElement& { return this->element->children[name]; }
 
-void SElement::setComment(const string& name, const string& comment) {
-    SAttribute& attrib = this->element->attributes[name];
-    attrib.comment = comment;
-}
-
 void SElement::setIntHex(const string& name, const int value) {
     SAttribute& attrib = this->element->attributes[name];
     attrib.iValue = value;
@@ -2552,22 +2547,6 @@ void SElement::setDouble(const string& name, const double value) {
     SAttribute& attrib = this->element->attributes[name];
     attrib.dValue = value;
     attrib.type = ATTRIBUTE_TYPE_DOUBLE;
-}
-
-auto SElement::getDouble(const string& name, double& value) -> bool {
-    SAttribute& attrib = this->element->attributes[name];
-    if (attrib.type == ATTRIBUTE_TYPE_NONE) {
-        this->element->attributes.erase(name);
-        return false;
-    }
-
-    if (attrib.type != ATTRIBUTE_TYPE_DOUBLE) {
-        return false;
-    }
-
-    value = attrib.dValue;
-
-    return true;
 }
 
 auto SElement::getInt(const string& name, int& value) -> bool {
