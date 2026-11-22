@@ -1,6 +1,6 @@
 #include "XojCairoPdfExport.h"
 
-#include <algorithm>  // for copy, min
+#include <algorithm>  // for any_of, min
 #include <map>        // for map
 #include <memory>     // for __shared_ptr_access
 #include <sstream>    // for ostringstream, operator<<
@@ -71,7 +71,7 @@ void XojCairoPdfExport::configureCairoFontOptions() {
 }
 
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
-void XojCairoPdfExport::populatePdfOutline() {
+void XojCairoPdfExport::populatePdfOutline(std::span<const size_t> outputPages) {
     auto tocModel = doc->getContentsModel();
     if (tocModel == nullptr)
         return;
@@ -96,6 +96,9 @@ void XojCairoPdfExport::populatePdfOutline() {
         auto dest = link->dest;
         auto pdfBgPage = dest->getPdfPage();  // Link destination in original background PDF
         auto pageDest = pdfBgPage == npos ? npos : doc->findPdfPage(pdfBgPage);  // Destination in document
+        if (pageDest != npos && !outputPages.empty()) {
+            pageDest = outputPages[pageDest];
+        }
         if (pageDest != npos) {
             auto linkAttrBuf = serdes_stream<std::ostringstream>();
             linkAttrBuf << "page=" << pageDest + 1;
@@ -136,7 +139,7 @@ bool XojCairoPdfExport::endPdf() {
     return success;
 }
 
-void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground) {
+void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground, bool progressiveMode) {
     PageRef p = doc->getPage(page);
 
     cairo_pdf_surface_set_size(this->surface, p->getWidth(), p->getHeight());
@@ -160,7 +163,7 @@ void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground) {
     flags.showRuling = exportBackground <= EXPORT_BACKGROUND_UNRULED ? xoj::view::HIDE_RULING_BACKGROUND :
                                                                        xoj::view::SHOW_RULING_BACKGROUND;
 
-    if (layerRange) {
+    if (layerRange && !progressiveMode) {
         view.drawLayersOfPage(*layerRange, p, this->cr, true /* dont render eraseable */, flags);
     } else {
         view.drawPage(p, this->cr, true /* dont render eraseable */, flags);
@@ -171,26 +174,36 @@ void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground) {
     cairo_restore(this->cr);
 }
 
-// export layers one by one to produce as many PDF pages as there are layers.
-void XojCairoPdfExport::exportPageLayers(size_t page) {
+size_t XojCairoPdfExport::exportPageLayers(size_t page) {
     PageRef p = doc->getPage(page);
+    const auto& layers = p->getLayers();
 
     // We keep a copy of the layers initial Visible state
     std::map<Layer*, bool> initialVisibility;
-    for (const auto& layer: p->getLayers()) {
+    for (const auto& layer: layers) {
         initialVisibility[layer] = layer->isVisible();
         layer->setVisible(false);
     }
 
-    // We draw as many pages as there are layers. The first page has
-    // only Layer 1 visible, the last has all layers visible.
-    for (const auto& layer: p->getLayers()) {
-        layer->setVisible(true);
-        exportPage(page);
+    size_t frameCount = 0;
+    // Draw one page per selected layer, building up the layer stack.
+    for (size_t i = 0; i < layers.size(); ++i) {
+        if (!layerRange || std::ranges::any_of(*layerRange, [i](LayerRangeEntry range) {
+                return range.first <= i && i <= range.last;
+            })) {
+            layers[i]->setVisible(true);
+            exportPage(page, true /* exportPdfBackground */, true /* progressiveMode */);
+            ++frameCount;
+        }
+    }
+    if (frameCount == 0) {
+        exportPage(page, true /* exportPdfBackground */, true /* progressiveMode */);
+        frameCount = 1;
     }
 
     // We restore the initial visibilities
-    for (const auto& layer: p->getLayers()) layer->setVisible(initialVisibility[layer]);
+    for (const auto& layer: layers) layer->setVisible(initialVisibility[layer]);
+    return frameCount;
 }
 
 auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
@@ -202,8 +215,9 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
     // Only export the outline if we are exporting the entire document. otherwise, links may point to page numbers
     // greater than the total number of pages, leading to corrupt pdf files
     bool outline = range.size() == 1 && range.front().first == 0 && range.front().last >= doc->getPageCount() - 1;
+    const bool remapOutline = outline && progressiveMode && layerRange;
 
-    if (!startPdf(file, outline)) {
+    if (!startPdf(file, outline && !remapOutline)) {
         this->lastError = _("Failed to initialize PDF Cairo surface");
         this->lastError += "\nCairo error: ";
         this->lastError += cairo_status_to_string(cairo_surface_status(this->surface));
@@ -220,12 +234,18 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
         this->progressListener->setMaximumState(count);
     }
 
+    std::vector<size_t> outputPages(remapOutline ? doc->getPageCount() : 0, npos);
+    size_t nextFrame = 0;
     size_t c = 0;
     for (const auto& e: range) {
         auto max = std::min(e.last, doc->getPageCount());  // Should be e.last for parsed PageRangeVector
         for (size_t i = e.first; i <= max; i++) {
             if (progressiveMode) {
-                exportPageLayers(i);
+                auto frameCount = exportPageLayers(i);
+                if (remapOutline) {
+                    outputPages[i] = nextFrame;
+                    nextFrame += frameCount;
+                }
             } else {
                 exportPage(i);
             }
@@ -236,6 +256,11 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
         }
     }
 
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
+    if (remapOutline) {
+        populatePdfOutline(outputPages);
+    }
+#endif
     return endPdf();
 }
 
@@ -243,6 +268,10 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, bool progressiveMode) ->
     if (doc->getPageCount() < 1) {
         lastError = _("No pages to export!");
         return false;
+    }
+
+    if (progressiveMode && layerRange) {
+        return createPdf(file, {{0, doc->getPageCount() - 1}}, progressiveMode);
     }
 
     if (!startPdf(file, /* exportOutline */ true)) {
