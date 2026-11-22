@@ -3475,11 +3475,11 @@ msgstr "Sistema"
 
 #: ../ui/settings.glade:3338
 msgid "Recolor Drawing Area (might introduce lags when moving selections)"
-msgstr ""
+msgstr "Recolorir a área de desenho (pode causar lentidão ao mover seleções)"
 
 #: ../ui/settings.glade:3343
 msgid "Recolors the drawing area so that light regions get the \"Light Color\" and dark regions get the \"Dark Color\". Other colors are interpolated accordingly. Can be use to implement a dark-mode."
-msgstr ""
+msgstr "Recolore a área de desenho: aplica a \"Cor Clara\" às regiões claras e a \"Cor Escura\" às regiões escuras. As demais cores são interpoladas. Isso permite criar um modo escuro."
 
 #: ../ui/settings.glade:3353
 msgid "Recolor Previews in the Sidebar"
@@ -3487,17 +3487,21 @@ msgstr "Recolorir pré-visualizações no painel lateral"
 
 #: ../ui/settings.glade:3358
 msgid "Recolors the previews in the sidebar (Page/Layer Preview) the same way as the drawing area."
-msgstr ""
+msgstr "Recolore as pré-visualizações de páginas e camadas no painel lateral da mesma forma que a área de desenho."
 
 #: ../ui/settings.glade:3372
 msgid "The color light regions are translated to\n"
 "(use a dark color for a dark-mode)"
 msgstr ""
+"Cor aplicada às regiões claras\n"
+"(use uma cor escura para o modo escuro)"
 
 #: ../ui/settings.glade:3387
 msgid "The color dark regions are translated to\n"
 "(use a light color for dark-mode)"
 msgstr ""
+"Cor aplicada às regiões escuras\n"
+"(use uma cor clara para o modo escuro)"
 
 #: ../ui/settings.glade:3403
 msgid "Dark Color"
@@ -3509,7 +3513,7 @@ msgstr "Cor Clara"
 
 #: ../ui/settings.glade:3430
 msgid "Recoloring (allows theming)"
-msgstr ""
+msgstr "Recolorização (permite personalizar o tema)"
 
 #: ../ui/settings.glade:3462
 msgid "Cursor icon for pen"
@@ -3708,11 +3712,11 @@ msgstr "Velocidade do Zoom"
 
 #: ../ui/settings.glade:4489
 msgid "Force zoom to fit on document load"
-msgstr ""
+msgstr "Sempre ajustar o zoom à janela ao abrir um documento"
 
 #: ../ui/settings.glade:4508
 msgid "Default Zoom"
-msgstr ""
+msgstr "Zoom padrão"
 
 #: ../ui/settings.glade:4535
 msgid "<i>To make sure on 100% zoom the size of elements is natural.</i>"
@@ -4420,11 +4424,11 @@ msgstr "Duplicar Página"
 
 #: ../ui/mainmenubar.xml:461
 msgid "Move Page _Up"
-msgstr ""
+msgstr "Mover página para c_ima"
 
 #: ../ui/mainmenubar.xml:465
 msgid "Move Page _Down"
-msgstr ""
+msgstr "Mover página para _baixo"
 
 #: ../ui/mainmenubar.xml:469
 msgid "Append New PDF Pages"
