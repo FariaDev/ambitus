@@ -1156,12 +1156,6 @@ auto XojPageView::getDisplayHeight() const -> int {
     return round_cast<int>(this->page->getHeight() * this->xournal->getZoom());
 }
 
-auto XojPageView::getDisplayWidthDouble() const -> double { return this->page->getWidth() * this->xournal->getZoom(); }
-
-auto XojPageView::getDisplayHeightDouble() const -> double {
-    return this->page->getHeight() * this->xournal->getZoom();
-}
-
 void XojPageView::rectChanged(Rectangle<double>& rect) { rerenderRect(rect.x, rect.y, rect.width, rect.height); }
 
 void XojPageView::rangeChanged(Range& range) { rerenderRange(range); }
@@ -1201,4 +1195,3 @@ void XojPageView::showFloatingToolbox(const PositionInputData& pos) {
 }
 
 void XojPageView::setGridCoordinates(xoj::util::Point<int> coords) { this->gridCoordinates = coords; }
-auto XojPageView::getGridCoordinates() const -> xoj::util::Point<int> { return this->gridCoordinates; }
