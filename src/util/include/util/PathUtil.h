@@ -42,11 +42,6 @@ namespace Util {
                                                                      std::ios_base::openmode openmode = std::ios::in);
 
 /**
- * Get escaped path, all " and \ are escaped
- */
-[[maybe_unused]] [[nodiscard]] std::string getEscapedPath(const fs::path& path);
-
-/**
  * @return true if this file has .xopp or .xoj extension
  */
 [[maybe_unused]] [[nodiscard]] bool hasXournalFileExt(const fs::path& path);
@@ -115,7 +110,6 @@ private:
 [[maybe_unused]] [[nodiscard]] bool isChildOrEquivalent(fs::path const& path, fs::path const& base);
 
 [[maybe_unused]] bool safeRenameFile(fs::path const& from, fs::path const& to);
-[[maybe_unused]] void safeReplaceExtension(fs::path& p, const char* nexExtension);
 
 [[maybe_unused]] fs::path ensureFolderExists(const fs::path& p);
 
@@ -152,7 +146,6 @@ auto system_single_byte_filename(const fs::path& path) -> std::string;
 [[maybe_unused]] [[nodiscard]] fs::path getStateSubfolder(const fs::path& subfolder = "");
 [[maybe_unused]] [[nodiscard]] fs::path getConfigFile(const fs::path& relativeFileName = "");
 [[maybe_unused]] [[nodiscard]] fs::path getConfigFileWithFallback(const fs::path& relativeFileName = "");
-[[maybe_unused]] [[nodiscard]] fs::path getCacheFile(const fs::path& relativeFileName = "");
 [[maybe_unused]] [[nodiscard]] fs::path getTmpDirSubfolder(const fs::path& subfolder = "");
 [[maybe_unused]] [[nodiscard]] fs::path getAutosaveFilepath();
 [[maybe_unused]] [[nodiscard]] fs::path getGettextFilepath(fs::path const& localeDir);
