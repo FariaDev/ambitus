@@ -20,6 +20,8 @@
 class Document;
 
 namespace ExportHelper {
+void rejectInputOverwrite(const fs::path& input, const fs::path& output);
+
 /**
  * @brief Export the input file as a bunch of image files (one per page)
  * @param doc Document to export

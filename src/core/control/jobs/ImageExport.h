@@ -86,6 +86,7 @@ private:
      */
     bool freeSurface(size_t id);
 
+public:
     /**
      * @brief Get a filename with a (page) number appended
      * @param no The appended number. If no==-1, does not append anything.
@@ -95,6 +96,7 @@ private:
      */
     fs::path getFilenameWithNumber(size_t no) const;
 
+private:
     /**
      * @brief Export a single PNG/SVG page
      * @param pageId The index of the page being exported

@@ -168,6 +168,7 @@ auto loadDocumentOrExit(const fs::path& filename, ExportBackgroundType exportBac
     try {
         LoadHandler loader;
         auto doc = loader.loadDocument(filename);
+        doc->setFilepath(filename);
 
         if (loader.isFileFormatNewerThanSupported()) {
             std::cerr << FS(_F("Warning: the file \"{1}\" has a file format version newer than the one currently "
@@ -230,6 +231,12 @@ auto exportImg(fs::path infile, fs::path outfile, const char* range, const char*
  * Calls std::exit(-2) on failure reading the input file and std::exit(-3) on save failure
  */
 auto saveDoc(fs::path infile, fs::path outfile) -> int {
+    try {
+        ExportHelper::rejectInputOverwrite(infile, outfile);
+    } catch (const std::exception& e) {
+        std::cerr << FS(_F("Error saving document: {1}") % e.what()) << std::endl;
+        std::exit(-3);
+    }
     SaveHandler saver;
     auto handler = std::make_unique<DocumentHandler>();
     auto newDoc = std::make_unique<Document>(handler.get());
