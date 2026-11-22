@@ -289,11 +289,6 @@ void Layout::updateVisibility() {
     }
 }
 
-auto Layout::getVisiblePages() const -> std::vector<size_t> {
-    // We make a copy in case previouslyVisiblePages's iterators get invalidated. The vector is typically very small.
-    return previouslyVisiblePages;
-}
-
 auto Layout::getVisibleRect() -> xoj::util::Rectangle<double> {
     return xoj::util::Rectangle<double>(gtk_adjustment_get_value(scrollHandling->getHorizontal()),
                                         gtk_adjustment_get_value(scrollHandling->getVertical()),
