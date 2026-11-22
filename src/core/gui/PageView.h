@@ -145,13 +145,11 @@ public:
      * on the display taking into account the current zoom
      */
     int getDisplayWidth() const;
-    double getDisplayWidthDouble() const;
     /**
      * Returns the height of this XojPageView as displayed
      * on the display taking into account the current zoom
      */
     int getDisplayHeight() const;
-    double getDisplayHeightDouble() const;
 
     /// Returns the position of the upper-left corner in Layout pixel-coordinates
     xoj::util::Point<int> getPixelPosition() const;
@@ -180,7 +178,6 @@ public:  // event handler
     void deleteLaserPointerHandler();
 
     void setGridCoordinates(xoj::util::Point<int> pos);
-    xoj::util::Point<int> getGridCoordinates() const;
 
 public:  // listener
     void rectChanged(xoj::util::Rectangle<double>& rect) override;
