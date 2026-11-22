@@ -142,7 +142,7 @@ auto Image::renderBuffer() const -> std::optional<std::string> {
     if (!success) {
         if (err != nullptr) {
             std::string msg = std::string(_("Failed to load image")) + "\n" + _("Error: ") + err->message;
-            g_free(err);
+            g_error_free(err);
             return msg;
         } else {
             return std::string(_("Failed to load image")) + "\n" + _("Unrecoverable error");
@@ -152,7 +152,7 @@ auto Image::renderBuffer() const -> std::optional<std::string> {
     if (!success) {
         if (err != nullptr) {
             std::string msg = std::string(_("Failed to close image stream")) + "\n" + _("Error: ") + err->message;
-            g_free(err);
+            g_error_free(err);
             return msg;
         } else {
             return std::string(_("Failed to close image stream")) + "\n" + _("Unrecoverable error");
