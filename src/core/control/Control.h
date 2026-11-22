@@ -303,7 +303,6 @@ public:
     void addChangedDocumentListener(DocumentListener* dl);
     void removeChangedDocumentListener(DocumentListener* dl);
 
-    MetadataManager* getMetadataManager() const;
     Settings* getSettings() const;
     ToolHandler* getToolHandler() const;
     ZoomControl* getZoomControl() const;

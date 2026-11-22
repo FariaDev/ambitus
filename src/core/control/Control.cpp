@@ -2719,8 +2719,6 @@ auto Control::getSettings() const -> Settings* { return settings; }
 
 auto Control::getScrollHandler() const -> ScrollHandler* { return this->scrollHandler; }
 
-auto Control::getMetadataManager() const -> MetadataManager* { return this->metadata; }
-
 auto Control::getSidebar() const -> Sidebar* { return this->sidebar; }
 
 auto Control::getSearchBar() const -> SearchBar* { return this->searchBar; }
