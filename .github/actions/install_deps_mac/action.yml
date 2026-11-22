@@ -45,7 +45,8 @@ runs:
   - name: 'Install ninja'
     shell: bash
     run: |
-      curl -L -o ninja-mac.zip https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-mac.zip
+      curl -fL -o ninja-mac.zip https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-mac.zip
+      echo "c99048673aa765960a99cf10c6ddb9f1fad506099ff0a0e137ad8960a88f321b  ninja-mac.zip" | shasum -a 256 -c -
       unzip ninja-mac.zip -d "${{inputs.install_path}}/gtk/inst/bin"
       rm ninja-mac.zip
   - name: 'Setup ENV for future steps'
