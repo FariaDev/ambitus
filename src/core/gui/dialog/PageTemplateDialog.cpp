@@ -176,8 +176,3 @@ void PageTemplateDialog::showPageSizeDialog() {
                                                                           });
     popup.show(this->getWindow());
 }
-
-/**
- * The dialog was confirmed / saved
- */
-auto PageTemplateDialog::isSaved() const -> bool { return saved; }
