@@ -12,7 +12,6 @@
 #pragma once
 
 #include <memory>  // for unique_ptr
-#include <string>  // for string
 
 #include "BaseExportJob.h"  // for BaseExportJob
 #include "filesystem.h"     // for path
@@ -31,8 +30,6 @@ public:
     void run() override;
 
 protected:
-    void afterRun() override;
-
     /**
      * Create one Graphics file per page
      */
@@ -41,6 +38,4 @@ protected:
 
 private:
     std::unique_ptr<ExportParameters> parameters;
-
-    std::string lastError;
 };

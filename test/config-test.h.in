@@ -22,6 +22,8 @@
 
 #define GET_UI_FOLDER std::u8string(PROJECT_SOURCE_DIR) + u8"/ui/"
 
+#define GET_TEST_RESOURCE_FOLDER u8"@PROJECT_BINARY_DIR@/resources-templates/"
+
 /**
  * Show speed benchmarks of tests
  */
