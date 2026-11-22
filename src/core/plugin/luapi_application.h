@@ -3396,20 +3396,27 @@ static int applib_export(lua_State* L) {
         return luaL_error(L, "Missing output file!");
     }
 
-    fs::path file = fs::path(outputFile);
-    auto extension = file.extension();
+    {
+        fs::path file = fs::path(outputFile);
+        auto extension = StringUtils::toLowerCase(file.extension().string());
 
-    try {
-        if (extension == ".pdf") {
-            ExportHelper::exportPdf(doc, outputFile, range, layerRange, bgType, progressiveMode, backendType);
-        } else if (extension == ".svg" || extension == ".png") {
-            ExportHelper::exportImg(doc, outputFile, range, layerRange, pngDpi, pngWidth, pngHeight, bgType);
+        try {
+            if (extension == ".pdf") {
+                ExportHelper::exportPdf(doc, outputFile, range, layerRange, bgType, progressiveMode, backendType);
+                return 0;
+            } else if (extension == ".svg" || extension == ".png") {
+                ExportHelper::exportImg(doc, outputFile, range, layerRange, pngDpi, pngWidth, pngHeight, bgType);
+                return 0;
+            } else {
+                lua_pushfstring(L, "Unsupported export extension '%s'. Supported extensions: .pdf, .svg, .png",
+                                file.extension().string().c_str());
+            }
+        } catch (const std::exception& e) {
+            return luaL_error(L, "Error exporting document: %s", e.what());
         }
-    } catch (const std::exception& e) {
-        return luaL_error(L, "Error exporting document: %s", e.what());
     }
 
-    return 0;
+    return lua_error(L);
 }
 
 

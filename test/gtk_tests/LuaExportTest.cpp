@@ -46,6 +46,33 @@ function exportPngs(directory)
     options.range = "1"
     app.export(options)
   end
+  for _, ext in ipairs({"png", "PNG", "pNg", "pdf", "PDF", "svg", "SVG"}) do
+    local path = directory .. "/format." .. ext
+    os.remove(path)
+    app.export({outputFile = path, range = "1", pngWidth = 40})
+    local file = assert(io.open(path, "rb"), ext .. " export missing")
+    local header = file:read(256)
+    file:close()
+    if ext:lower() == "png" then
+      assert(header:sub(1, 8) == "\137PNG\r\n\26\n", ext)
+    elseif ext:lower() == "pdf" then
+      assert(header:sub(1, 5) == "%PDF-", ext)
+    else
+      assert(header:find("<svg", 1, true), ext)
+    end
+  end
+  for _, ext in ipairs({".jpg", ".bogus", ""}) do
+    local path = directory .. "/unsupported" .. ext
+    os.remove(path)
+    local ok, err = pcall(app.export, {outputFile = path, range = "1"})
+    assert(not ok, "unsupported extension accepted: " .. ext)
+    assert(err == "Unsupported export extension '" .. ext .. "'. Supported extensions: .pdf, .svg, .png", err)
+    assert(err:find("Unsupported export extension", 1, true), err)
+    for _, expected in ipairs({ext, ".pdf", ".svg", ".png"}) do
+      assert(err:find(expected, 1, true), err)
+    end
+    assert(io.open(path, "rb") == nil, "unsupported export created a file")
+  end
 end
 )lua");
 
@@ -76,6 +103,6 @@ end
     }
 };
 
-TEST_F(LuaExportTest, ResolvesPngSizeOptions) {}
+TEST_F(LuaExportTest, ResolvesPngSizeOptionsAndExportExtensions) {}
 
 #endif
