@@ -3397,13 +3397,16 @@ static int applib_export(lua_State* L) {
     }
 
     fs::path file = fs::path(outputFile);
-    auto extension = file.extension();
+    auto extension = StringUtils::toLowerCase(file.extension().string());
 
     try {
         if (extension == ".pdf") {
             ExportHelper::exportPdf(doc, outputFile, range, layerRange, bgType, progressiveMode, backendType);
         } else if (extension == ".svg" || extension == ".png") {
             ExportHelper::exportImg(doc, outputFile, range, layerRange, pngDpi, pngWidth, pngHeight, bgType);
+        } else {
+            return luaL_error(L, "Unsupported export extension '%s'. Supported extensions: .pdf, .svg, .png",
+                              file.extension().string().c_str());
         }
     } catch (const std::exception& e) {
         return luaL_error(L, "Error exporting document: %s", e.what());

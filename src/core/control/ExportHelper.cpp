@@ -15,6 +15,7 @@
 #include "pdf/base/XojPdfExport.h"          // for XojPdfExport
 #include "pdf/base/XojPdfExportFactory.h"   // for XojPdfExportFactory
 #include "util/ElementRange.h"              // for parse, PageRangeVector
+#include "util/StringUtils.h"
 #include "util/i18n.h"                      // for _
 #include "util/raii/GObjectSPtr.h"          // for GObjectSPtr
 
@@ -41,7 +42,7 @@ void exportImg(Document* doc, fs::path outfile, const char* range, const char* l
 
     ExportFormat format = EXPORT_GRAPHICS_PNG;
 
-    if (outfile.extension() == ".svg") {
+    if (StringUtils::toLowerCase(outfile.extension().string()) == ".svg") {
         format = EXPORT_GRAPHICS_SVG;
     }
 
