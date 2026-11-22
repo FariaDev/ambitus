@@ -64,10 +64,12 @@ public:
 public:
     /**
      * Load document located at `filepath`
+     * @param exportPage Optional zero-based page to load for image export only.
+     *                   Other pages keep their dimensions and backgrounds, but not their layer content.
      * @return A valid pointer to a `Document`
      * @exception Throws a `std::runtime_error` if a fatal error is encountered.
      */
-    std::unique_ptr<Document> loadDocument(fs::path const& filepath);
+    std::unique_ptr<Document> loadDocument(fs::path const& filepath, std::optional<size_t> exportPage = std::nullopt);
 
     /**
      * The attached PDF file was not found.
@@ -152,7 +154,7 @@ private:
      * @exception Throws a `std::runtime_error` if the document is corrupted and
      *            cannot be loaded.
      */
-    void parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStream);
+    void parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStream, std::optional<size_t> exportPage);
 
     /**
      * Remove points of the current `stroke` that have an invalid pressure.
