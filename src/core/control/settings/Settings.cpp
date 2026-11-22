@@ -2156,14 +2156,6 @@ void Settings::setPDFPageRerenderThreshold(double threshold) {
 
 auto Settings::getPdfPageCacheSize() const -> int { return this->pdfPageCacheSize; }
 
-void Settings::setPdfPageCacheSize(int size) {
-    if (this->pdfPageCacheSize == size) {
-        return;
-    }
-    this->pdfPageCacheSize = size;
-    save();
-}
-
 auto Settings::getPreloadPagesBefore() const -> unsigned int { return this->preloadPagesBefore; }
 
 void Settings::setPreloadPagesBefore(unsigned int n) {

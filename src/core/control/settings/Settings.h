@@ -410,7 +410,6 @@ public:
     void setTouchZoomStartThreshold(double threshold);
 
     int getPdfPageCacheSize() const;
-    [[maybe_unused]] void setPdfPageCacheSize(int size);
 
     unsigned int getPreloadPagesBefore() const;
     void setPreloadPagesBefore(unsigned int n);
