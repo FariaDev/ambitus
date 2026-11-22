@@ -116,7 +116,16 @@ void XmlParser::parserStartElement(GMarkupParseContext* context, const gchar* el
     auto self = static_cast<XmlParser*>(userdata);
     xoj_assert(self);
 
+    if (self->skippedLayerDepth) {
+        ++self->skippedLayerDepth;
+        return;
+    }
     const auto tagType = self->getTagType(elementName | xoj::util::utf8);
+    if (tagType == TagType::LAYER && self->skipPageLayers) {
+        // The XML is still validated by GMarkup, but these layers won't be rendered.
+        self->skippedLayerDepth = 1;
+        return;
+    }
 
     // Check for unknown tags
     if (tagType == TagType::UNKNOWN) {
@@ -149,6 +158,11 @@ void XmlParser::parserEndElement(GMarkupParseContext* context, const gchar* elem
     auto self = static_cast<XmlParser*>(userdata);
     xoj_assert(self);
 
+    if (self->skippedLayerDepth) {
+        --self->skippedLayerDepth;
+        return;
+    }
+
     // GMarkup should have already risen an error if there was an error in the document structure.
     xoj_assert(!self->hierarchy.empty());
     xoj_assert(TAG_NAMES[self->hierarchy.back()] == xoj::util::utf8(elementName) ||
@@ -160,6 +174,10 @@ void XmlParser::parserText(GMarkupParseContext* context, const gchar* text, gsiz
                            GError** error) {
     auto self = static_cast<XmlParser*>(userdata);
     xoj_assert(self);
+
+    if (self->skippedLayerDepth) {
+        return;
+    }
 
     const auto textSV = std::string_view{text, textLen};
 
@@ -182,7 +200,8 @@ void XmlParser::parserText(GMarkupParseContext* context, const gchar* text, gsiz
 }
 
 
-XmlParser::XmlParser(DocumentBuilderInterface& builder): builder(builder) {}
+XmlParser::XmlParser(DocumentBuilderInterface& builder, std::optional<size_t> exportPage):
+        builder(builder), exportPage(exportPage) {}
 
 void XmlParser::closeOpenNodes() {
     while (!this->hierarchy.empty()) {
@@ -237,6 +256,8 @@ void XmlParser::parseMrWriterTag(const XmlParserHelper::AttributeMap& attributeM
 }
 
 void XmlParser::parsePageTag(const XmlParserHelper::AttributeMap& attributeMap) {
+    this->skipPageLayers = this->exportPage && this->nextPageIndex != *this->exportPage;
+    ++this->nextPageIndex;
     const auto width = XmlParserHelper::getAttribMandatory<double>(xoj::xml_attrs::WIDTH_STR, attributeMap);
     const auto height = XmlParserHelper::getAttribMandatory<double>(xoj::xml_attrs::HEIGHT_STR, attributeMap);
 

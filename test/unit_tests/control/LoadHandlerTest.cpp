@@ -650,6 +650,26 @@ TEST(ControlLoadHandler, testPageTypeFormatCopyFix) {
     checkPageType(doc.get(), 2, "p3", PageType(PageTypeFormat::Plain));  // PageTypeFormat::Plain in the file
 }
 
+TEST(ControlLoadHandler, testLoadSinglePageForImageExport) {
+    LoadHandler loader;
+    const auto doc = loader.loadDocument(GET_TESTFILE(u8"packaged_xopp/pages.xopp"), 3);
+    ASSERT_EQ(6u, doc->getPageCount());
+    checkPageType(doc.get(), 3, "p4", PageType(PageTypeFormat::Staves));
+
+    for (size_t i = 0; i < doc->getPageCount(); ++i) {
+        if (i != 3) {
+            const auto page = doc->getPage(i);
+            ASSERT_EQ(1u, page->getLayerCount());
+            EXPECT_EQ(0u, page->getLayersView().front()->getElementsView().size());
+        }
+    }
+    const auto lastPage = doc->getPage(5);
+    EXPECT_DOUBLE_EQ(50.0, lastPage->getWidth());
+    EXPECT_DOUBLE_EQ(50.0, lastPage->getHeight());
+    EXPECT_EQ(PageType(PageTypeFormat::Image), lastPage->getBackgroundType());
+    EXPECT_EQ("attachments/bg_1.png", lastPage->getBackgroundImage().getFilepath());
+}
+
 TEST(ControlLoadHandler, testLayers) {
     auto doc = loadTestDocument(GET_TESTFILE(u8"load/layers.xopp"));
     ASSERT_TRUE(doc);

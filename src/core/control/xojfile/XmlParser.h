@@ -29,7 +29,7 @@
 
 class XmlParser {
 public:
-    XmlParser(DocumentBuilderInterface& builder);
+    XmlParser(DocumentBuilderInterface& builder, std::optional<size_t> exportPage = std::nullopt);
 
     // GMarkup callbacks
     static void parserStartElement(GMarkupParseContext* context, const gchar* elementName, const gchar** attributeNames,
@@ -138,6 +138,11 @@ private:
     std::vector<xoj::xml_tags::Type> hierarchy;
     // Variable to track the topmost valid tag type in the hierarchy stack
     std::optional<xoj::xml_tags::Type> lastValidTag;
+
+    const std::optional<size_t> exportPage;
+    size_t nextPageIndex = 0;
+    size_t skippedLayerDepth = 0;
+    bool skipPageLayers = false;
 
     bool pdfFilenameParsed = false;
 

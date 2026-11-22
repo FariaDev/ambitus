@@ -602,10 +602,10 @@ void LoadHandler::closeFile() noexcept { this->zipFp.reset(); }
 
 XOJ_GIO_GUARD_GENERATOR_TYPE(GMarkupParseContext, g_markup_parse_context_free);
 
-void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStream) {
+void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStream, std::optional<size_t> exportPage) {
     xoj_assert(xmlContentStream);
 
-    XmlParser parserInterface{*this};
+    XmlParser parserInterface{*this, exportPage};
     auto context = GMarkupParseContextGuard{g_markup_parse_context_new(
             &XmlParser::interface, static_cast<GMarkupParseFlags>(0), &parserInterface, nullptr)};
 
@@ -659,9 +659,9 @@ void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStr
 }
 
 
-auto LoadHandler::loadDocument(fs::path const& filepath) -> std::unique_ptr<Document> {
+auto LoadHandler::loadDocument(fs::path const& filepath, std::optional<size_t> exportPage) -> std::unique_ptr<Document> {
     auto xmlContentStream = openFile(filepath);
-    parseXml(std::move(xmlContentStream));
+    parseXml(std::move(xmlContentStream), exportPage);
     closeFile();
 
     xoj_assert(this->doc);
