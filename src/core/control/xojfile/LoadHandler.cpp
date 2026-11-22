@@ -144,15 +144,16 @@ void LoadHandler::addAudioAttachment(const fs::path& filename) {
     }
 
     // Extract audio to temporary file
-    GFileIOStream* fileStream = nullptr;
-    const xoj::util::GObjectSPtr<GFile> tmpFile(g_file_new_tmp("xournal_audio_XXXXXX.tmp", &fileStream, nullptr),
+    GFileIOStream* rawFileStream = nullptr;
+    const xoj::util::GObjectSPtr<GFile> tmpFile(g_file_new_tmp("xournal_audio_XXXXXX.tmp", &rawFileStream, nullptr),
                                                 xoj::util::adopt);
+    const xoj::util::GObjectSPtr<GFileIOStream> fileStream(rawFileStream, xoj::util::adopt);
     if (!tmpFile) {
         logError(_("Unable to create temporary file for audio attachment"));
         return;
     }
 
-    GOutputStream* outputStream = g_io_stream_get_output_stream(G_IO_STREAM(fileStream));
+    GOutputStream* outputStream = g_io_stream_get_output_stream(G_IO_STREAM(fileStream.get()));
 
     auto data = std::make_unique<std::array<std::byte, 1024>>();
     zip_int64_t readBytes = 0;
