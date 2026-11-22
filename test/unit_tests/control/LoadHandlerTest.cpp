@@ -44,6 +44,7 @@
 #include "util/PathUtil.h"
 #include "util/StringUtils.h"
 
+#include "config.h"
 #include "filesystem.h"
 
 static constexpr double DOUBLE_COMPARE_ERROR = 1e-8;
@@ -447,31 +448,33 @@ TEST(ControlLoadHandler, testLoadZipped) {
     EXPECT_EQ(std::string("12345"), text->getText());
 }
 
+static void copyPackagedXoppReplacingEntry(const fs::path& filepath, const char* entryName,
+                                           const std::string& content) {
+    fs::copy_file(GET_TESTFILE(u8"packaged_xopp/test.xopp"), filepath, fs::copy_options::overwrite_existing);
+    auto* archive = zip_open(char_cast(filepath.u8string().c_str()), 0, nullptr);
+    ASSERT_NE(archive, nullptr);
+    auto* source = zip_source_buffer(archive, content.data(), content.size(), 0);
+    if (!source) {
+        zip_discard(archive);
+        FAIL() << "Could not create source for " << entryName;
+    }
+    if (zip_file_add(archive, entryName, source, ZIP_FL_OVERWRITE) < 0) {
+        zip_source_free(source);
+        zip_discard(archive);
+        FAIL() << "Could not replace " << entryName;
+    }
+    const int result = zip_close(archive);
+    if (result != 0) {
+        zip_discard(archive);
+    }
+    ASSERT_EQ(result, 0);
+}
+
 class PackagedXoppMimetypeTest: public ::testing::TestWithParam<std::pair<std::string, bool>> {
 protected:
     fs::path filepath = Util::getTmpDirSubfolder() / "mimetype-test.xopp";
 
-    void SetUp() override {
-        fs::copy_file(GET_TESTFILE(u8"packaged_xopp/test.xopp"), filepath, fs::copy_options::overwrite_existing);
-        auto* archive = zip_open(char_cast(filepath.u8string().c_str()), 0, nullptr);
-        ASSERT_NE(archive, nullptr);
-        const auto& mimetype = GetParam().first;
-        auto* source = zip_source_buffer(archive, mimetype.data(), mimetype.size(), 0);
-        if (!source) {
-            zip_discard(archive);
-            FAIL() << "Could not create mimetype source";
-        }
-        if (zip_file_add(archive, "mimetype", source, ZIP_FL_OVERWRITE) < 0) {
-            zip_source_free(source);
-            zip_discard(archive);
-            FAIL() << "Could not replace mimetype";
-        }
-        const int result = zip_close(archive);
-        if (result != 0) {
-            zip_discard(archive);
-        }
-        ASSERT_EQ(result, 0);
-    }
+    void SetUp() override { copyPackagedXoppReplacingEntry(filepath, "mimetype", GetParam().first); }
 
     void TearDown() override { fs::remove(filepath); }
 };
@@ -495,6 +498,34 @@ INSTANTIATE_TEST_SUITE_P(PackagedXopp, PackagedXoppMimetypeTest,
                          ::testing::Values(std::make_pair("application/xournal++", true),
                                            std::make_pair("application/zip", false), std::make_pair("", false),
                                            std::make_pair(" \tapplication/xournal++\n", true)));
+
+static auto versionEntry(int current, int min) -> std::string {
+    return "current=" + std::to_string(current) + "\nmin=" + std::to_string(min) + "\n";
+}
+
+class PackagedXoppVersionTest: public ::testing::TestWithParam<std::pair<std::string, bool>> {
+protected:
+    fs::path filepath = Util::getTmpDirSubfolder() / "version-test.xopp";
+
+    void SetUp() override { copyPackagedXoppReplacingEntry(filepath, "META-INF/version", GetParam().first); }
+
+    void TearDown() override { fs::remove(filepath); }
+};
+
+TEST_P(PackagedXoppVersionTest, opensAndReportsNewerFileFormat) {
+    LoadHandler handler;
+    auto doc = handler.loadDocument(filepath);
+    ASSERT_TRUE(doc);
+    EXPECT_EQ(doc->getPageCount(), 1U);
+    EXPECT_EQ(handler.isFileFormatNewerThanSupported(), GetParam().second);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+        PackagedXopp, PackagedXoppVersionTest,
+        ::testing::Values(std::make_pair(versionEntry(FILE_FORMAT_VERSION, FILE_FORMAT_VERSION), false),
+                          std::make_pair(versionEntry(FILE_FORMAT_VERSION + 1, FILE_FORMAT_VERSION), true),
+                          std::make_pair(versionEntry(FILE_FORMAT_VERSION + 1, FILE_FORMAT_VERSION + 1), true),
+                          std::make_pair(versionEntry(FILE_FORMAT_VERSION, 999), true)));
 
 TEST(ControlLoadHandler, testAudioAttachmentClosesFile) {
     auto doc = loadTestDocument(GET_TESTFILE(u8"packaged_xopp/audioAttachment/new.xopp"));

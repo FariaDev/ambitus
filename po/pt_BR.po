@@ -352,6 +352,16 @@ msgstr "O arquivo de plano de fundo anexado \"{1}\" não pôde ser encontrado. E
 msgid "Error loading document: {1}"
 msgstr ""
 
+#: ../src/core/control/XournalMain.cpp:174
+msgid ""
+"Warning: the file \"{1}\" has a file format version newer than the one "
+"currently supported by this version of Xournal++, so some content may be "
+"lost."
+msgstr ""
+"Aviso: o arquivo \"{1}\" tem uma versão de formato de arquivo mais recente "
+"que a atualmente suportada por esta versão do Xournal++, por isso parte do "
+"conteúdo pode ser perdida."
+
 #: ../src/core/control/XournalMain.cpp:206
 msgid "Error exporting image: {1}"
 msgstr ""

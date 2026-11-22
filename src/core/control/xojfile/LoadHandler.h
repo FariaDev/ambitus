@@ -83,6 +83,9 @@ public:
     /** @return The version of the loaded file */
     int getFileVersion() const;
 
+    /** @return Whether the file declares a file format version newer than the one this build supports */
+    bool isFileFormatNewerThanSupported() const;
+
 private:
     // interface for XmlParser
     void addDocument(std::u8string creator, int fileVersion) override;
