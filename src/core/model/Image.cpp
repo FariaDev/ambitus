@@ -37,6 +37,9 @@ auto Image::clone() const -> ElementPtr {
 
     img->data = this->data;
     img->image = this->image;
+    if (this->format) {
+        img->format = gdk_pixbuf_format_copy(this->format);
+    }
 
     return img;
 }

@@ -19,6 +19,31 @@
 #include "filesystem.h"
 
 
+TEST(Image, clonePreservesFormat) {
+    Image image;
+    std::ifstream imageFile{fs::path(GET_TESTFILE(u8"images/r90.jpg")), std::ios::binary};
+    ASSERT_TRUE(imageFile.is_open());
+    image.setImage(std::string(std::istreambuf_iterator<char>(imageFile), {}));
+    ASSERT_NE(image.getImageFormat(), nullptr);
+
+    auto clone = image.clone();
+    auto* clonedImage = static_cast<Image*>(clone.get());
+    ASSERT_NE(clonedImage->getImageFormat(), nullptr);
+    EXPECT_NE(clonedImage->getImageFormat(), image.getImageFormat());
+    gchar* originalName = gdk_pixbuf_format_get_name(image.getImageFormat());
+    gchar* clonedName = gdk_pixbuf_format_get_name(clonedImage->getImageFormat());
+    EXPECT_STREQ(clonedName, originalName);
+    g_free(originalName);
+    g_free(clonedName);
+}
+
+TEST(Image, cloneWithoutFormat) {
+    Image image;
+    auto clone = image.clone();
+    EXPECT_EQ(static_cast<Image*>(clone.get())->getImageFormat(), nullptr);
+}
+
+
 TEST(Image, testGetImageApplyOrientation) {
     auto image = Image();
 
