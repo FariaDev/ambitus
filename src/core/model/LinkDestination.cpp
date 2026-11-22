@@ -88,8 +88,6 @@ auto LinkDestination::getName() const -> const std::string& { return name; }
 
 void LinkDestination::setURI(std::string uri) { this->contents = LinkType{std::move(uri)}; }
 
-auto LinkDestination::isURI() const -> bool { return std::holds_alternative<LinkDestination::LinkType>(contents); }
-
 auto LinkDestination::getURI() const -> std::optional<std::string> {
     if (auto* t = std::get_if<LinkDestination::LinkType>(&contents)) {
         return t->uri;
