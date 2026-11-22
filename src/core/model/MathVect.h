@@ -23,8 +23,6 @@ struct MathVect2 {
     double dy{};
     static double scalarProduct(const MathVect2& u, const MathVect2& v);
     double norm() const;
-    double squaredNorm() const;
-    bool isZero() const;
     MathVect2 operator+(const MathVect2& u) const;
     MathVect2 operator-(const MathVect2& u) const;
     MathVect2 operator-() const;
