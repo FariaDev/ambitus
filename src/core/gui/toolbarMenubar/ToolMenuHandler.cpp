@@ -169,12 +169,6 @@ void ToolMenuHandler::load(const ToolbarData* d, GtkWidget* toolbar, const char*
     }
 }
 
-void ToolMenuHandler::removeColorToolItem(AbstractToolItem* it) {
-    g_return_if_fail(it != nullptr);
-    this->toolbarColorItems.erase(std::find_if(this->toolbarColorItems.begin(), this->toolbarColorItems.end(),
-                                               [it](const auto& p) { return p.get() == it; }));
-}
-
 void ToolMenuHandler::addColorToolItem(std::unique_ptr<ColorToolItem> it) {
     g_return_if_fail(it != nullptr);
     this->toolbarColorItems.emplace_back(std::move(it));
