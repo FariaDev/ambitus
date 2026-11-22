@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <utility>
 
+#include <cairo-pdf.h>
 #include <glib.h>
 #include <gtest/gtest.h>
 
@@ -9,10 +10,15 @@
 #include "model/Document.h"
 #include "model/DocumentHandler.h"
 #include "model/Layer.h"
+#include "model/LinkDestination.h"
 #include "model/Text.h"
 #include "model/XojPage.h"
+#include "pdf/base/XojPdfAction.h"
+#include "pdf/base/XojPdfBookmarkIterator.h"
 #include "pdf/base/XojPdfDocument.h"
 #include "util/PathUtil.h"
+#include "util/StringUtils.h"
+#include "util/raii/CairoWrappers.h"
 
 class PdfExportTest: public ::testing::Test {
 protected:
@@ -72,3 +78,41 @@ TEST_F(PdfExportTest, ProgressiveLayerRange) {
                  std::runtime_error);
     EXPECT_FALSE(fs::exists(emptyOutput));
 }
+
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
+TEST_F(PdfExportTest, ProgressiveLayerRangeRemapsBookmarks) {
+    const auto background = outputDirectory / "background.pdf";
+    {
+        xoj::util::CairoSurfaceSPtr surface(cairo_pdf_surface_create(char_cast(background.u8string().c_str()), 100, 100),
+                                           xoj::util::adopt);
+        xoj::util::CairoSPtr cr(cairo_create(surface.get()), xoj::util::adopt);
+        const int first = cairo_pdf_surface_add_outline(surface.get(), CAIRO_PDF_OUTLINE_ROOT, "First", "page=1",
+                                                        CAIRO_PDF_OUTLINE_FLAG_OPEN);
+        cairo_pdf_surface_add_outline(surface.get(), first, "Second", "page=2", CAIRO_PDF_OUTLINE_FLAG_OPEN);
+        cairo_show_page(cr.get());
+        cairo_show_page(cr.get());
+        cairo_surface_finish(surface.get());
+        ASSERT_EQ(cairo_surface_status(surface.get()), CAIRO_STATUS_SUCCESS);
+    }
+
+    DocumentHandler handler;
+    Document doc(&handler);
+    ASSERT_TRUE(doc.readPdf(background, true, false));
+    doc.getPage(1)->getLayers().push_back(new Layer());
+
+    const auto output = outputDirectory / "progressive-bookmarks.pdf";
+    ASSERT_NO_THROW(ExportHelper::exportPdf(&doc, output, nullptr, "2", EXPORT_BACKGROUND_ALL, true,
+                                            PdfExportBackend::CAIRO));
+    XojPdfDocument pdf;
+    ASSERT_TRUE(pdf.load(output, "", nullptr));
+    ASSERT_EQ(pdf.getPageCount(), 1U);
+
+    std::unique_ptr<XojPdfBookmarkIterator> bookmark(pdf.getContentsIter());
+    ASSERT_NE(bookmark, nullptr);
+    std::unique_ptr<XojPdfAction> action(bookmark->getAction());
+    ASSERT_NE(action, nullptr);
+    EXPECT_EQ(action->getTitle(), "Second");
+    EXPECT_EQ(action->getDestination()->getPdfPage(), 0U);
+    EXPECT_FALSE(bookmark->next());
+}
+#endif

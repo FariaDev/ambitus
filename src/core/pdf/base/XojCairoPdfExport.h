@@ -12,6 +12,7 @@
 #pragma once
 
 #include <cstddef>  // for size_t
+#include <span>     // for span
 #include <string>   // for string
 
 #include <cairo.h>    // for CAIRO_VERSION, CAIRO_VERSION...
@@ -51,7 +52,7 @@ private:
      *
      * This requires features available only in cairo 1.16 or newer.
      */
-    void populatePdfOutline();
+    void populatePdfOutline(std::span<const size_t> outputPages = {});
 #endif
 
 protected:
@@ -61,7 +62,7 @@ protected:
     /**
      * Export as a PDF document where each additional selected layer creates a
      * new page */
-    void exportPageLayers(size_t page);
+    size_t exportPageLayers(size_t page);
 
     /**
      * @brief Select layers to export by parsing str

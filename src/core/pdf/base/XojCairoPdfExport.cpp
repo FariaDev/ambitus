@@ -71,12 +71,11 @@ void XojCairoPdfExport::configureCairoFontOptions() {
 }
 
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
-void XojCairoPdfExport::populatePdfOutline() {
+void XojCairoPdfExport::populatePdfOutline(std::span<const size_t> outputPages) {
     auto tocModel = doc->getContentsModel();
     if (tocModel == nullptr)
         return;
 
-    int idCounter = CAIRO_PDF_OUTLINE_ROOT;
     std::stack<std::pair<GtkTreeIter, int>> nodeStack;
 
     GtkTreeIter firstIter = {0};
@@ -85,17 +84,20 @@ void XojCairoPdfExport::populatePdfOutline() {
         return;
     }
 
-    nodeStack.push(std::make_pair(firstIter, idCounter));
+    nodeStack.push(std::make_pair(firstIter, CAIRO_PDF_OUTLINE_ROOT));
     while (!nodeStack.empty()) {
         auto [iter, parentId] = nodeStack.top();
         nodeStack.pop();
-        const int currentId = ++idCounter;
+        int currentId = parentId;
         XojLinkDest* link = nullptr;
 
         gtk_tree_model_get(tocModel, &iter, DOCUMENT_LINKS_COLUMN_LINK, &link, -1);
         auto dest = link->dest;
         auto pdfBgPage = dest->getPdfPage();  // Link destination in original background PDF
         auto pageDest = pdfBgPage == npos ? npos : doc->findPdfPage(pdfBgPage);  // Destination in document
+        if (pageDest != npos && !outputPages.empty()) {
+            pageDest = outputPages[pageDest];
+        }
         if (pageDest != npos) {
             auto linkAttrBuf = serdes_stream<std::ostringstream>();
             linkAttrBuf << "page=" << pageDest + 1;
@@ -104,8 +106,9 @@ void XojCairoPdfExport::populatePdfOutline() {
             }
             const auto linkAttr = linkAttrBuf.str();
             auto outlineFlags = dest->getExpand() ? CAIRO_PDF_OUTLINE_FLAG_OPEN : 0;
-            cairo_pdf_surface_add_outline(this->surface, parentId, link->dest->getName().data(), linkAttr.data(),
-                                          static_cast<cairo_pdf_outline_flags_t>(outlineFlags));
+            currentId = cairo_pdf_surface_add_outline(this->surface, parentId, link->dest->getName().data(),
+                                                       linkAttr.data(),
+                                                       static_cast<cairo_pdf_outline_flags_t>(outlineFlags));
         }
         g_object_unref(link);
 
@@ -171,7 +174,7 @@ void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground, bool p
     cairo_restore(this->cr);
 }
 
-void XojCairoPdfExport::exportPageLayers(size_t page) {
+size_t XojCairoPdfExport::exportPageLayers(size_t page) {
     PageRef p = doc->getPage(page);
     const auto& layers = p->getLayers();
 
@@ -182,6 +185,7 @@ void XojCairoPdfExport::exportPageLayers(size_t page) {
         layer->setVisible(false);
     }
 
+    size_t frameCount = 0;
     // Draw one page per selected layer, building up the layer stack.
     for (size_t i = 0; i < layers.size(); ++i) {
         if (!layerRange || std::ranges::any_of(*layerRange, [i](LayerRangeEntry range) {
@@ -189,11 +193,13 @@ void XojCairoPdfExport::exportPageLayers(size_t page) {
             })) {
             layers[i]->setVisible(true);
             exportPage(page, true /* exportPdfBackground */, true /* progressiveMode */);
+            ++frameCount;
         }
     }
 
     // We restore the initial visibilities
     for (const auto& layer: layers) layer->setVisible(initialVisibility[layer]);
+    return frameCount;
 }
 
 bool XojCairoPdfExport::hasLayersToExport(const PageRangeVector& range) const {
@@ -221,8 +227,9 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
     // Only export the outline if we are exporting the entire document. otherwise, links may point to page numbers
     // greater than the total number of pages, leading to corrupt pdf files
     bool outline = range.size() == 1 && range.front().first == 0 && range.front().last >= doc->getPageCount() - 1;
+    const bool remapOutline = outline && progressiveMode && layerRange;
 
-    if (!startPdf(file, outline)) {
+    if (!startPdf(file, outline && !remapOutline)) {
         this->lastError = _("Failed to initialize PDF Cairo surface");
         this->lastError += "\nCairo error: ";
         this->lastError += cairo_status_to_string(cairo_surface_status(this->surface));
@@ -239,12 +246,18 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
         this->progressListener->setMaximumState(count);
     }
 
+    std::vector<size_t> outputPages(remapOutline ? doc->getPageCount() : 0, npos);
+    size_t nextFrame = 0;
     size_t c = 0;
     for (const auto& e: range) {
         auto max = std::min(e.last, doc->getPageCount());  // Should be e.last for parsed PageRangeVector
         for (size_t i = e.first; i <= max; i++) {
             if (progressiveMode) {
-                exportPageLayers(i);
+                auto frameCount = exportPageLayers(i);
+                if (remapOutline && frameCount) {
+                    outputPages[i] = nextFrame;
+                    nextFrame += frameCount;
+                }
             } else {
                 exportPage(i);
             }
@@ -255,6 +268,11 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& r
         }
     }
 
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 16, 0)
+    if (remapOutline) {
+        populatePdfOutline(outputPages);
+    }
+#endif
     return endPdf();
 }
 
