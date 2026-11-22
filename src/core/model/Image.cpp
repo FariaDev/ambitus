@@ -132,7 +132,7 @@ auto Image::renderBuffer() const -> std::optional<std::string> {
                              gint maxWidth = floor_cast<gint>(maxHeight * ratio);
                              g_warning("Trying to open an image too big %d x %d. Resizing it to %d x %d", width, height,
                                        maxWidth, maxHeight);
-                             gdk_pixbuf_loader_set_size(self, maxHeight, maxWidth);
+                             gdk_pixbuf_loader_set_size(self, maxWidth, maxHeight);
                          }
                      }),
                      nullptr);
