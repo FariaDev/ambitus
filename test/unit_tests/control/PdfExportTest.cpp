@@ -1,4 +1,5 @@
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 #include <glib.h>
@@ -54,4 +55,20 @@ TEST_F(PdfExportTest, ProgressiveLayerRange) {
     EXPECT_TRUE(pdf.getPage(0)->findText("SECOND").empty());
     EXPECT_FALSE(pdf.getPage(1)->findText("FIRST").empty());
     EXPECT_FALSE(pdf.getPage(1)->findText("SECOND").empty());
+
+    const auto subsetOutput = outputDirectory / "progressive-subset.pdf";
+    ASSERT_NO_THROW(ExportHelper::exportPdf(&doc, subsetOutput, nullptr, "2", EXPORT_BACKGROUND_NONE, true,
+                                            PdfExportBackend::CAIRO));
+
+    XojPdfDocument subset;
+    ASSERT_TRUE(subset.load(subsetOutput, "", nullptr));
+    ASSERT_EQ(subset.getPageCount(), 1U);
+    EXPECT_TRUE(subset.getPage(0)->findText("FIRST").empty());
+    EXPECT_FALSE(subset.getPage(0)->findText("SECOND").empty());
+
+    const auto emptyOutput = outputDirectory / "progressive-empty.pdf";
+    EXPECT_THROW(ExportHelper::exportPdf(&doc, emptyOutput, nullptr, "3", EXPORT_BACKGROUND_NONE, true,
+                                        PdfExportBackend::CAIRO),
+                 std::runtime_error);
+    EXPECT_FALSE(fs::exists(emptyOutput));
 }

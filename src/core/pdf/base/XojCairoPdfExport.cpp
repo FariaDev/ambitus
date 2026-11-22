@@ -1,6 +1,6 @@
 #include "XojCairoPdfExport.h"
 
-#include <algorithm>  // for any_of, min
+#include <algorithm>  // for any_of, min, min_element
 #include <map>        // for map
 #include <memory>     // for __shared_ptr_access
 #include <sstream>    // for ostringstream, operator<<
@@ -171,7 +171,6 @@ void XojCairoPdfExport::exportPage(size_t page, bool exportPdfBackground, bool p
     cairo_restore(this->cr);
 }
 
-// export layers one by one to produce as many PDF pages as there are layers.
 void XojCairoPdfExport::exportPageLayers(size_t page) {
     PageRef p = doc->getPage(page);
     const auto& layers = p->getLayers();
@@ -183,22 +182,38 @@ void XojCairoPdfExport::exportPageLayers(size_t page) {
         layer->setVisible(false);
     }
 
-    // Draw one page per layer, revealing only layers in the requested range.
+    // Draw one page per selected layer, building up the layer stack.
     for (size_t i = 0; i < layers.size(); ++i) {
         if (!layerRange || std::ranges::any_of(*layerRange, [i](LayerRangeEntry range) {
                 return range.first <= i && i <= range.last;
             })) {
             layers[i]->setVisible(true);
+            exportPage(page, true /* exportPdfBackground */, true /* progressiveMode */);
         }
-        exportPage(page, true /* exportPdfBackground */, true /* progressiveMode */);
     }
 
     // We restore the initial visibilities
     for (const auto& layer: layers) layer->setVisible(initialVisibility[layer]);
 }
 
+bool XojCairoPdfExport::hasLayersToExport(const PageRangeVector& range) const {
+    const auto first = std::ranges::min_element(*layerRange, {}, &LayerRangeEntry::first);
+    if (first == layerRange->end()) {
+        return false;
+    }
+    return std::ranges::any_of(range, [this, first](PageRangeEntry pages) {
+        const auto lastPage = std::min(pages.last, doc->getPageCount() - 1);
+        for (size_t i = pages.first; i <= lastPage; ++i) {
+            if (doc->getPage(i)->getLayerCount() > first->first) {
+                return true;
+            }
+        }
+        return false;
+    });
+}
+
 auto XojCairoPdfExport::createPdf(fs::path const& file, const PageRangeVector& range, bool progressiveMode) -> bool {
-    if (range.empty()) {
+    if (range.empty() || !doc->getPageCount() || (progressiveMode && layerRange && !hasLayersToExport(range))) {
         this->lastError = _("No pages to export!");
         return false;
     }
@@ -247,6 +262,10 @@ auto XojCairoPdfExport::createPdf(fs::path const& file, bool progressiveMode) ->
     if (doc->getPageCount() < 1) {
         lastError = _("No pages to export!");
         return false;
+    }
+
+    if (progressiveMode && layerRange) {
+        return createPdf(file, {{0, doc->getPageCount() - 1}}, progressiveMode);
     }
 
     if (!startPdf(file, /* exportOutline */ true)) {
