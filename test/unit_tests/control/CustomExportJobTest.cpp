@@ -9,6 +9,7 @@
 #include "control/settings/Settings.h"
 #include "gui/GladeSearchpath.h"
 #include "gui/MainWindow.h"
+#include "util/PathUtil.h"
 
 #include "config-test.h"
 
@@ -29,6 +30,32 @@ TEST(CustomExportJobTest, DeliversWriteErrorToAfterRun) {
 #ifndef __linux__
     GTEST_SKIP() << "Requires /dev/full";
 #else
+    if (!g_getenv("XOJ_CUSTOM_EXPORT_TEST_CONFIG")) {
+        char* directory = g_dir_make_tmp("xournalpp-custom-export-config-XXXXXX", nullptr);
+        ASSERT_NE(directory, nullptr);
+        auto executable = fs::read_symlink("/proc/self/exe").string();
+        char filter[] = "--gtest_filter=CustomExportJobTest.DeliversWriteErrorToAfterRun";
+        char* args[] = {executable.data(), filter, nullptr};
+        auto** environment = g_get_environ();
+        environment = g_environ_setenv(environment, "XDG_CONFIG_HOME", directory, true);
+        environment = g_environ_setenv(environment, "XOJ_CUSTOM_EXPORT_TEST_CONFIG", directory, true);
+        int status = 0;
+        GError* error = nullptr;
+        // GLib caches the config directory, so use a fresh process even when other tests have accessed it.
+        bool spawned = g_spawn_sync(nullptr, args, environment, G_SPAWN_DEFAULT, nullptr, nullptr, nullptr, nullptr,
+                                    &status, &error);
+        g_strfreev(environment);
+        fs::remove_all(directory);
+        g_free(directory);
+        EXPECT_TRUE(spawned) << (error ? error->message : "");
+        g_clear_error(&error);
+        if (spawned) {
+            EXPECT_TRUE(g_spawn_check_wait_status(status, &error)) << (error ? error->message : "");
+            g_clear_error(&error);
+        }
+        return;
+    }
+    ASSERT_EQ(Util::getConfigFolder(), fs::path(g_getenv("XOJ_CUSTOM_EXPORT_TEST_CONFIG")) / "xournalpp");
     if (!gtk_init_check(nullptr, nullptr)) {
         GTEST_SKIP() << "Requires a GTK display";
     }
