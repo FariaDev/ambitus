@@ -73,9 +73,10 @@ file (GLOB_RECURSE test-gtk-sources
 
 # Define test-gtk-integration target
 add_executable (test-gtk-integration EXCLUDE_FROM_ALL ${test-gtk-sources})
-target_link_libraries (test-gtk-integration xoj::core xoj::util gtest_main gtest)
+target_link_libraries (test-gtk-integration xoj::core xoj::util gtest)
 target_compile_features(test-gtk-integration PRIVATE cxx_std_20)
 target_include_directories(test-gtk-integration PRIVATE "${PROJECT_BINARY_DIR}/test")
+target_compile_definitions(test-gtk-integration PRIVATE XOJ_TEST_RESOURCE_DIR=u8"${PROJECT_BINARY_DIR}/resources-templates")
 
 ###############################################################################
 # Discover and Register Tests

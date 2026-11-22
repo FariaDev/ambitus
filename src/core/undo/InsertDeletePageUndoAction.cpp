@@ -2,6 +2,8 @@
 
 #include "control/Control.h"        // for Control
 #include "control/ScrollHandler.h"  // for ScrollHandler
+#include "gui/MainWindow.h"         // for MainWindow
+#include "gui/XournalView.h"        // for XournalView
 #include "gui/XournalppCursor.h"    // for XournalppCursor
 #include "model/Document.h"         // for Document
 #include "model/PageRef.h"          // for PageRef
@@ -50,6 +52,7 @@ auto InsertDeletePageUndoAction::insertPage(Control* control) -> bool {
     control->firePageInserted(this->pagePos);
     control->getCursor()->updateCursor();
     control->getScrollHandler()->scrollToPage(this->pagePos);
+    control->getWindow()->getXournal()->forceUpdatePagenumbers();
 
     return true;
 }
@@ -75,6 +78,7 @@ auto InsertDeletePageUndoAction::deletePage(Control* control) -> bool {
     doc->lock();
     doc->deletePage(pNr);
     doc->unlock();
+    control->getWindow()->getXournal()->forceUpdatePagenumbers();
     return true;
 }
 
