@@ -15,8 +15,31 @@
 #include <gtest/gtest.h>
 
 #include "model/Image.h"
+#include "util/raii/GObjectSPtr.h"
 
 #include "filesystem.h"
+
+TEST(Image, testDownsampleLargeLandscapeImage) {
+    xoj::util::GObjectSPtr<GdkPixbuf> pixbuf(gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, 9000, 4000),
+                                           xoj::util::adopt);
+    ASSERT_NE(pixbuf.get(), nullptr);
+    gdk_pixbuf_fill(pixbuf.get(), 0x336699ff);
+    gchar* buffer = nullptr;
+    gsize length = 0;
+    ASSERT_TRUE(gdk_pixbuf_save_to_buffer(pixbuf.get(), &buffer, &length, "png", nullptr, nullptr));
+    std::string data(buffer, length);
+    g_free(buffer);
+    pixbuf.reset();
+
+    Image image;
+    image.setImage(std::move(data));
+    ASSERT_FALSE(image.renderBuffer().has_value());
+    auto* surface = image.getImage();
+    ASSERT_NE(surface, nullptr);
+    EXPECT_EQ(cairo_image_surface_get_width(surface), 8687);
+    EXPECT_EQ(cairo_image_surface_get_height(surface), 3861);
+    EXPECT_EQ(image.getNaturalSize(), xoj::util::Size<double>(8687, 3861));
+}
 
 
 TEST(Image, testGetImageApplyOrientation) {
