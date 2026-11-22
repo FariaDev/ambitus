@@ -42,6 +42,19 @@ TEST(Image, testDownsampleLargeLandscapeImage) {
 }
 
 
+TEST(Image, testRenderBufferTruncatedPng) {
+    gsize length = 0;
+    auto* bytes = g_base64_decode("iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AAAABmJLR0QA/wD/AP+gvac=", &length);
+    auto image = Image();
+    image.setImage(std::string(reinterpret_cast<const char*>(bytes), length));
+    g_free(bytes);
+
+    auto error = image.renderBuffer();
+
+    ASSERT_TRUE(error.has_value());
+    EXPECT_NE(error->find("Failed to close image stream"), std::string::npos);
+}
+
 TEST(Image, testGetImageApplyOrientation) {
     auto image = Image();
 
