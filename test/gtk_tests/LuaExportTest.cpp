@@ -66,6 +66,7 @@ function exportPngs(directory)
     os.remove(path)
     local ok, err = pcall(app.export, {outputFile = path, range = "1"})
     assert(not ok, "unsupported extension accepted: " .. ext)
+    assert(err == "Unsupported export extension '" .. ext .. "'. Supported extensions: .pdf, .svg, .png", err)
     assert(err:find("Unsupported export extension", 1, true), err)
     for _, expected in ipairs({ext, ".pdf", ".svg", ".png"}) do
       assert(err:find(expected, 1, true), err)
