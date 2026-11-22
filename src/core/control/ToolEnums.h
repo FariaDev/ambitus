@@ -152,7 +152,6 @@ static constexpr std::array<std::string_view, 4> opacityFeatureNames{"none", "op
 static constexpr std::string_view opacityFeatureToString(OpacityFeature feature) {
     return opacityFeatureNames.at(static_cast<size_t>(feature));
 }
-OpacityFeature opacityFeatureFromString(const std::string& feature);
 
 enum EraserType { ERASER_TYPE_NONE = 0, ERASER_TYPE_DEFAULT, ERASER_TYPE_WHITEOUT, ERASER_TYPE_DELETE_STROKE };
 static constexpr std::array<std::string_view, 4> eraserTypeNames{"none", "default", "whiteout", "deleteStroke"};

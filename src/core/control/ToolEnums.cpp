@@ -56,15 +56,6 @@ auto toolTypeFromString(const std::string& type) -> ToolType {
 }
 
 
-auto opacityFeatureFromString(const std::string& feature) -> OpacityFeature {
-    auto it = std::find(opacityFeatureNames.begin(), opacityFeatureNames.end(), feature);
-    if (it != opacityFeatureNames.end()) {
-        return static_cast<OpacityFeature>(std::distance(opacityFeatureNames.begin(), it));
-    }
-    return OPACITY_NONE;
-}
-
-
 auto eraserTypeFromString(const std::string& type) -> EraserType {
     auto it = std::find(eraserTypeNames.begin(), eraserTypeNames.end(), type);
     if (it != eraserTypeNames.end()) {
