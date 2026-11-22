@@ -37,10 +37,26 @@ protected:
 
 TEST_P(ImageExportTest, ExportsBlankPage) {
     ImageExport exporter(&doc, outputPath(), GetParam(), EXPORT_BACKGROUND_ALL, range);
+    EXPECT_EQ(exporter.getOutputFiles(), std::vector<fs::path>{outputPath()});
     exporter.exportGraphics(&progress);
 
     EXPECT_TRUE(exporter.getLastErrorMsg().empty()) << exporter.getLastErrorMsg();
     EXPECT_GT(fs::file_size(outputPath()), 0);
+}
+
+TEST_P(ImageExportTest, ListsSelectedOutputFiles) {
+    doc.addPage(std::make_shared<XojPage>(100, 100));
+    doc.addPage(std::make_shared<XojPage>(100, 100));
+    range.clear();
+    ImageExport exporter(&doc, outputPath(), GetParam(), EXPORT_BACKGROUND_ALL, range);
+    EXPECT_TRUE(exporter.getOutputFiles().empty());
+    range = {{2, 2}};
+    EXPECT_EQ(exporter.getOutputFiles(), std::vector<fs::path>{outputPath()});
+    range = {{2, 2}, {0, 0}, {2, 2}};
+    const std::vector<fs::path> expected{
+            outputDirectory / ("out-1" + outputPath().extension().string()),
+            outputDirectory / ("out-3" + outputPath().extension().string())};
+    EXPECT_EQ(exporter.getOutputFiles(), expected);
 }
 
 TEST_P(ImageExportTest, ReportsWriteError) {

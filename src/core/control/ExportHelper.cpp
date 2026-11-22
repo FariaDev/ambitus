@@ -56,14 +56,8 @@ void exportImg(Document* doc, fs::path outfile, const char* range, const char* l
 
     ImageExport imgExport(doc, std::move(outfile), format, exportBackground, exportRange);
 
-    rejectInputOverwrite(doc->getFilepath(), imgExport.file);
-    const bool onePage = exportRange.size() == 1 && exportRange[0].first == exportRange[0].last;
-    if (!onePage) {
-        for (const auto& entry: exportRange) {
-            for (size_t page = entry.first; page <= entry.last; ++page) {
-                rejectInputOverwrite(doc->getFilepath(), imgExport.getFilenameWithNumber(page + 1));
-            }
-        }
+    for (const auto& output: imgExport.getOutputFiles()) {
+        rejectInputOverwrite(doc->getFilepath(), output);
     }
 
     if (format == EXPORT_GRAPHICS_PNG) {
