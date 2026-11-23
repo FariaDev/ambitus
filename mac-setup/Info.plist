@@ -9,11 +9,11 @@
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.business</string>
     <key>CFBundleIdentifier</key>
-    <string>com.github.xournalpp</string>
+    <string>io.github.fariadev.Ambitus</string>
     <key>CFBundleName</key>
-    <string>Xournal++</string>
+    <string>Ambitus</string>
     <key>CFBundleDisplayName</key>
-    <string>Xournal++</string>
+    <string>Ambitus</string>
 
     <key>CFBundleShortVersionString</key>
     <string>1.3.8+dev</string>
@@ -181,12 +181,6 @@
     <true />
     <key>NSDownloadsUbiquitousContents</key>
     <true />
-
-    <key>LSEnvironment</key>
-    <dict>
-        <key>DYLD_LIBRARY_PATH</key>
-        <string>/Applications/Xournal++.app/Contents/Resources/lib</string>
-    </dict>
 
     <key>NSHighResolutionCapable</key>
     <true />

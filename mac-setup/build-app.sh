@@ -24,7 +24,7 @@ cd "$(dirname "$0")" || exit
 
 # delete old app, if there
 echo "clean old app"
-rm -rf ./Xournal++.app
+rm -rf ./Ambitus.app
 
 echo "prepare gtk-mac-bundler"
 GTK_MAC_BUNDLER_VENV="$PWD"/gtk-mac-bundler-venv
@@ -79,9 +79,9 @@ export GTKDIR="$1/inst"
 "$GTK_MAC_BUNDLER" xournalpp.bundle
 
 echo "Replace Ctrl by Meta in mainmenubar.xml"
-sed -i -e 's/Ctrl/Meta/g' ./Xournal++.app/Contents/Resources/ui/mainmenubar.xml
+sed -i -e 's/Ctrl/Meta/g' ./Ambitus.app/Contents/Resources/ui/mainmenubar.xml
 
 echo "Create zip"
-zip --filesync -r Xournal++.zip Xournal++.app
+zip --filesync -r Ambitus.zip Ambitus.app
 
 echo "finished"

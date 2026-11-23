@@ -47,6 +47,9 @@ jobs:
           build_type: ${{ inputs.build_type }}
           cmake_flags: >-
             -DCMAKE_INSTALL_PREFIX="$HOME/gtk/inst"
+            -DLUA_INCLUDE_DIR="$HOME/gtk/inst/include"
+            -DLUA_LIBRARY="$HOME/gtk/inst/lib/liblua.a"
+            -DCMAKE_EXE_LINKER_FLAGS=-Wl,-headerpad_max_install_names
           extra_cmake_flags: ${{ inputs.extra_cmake_flags }}
       - name: 'Create installer'
         id: create-installer
@@ -55,12 +58,12 @@ jobs:
           which pkg-config
           pkg-config --version
           (cd build && cmake --build . --target install)
-          (cd mac-setup && ./build-app.sh $HOME/gtk)                    # populates a folder mac-setup/Xournal++.app
+          (cd mac-setup && ./build-app.sh $HOME/gtk)                    # populates a folder mac-setup/Ambitus.app
 
           export VERSION=$(cat build/VERSION | sed '1q;d')
-          export OUTPUT="xournalpp-$VERSION${{ inputs.artifact_version_suffix }}-macOS-${{runner.arch}}.dmg"
+          export OUTPUT="ambitus-$VERSION${{ inputs.artifact_version_suffix }}-macOS-${{runner.arch}}.dmg"
 
-          (cd mac-setup && ./build-dmg.sh Xournal++.app $OUTPUT)  # makes an installer out of this folder
+          (cd mac-setup && ./build-dmg.sh Ambitus.app $OUTPUT)  # makes an installer out of this folder
 
           echo "artifact=$OUTPUT" >> $GITHUB_OUTPUT
       - name: 'Publish package'
