@@ -2,6 +2,7 @@
 
 #include <algorithm>  // for copy, sort, max
 #include <array>      // for array
+#include <charconv>   // for from_chars
 #include <chrono>     // for time_point, duration, hours...
 #include <clocale>    // for setlocale, LC_NUMERIC
 #include <cstdio>     // for printf
@@ -14,6 +15,8 @@
 #include <sstream>    // for stringstream
 #include <stdexcept>  // for runtime_error
 #include <string>     // for string, basic_string
+#include <string_view>  // for string_view
+#include <system_error> // for errc
 #include <vector>     // for vector
 
 #include <gio/gio.h>      // for GApplication, G_APPLICATION
@@ -170,10 +173,30 @@ void throwIfMissingPdfFileName(const LoadHandler& loader) {
     }
 }
 
-auto loadDocumentOrExit(const fs::path& filename, ExportBackgroundType exportBackground) -> std::unique_ptr<Document> {
+auto singleExportPage(const char* range) -> std::optional<size_t> {
+    if (!range || !*range) {
+        return std::nullopt;
+    }
+    const std::string_view text{range};
+    const auto end = text.data() + text.size();
+    size_t page = 0;
+    const auto [ptr, ec] = std::from_chars(text.data(), end, page);
+    return ec == std::errc{} && ptr == end && page > 0 ? std::make_optional(page - 1) : std::nullopt;
+}
+
+auto loadDocumentOrExit(const fs::path& filename, ExportBackgroundType exportBackground,
+                       std::optional<size_t> exportPage = std::nullopt) -> std::unique_ptr<Document> {
     try {
         LoadHandler loader;
-        auto doc = loader.loadDocument(filename);
+        auto doc = loader.loadDocument(filename, exportPage);
+        doc->setFilepath(filename);
+
+        if (loader.isFileFormatNewerThanSupported()) {
+            std::cerr << FS(_F("Warning: the file \"{1}\" has a file format version newer than the one currently "
+                               "supported by this version of Xournal++, so some content may be lost.") %
+                            filename.u8string())
+                      << std::endl;
+        }
 
         if (exportBackground != EXPORT_BACKGROUND_NONE) {
             throwIfMissingPdfFileName(loader);
@@ -208,7 +231,7 @@ auto loadDocumentOrExit(const fs::path& filename, ExportBackgroundType exportBac
  */
 auto exportImg(fs::path infile, fs::path outfile, const char* range, const char* layerRange, int pngDpi, int pngWidth,
                int pngHeight, ExportBackgroundType exportBackground) -> int {
-    auto doc = loadDocumentOrExit(infile, exportBackground);
+    auto doc = loadDocumentOrExit(infile, exportBackground, singleExportPage(range));
 
     try {
         ExportHelper::exportImg(doc.get(), outfile, range, layerRange, pngDpi, pngWidth, pngHeight, exportBackground);
@@ -229,6 +252,12 @@ auto exportImg(fs::path infile, fs::path outfile, const char* range, const char*
  * Calls std::exit(-2) on failure reading the input file and std::exit(-3) on save failure
  */
 auto saveDoc(fs::path infile, fs::path outfile) -> int {
+    try {
+        ExportHelper::rejectInputOverwrite(infile, outfile);
+    } catch (const std::exception& e) {
+        std::cerr << FS(_F("Error saving document: {1}") % e.what()) << std::endl;
+        std::exit(-3);
+    }
     SaveHandler saver;
     auto handler = std::make_unique<DocumentHandler>();
     auto newDoc = std::make_unique<Document>(handler.get());

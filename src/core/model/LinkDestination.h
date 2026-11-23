@@ -61,9 +61,6 @@ public:
     void setName(std::string name);
     const std::string& getName() const;
 
-    /// \return Whether this link refers to a URI.
-    bool isURI() const;
-
     std::optional<std::string> getURI() const;
 
     /// \return Changes this link to refer to the given URI.

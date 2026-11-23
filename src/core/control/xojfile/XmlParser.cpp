@@ -116,7 +116,16 @@ void XmlParser::parserStartElement(GMarkupParseContext* context, const gchar* el
     auto self = static_cast<XmlParser*>(userdata);
     xoj_assert(self);
 
+    if (self->skippedLayerDepth) {
+        ++self->skippedLayerDepth;
+        return;
+    }
     const auto tagType = self->getTagType(elementName | xoj::util::utf8);
+    if (tagType == TagType::LAYER && self->skipPageLayers) {
+        // The XML is still validated by GMarkup, but these layers won't be rendered.
+        self->skippedLayerDepth = 1;
+        return;
+    }
 
     // Check for unknown tags
     if (tagType == TagType::UNKNOWN) {
@@ -149,17 +158,34 @@ void XmlParser::parserEndElement(GMarkupParseContext* context, const gchar* elem
     auto self = static_cast<XmlParser*>(userdata);
     xoj_assert(self);
 
+    if (self->skippedLayerDepth) {
+        --self->skippedLayerDepth;
+        return;
+    }
+
     // GMarkup should have already risen an error if there was an error in the document structure.
     xoj_assert(!self->hierarchy.empty());
     xoj_assert(TAG_NAMES[self->hierarchy.back()] == xoj::util::utf8(elementName) ||
                self->hierarchy.back() == TagType::UNKNOWN);
+    const bool finishExport = self->hierarchy.back() == TagType::PAGE && self->exportPage &&
+                              self->nextPageIndex - 1 == *self->exportPage &&
+                              (!self->canFinishExport || self->canFinishExport());
     self->closeTopTag();
+    if (finishExport) {
+        self->exportPageComplete = true;
+        // Stop before GMarkup processes trailing data in the same buffer.
+        g_set_error_literal(error, G_MARKUP_ERROR, G_MARKUP_ERROR_PARSE, "Requested export page complete");
+    }
 }
 
 void XmlParser::parserText(GMarkupParseContext* context, const gchar* text, gsize textLen, gpointer userdata,
                            GError** error) {
     auto self = static_cast<XmlParser*>(userdata);
     xoj_assert(self);
+
+    if (self->skippedLayerDepth) {
+        return;
+    }
 
     const auto textSV = std::string_view{text, textLen};
 
@@ -182,7 +208,9 @@ void XmlParser::parserText(GMarkupParseContext* context, const gchar* text, gsiz
 }
 
 
-XmlParser::XmlParser(DocumentBuilderInterface& builder): builder(builder) {}
+XmlParser::XmlParser(DocumentBuilderInterface& builder, std::optional<size_t> exportPage,
+                     std::function<bool()> canFinishExport):
+        builder(builder), exportPage(exportPage), canFinishExport(std::move(canFinishExport)) {}
 
 void XmlParser::closeOpenNodes() {
     while (!this->hierarchy.empty()) {
@@ -237,6 +265,8 @@ void XmlParser::parseMrWriterTag(const XmlParserHelper::AttributeMap& attributeM
 }
 
 void XmlParser::parsePageTag(const XmlParserHelper::AttributeMap& attributeMap) {
+    this->skipPageLayers = this->exportPage && this->nextPageIndex != *this->exportPage;
+    ++this->nextPageIndex;
     const auto width = XmlParserHelper::getAttribMandatory<double>(xoj::xml_attrs::WIDTH_STR, attributeMap);
     const auto height = XmlParserHelper::getAttribMandatory<double>(xoj::xml_attrs::HEIGHT_STR, attributeMap);
 

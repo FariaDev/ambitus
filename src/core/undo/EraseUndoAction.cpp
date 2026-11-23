@@ -23,15 +23,6 @@ void EraseUndoAction::addEdited(Layer* layer, Stroke* element, Element::Index po
     edited.emplace(layer, element, pos);
 }
 
-void EraseUndoAction::removeEdited(Stroke* element) {
-    for (auto entryIter = edited.begin(); entryIter != edited.end(); ++entryIter) {
-        if (entryIter->element == element) {
-            edited.erase(entryIter);
-            return;
-        }
-    }
-}
-
 void EraseUndoAction::finalize() {
     for (auto const& entry: original) {
         if (entry.element->getPointCount() == 0) {

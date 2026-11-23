@@ -11,7 +11,6 @@
 #include "pdf/base/XojPdfExport.h"             // for XojPdfExport
 #include "pdf/base/XojPdfExportFactory.h"      // for XojPdfExportFactory
 #include "util/Util.h"                         // for execInUiThread
-#include "util/XojMsgBox.h"                    // for XojMsgBox
 #include "util/i18n.h"                         // for _, FS, _F
 
 #include "ImageExport.h"  // for ImageExport, EXPORT_GR...
@@ -50,9 +49,7 @@ void CustomExportJob::run() {
         doc->unlock_shared();
 
         if (!h.getErrorMessage().empty()) {
-            this->lastError = FS(_F("Save file error: {1}") % h.getErrorMessage());
-
-            callAfterRun();
+            this->errorMsg = FS(_F("Save file error: {1}") % h.getErrorMessage());
         }
     } else if (parameters->format == EXPORT_GRAPHICS_PDF) {
         // don't lock the page here for the whole flow, else we get a dead lock...
@@ -70,14 +67,12 @@ void CustomExportJob::run() {
         }
         if (onPdfDone) {
             Util::execInUiThread([done = std::move(onPdfDone), ok, error = errorMsg]() { done(ok, error); });
+            return;  // Ambitus: o cartão de exportar já mostra o erro; sem a caixa repetida do afterRun
         }
     } else {
         exportGraphics();
     }
-}
-
-void CustomExportJob::afterRun() {
-    if (!this->lastError.empty()) {
-        XojMsgBox::showErrorToUser(control->getGtkWindow(), this->lastError);
+    if (!this->errorMsg.empty()) {
+        callAfterRun();
     }
 }

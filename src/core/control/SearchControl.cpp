@@ -20,9 +20,9 @@ auto SearchControl::search(const std::string& text, size_t index, size_t* occurr
         -> bool {
     this->highlightRect = nullptr;
     if (text.empty()) {
+        this->currentText.clear();
         if (!this->results.empty()) {
             this->results.clear();
-            this->currentText.clear();
             this->viewPool->dispatch(xoj::view::SearchResultView::SEARCH_CHANGED_NOTIFICATION);
         }
         return true;

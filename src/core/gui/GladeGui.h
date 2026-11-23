@@ -29,12 +29,8 @@ public:
 
     GtkWidget* get(const std::string& name);
 
-    void setThemePath(std::string themePath);
-
     GtkWidget* getWindow() const;
     GladeSearchpath* getGladeSearchPath() const;
-
-    GtkBuilder* getBuilder() const;
 
 private:
     /**

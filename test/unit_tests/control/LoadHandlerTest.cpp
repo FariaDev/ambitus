@@ -16,12 +16,16 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
 #include <config-test.h>
 #include <gtest/gtest.h>
+#include <zip.h>
 
 #include "control/xojfile/LoadHandler.h"
 #include "control/xojfile/SaveHandler.h"
@@ -40,6 +44,7 @@
 #include "util/PathUtil.h"
 #include "util/StringUtils.h"
 
+#include "config.h"
 #include "filesystem.h"
 
 static constexpr double DOUBLE_COMPARE_ERROR = 1e-8;
@@ -443,6 +448,112 @@ TEST(ControlLoadHandler, testLoadZipped) {
     EXPECT_EQ(std::string("12345"), text->getText());
 }
 
+static void copyPackagedXoppReplacingEntry(const fs::path& filepath, const char* entryName,
+                                           const std::string& content) {
+    fs::copy_file(GET_TESTFILE(u8"packaged_xopp/test.xopp"), filepath, fs::copy_options::overwrite_existing);
+    auto* archive = zip_open(char_cast(filepath.u8string().c_str()), 0, nullptr);
+    ASSERT_NE(archive, nullptr);
+    auto* source = zip_source_buffer(archive, content.data(), content.size(), 0);
+    if (!source) {
+        zip_discard(archive);
+        FAIL() << "Could not create source for " << entryName;
+    }
+    if (zip_file_add(archive, entryName, source, ZIP_FL_OVERWRITE) < 0) {
+        zip_source_free(source);
+        zip_discard(archive);
+        FAIL() << "Could not replace " << entryName;
+    }
+    const int result = zip_close(archive);
+    if (result != 0) {
+        zip_discard(archive);
+    }
+    ASSERT_EQ(result, 0);
+}
+
+class PackagedXoppMimetypeTest: public ::testing::TestWithParam<std::pair<std::string, bool>> {
+protected:
+    fs::path filepath = Util::getTmpDirSubfolder() / "mimetype-test.xopp";
+
+    void SetUp() override { copyPackagedXoppReplacingEntry(filepath, "mimetype", GetParam().first); }
+
+    void TearDown() override { fs::remove(filepath); }
+};
+
+TEST_P(PackagedXoppMimetypeTest, validatesMimetype) {
+    if (GetParam().second) {
+        auto doc = loadTestDocument(filepath);
+        ASSERT_TRUE(doc);
+        EXPECT_EQ(doc->getPageCount(), 1U);
+    } else {
+        try {
+            LoadHandler{}.loadDocument(filepath);
+            FAIL() << "Expected rejection of invalid mimetype";
+        } catch (const std::runtime_error& error) {
+            EXPECT_NE(std::string(error.what()).find("Mimetype wrong"), std::string::npos) << error.what();
+        }
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(PackagedXopp, PackagedXoppMimetypeTest,
+                         ::testing::Values(std::make_pair("application/xournal++", true),
+                                           std::make_pair("application/zip", false), std::make_pair("", false),
+                                           std::make_pair(" \tapplication/xournal++\n", true)));
+
+static auto versionEntry(int current, int min) -> std::string {
+    return "current=" + std::to_string(current) + "\nmin=" + std::to_string(min) + "\n";
+}
+
+class PackagedXoppVersionTest: public ::testing::TestWithParam<std::pair<std::string, bool>> {
+protected:
+    fs::path filepath = Util::getTmpDirSubfolder() / "version-test.xopp";
+
+    void SetUp() override { copyPackagedXoppReplacingEntry(filepath, "META-INF/version", GetParam().first); }
+
+    void TearDown() override { fs::remove(filepath); }
+};
+
+TEST_P(PackagedXoppVersionTest, opensAndReportsNewerFileFormat) {
+    LoadHandler handler;
+    auto doc = handler.loadDocument(filepath);
+    ASSERT_TRUE(doc);
+    EXPECT_EQ(doc->getPageCount(), 1U);
+    EXPECT_EQ(handler.isFileFormatNewerThanSupported(), GetParam().second);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+        PackagedXopp, PackagedXoppVersionTest,
+        ::testing::Values(std::make_pair(versionEntry(FILE_FORMAT_VERSION, FILE_FORMAT_VERSION), false),
+                          std::make_pair(versionEntry(FILE_FORMAT_VERSION + 1, FILE_FORMAT_VERSION), true),
+                          std::make_pair(versionEntry(FILE_FORMAT_VERSION + 1, FILE_FORMAT_VERSION + 1), true),
+                          std::make_pair(versionEntry(FILE_FORMAT_VERSION, 999), true),
+                          std::make_pair(versionEntry(FILE_FORMAT_VERSION, 10), true)));
+
+TEST(ControlLoadHandler, testAudioAttachmentClosesFile) {
+    auto doc = loadTestDocument(GET_TESTFILE(u8"packaged_xopp/audioAttachment/new.xopp"));
+    ASSERT_TRUE(doc);
+    ASSERT_EQ(1u, doc->getPageCount());
+    const auto page = doc->getPage(0);
+    ASSERT_EQ(1u, page->getLayerCount());
+    const auto elements = page->getLayersView()[0]->getElementsView();
+    ASSERT_EQ(1u, elements.size());
+    const auto* stroke = dynamic_cast<const Stroke*>(elements.front());
+    ASSERT_NE(nullptr, stroke);
+
+    const auto& audioPath = stroke->getAudioFilename();
+    ASSERT_TRUE(fs::is_regular_file(audioPath));
+    EXPECT_EQ(fs::file_size(GET_TESTFILE(u8"packaged_xopp/audioAttachment/test.ogg")), fs::file_size(audioPath));
+
+#ifdef __linux__
+    const auto openDescriptors = std::ranges::count_if(fs::directory_iterator{"/proc/self/fd"}, [&](const auto& fd) {
+        std::error_code error;
+        return fs::equivalent(fd.path(), audioPath, error);
+    });
+    EXPECT_EQ(0, openDescriptors) << "The extracted audio file must not remain open";
+#endif
+
+    EXPECT_TRUE(fs::remove(audioPath));
+}
+
 TEST(ControlLoadHandler, testLoadUnzipped) {
     auto doc = loadTestDocument(GET_TESTFILE(u8"test1.unzipped.xoj"));
     ASSERT_TRUE(doc);
@@ -537,6 +648,90 @@ TEST(ControlLoadHandler, testPageTypeFormatCopyFix) {
     checkPageType(doc.get(), 0, "p1", PageType(PageTypeFormat::Lined));
     checkPageType(doc.get(), 1, "p2", PageType(PageTypeFormat::Plain));  // PageTypeFormat::Copy in the file
     checkPageType(doc.get(), 2, "p3", PageType(PageTypeFormat::Plain));  // PageTypeFormat::Plain in the file
+}
+
+TEST(ControlLoadHandler, testLoadSinglePageForImageExport) {
+    LoadHandler loader;
+    const auto doc = loader.loadDocument(GET_TESTFILE(u8"packaged_xopp/pages.xopp"), 3);
+    ASSERT_EQ(4u, doc->getPageCount());
+    checkPageType(doc.get(), 3, "p4", PageType(PageTypeFormat::Staves));
+
+    for (size_t i = 0; i < doc->getPageCount(); ++i) {
+        if (i != 3) {
+            const auto page = doc->getPage(i);
+            ASSERT_EQ(1u, page->getLayerCount());
+            EXPECT_EQ(0u, page->getLayersView().front()->getElementsView().size());
+        }
+    }
+}
+
+TEST(ControlLoadHandler, testLoadSinglePageStopsBeforeFollowingPages) {
+    const auto doc = LoadHandler{}.loadDocument(GET_TESTFILE(u8"packaged_xopp/pages.xopp"), 0);
+    ASSERT_EQ(1u, doc->getPageCount());
+    checkPageType(doc.get(), 0, "p1", PageType(PageTypeFormat::Plain));
+}
+
+TEST(ControlLoadHandler, testLoadSinglePageLastPageAndOutOfRange) {
+    for (const size_t exportPage: {5u, 6u}) {
+        const auto doc = LoadHandler{}.loadDocument(GET_TESTFILE(u8"packaged_xopp/pages.xopp"), exportPage);
+        ASSERT_EQ(6u, doc->getPageCount());
+        const auto lastPage = doc->getPage(5);
+        EXPECT_DOUBLE_EQ(50.0, lastPage->getWidth());
+        EXPECT_DOUBLE_EQ(50.0, lastPage->getHeight());
+        EXPECT_EQ(PageType(PageTypeFormat::Image), lastPage->getBackgroundType());
+        EXPECT_EQ("attachments/bg_1.png", lastPage->getBackgroundImage().getFilepath());
+    }
+}
+
+class SinglePageExportLoadTest: public ::testing::Test {
+protected:
+    fs::path filepath = Util::getTmpDirSubfolder() / "single-page-export-test.xopp";
+
+    void writeXml(const std::string& content) { copyPackagedXoppReplacingEntry(filepath, "content.xml", content); }
+
+    void TearDown() override { fs::remove(filepath); }
+};
+
+TEST_F(SinglePageExportLoadTest, ignoresTrailingXmlInSameBuffer) {
+    writeXml(R"(<xournal><page width="50" height="50"><layer/></page><invalid></xournal>)");
+    const auto doc = LoadHandler{}.loadDocument(filepath, 0);
+    ASSERT_EQ(1u, doc->getPageCount());
+    EXPECT_THROW(LoadHandler{}.loadDocument(filepath), std::runtime_error);
+    EXPECT_THROW(LoadHandler{}.loadDocument(filepath, 1), std::runtime_error);
+}
+
+TEST_F(SinglePageExportLoadTest, rejectsMalformedRequestedPage) {
+    writeXml(R"(<xournal><page width="50" height="50"><layer></page></xournal>)");
+    EXPECT_THROW(LoadHandler{}.loadDocument(filepath, 0), std::runtime_error);
+    EXPECT_THROW(LoadHandler{}.loadDocument(filepath, 1), std::runtime_error);
+}
+
+TEST_F(SinglePageExportLoadTest, rejectsDocumentWithoutPages) {
+    writeXml("<xournal/>");
+    EXPECT_THROW(LoadHandler{}.loadDocument(filepath, 0), std::runtime_error);
+}
+
+TEST_F(SinglePageExportLoadTest, readsLaterPdfForUnresolvedBackgroundUpToRequestedPage) {
+    const auto pdf = fs::path(GET_TESTFILE(u8"packaged_xopp/pdfBackground/old.xopp.bg.pdf")).string();
+    writeXml(R"(<xournal><page width="50" height="50"><background type="pdf" filename="" pageno="1"/>)"
+             R"(<layer/></page><page width="50" height="50"><layer/></page>)"
+             R"(<page width="50" height="50"><background type="pdf" domain="absolute" filename=")" +
+             pdf + R"(" pageno="1"/><layer/></page></xournal>)");
+    for (const size_t exportPage: {0u, 1u}) {
+        const auto doc = LoadHandler{}.loadDocument(filepath, exportPage);
+        ASSERT_EQ(3u, doc->getPageCount());
+        EXPECT_GT(doc->getPdfPageCount(), 0u);
+        EXPECT_EQ(PageType(PageTypeFormat::Pdf), doc->getPage(0)->getBackgroundType());
+    }
+}
+
+TEST_F(SinglePageExportLoadTest, stopsAfterResolvedPdfBackground) {
+    const auto pdf = fs::path(GET_TESTFILE(u8"packaged_xopp/pdfBackground/old.xopp.bg.pdf")).string();
+    writeXml(R"(<xournal><page width="50" height="50"><background type="pdf" domain="absolute" filename=")" + pdf +
+             R"(" pageno="1"/><layer/></page><page width="50" height="50"><layer/></page></xournal>)");
+    const auto doc = LoadHandler{}.loadDocument(filepath, 0);
+    ASSERT_EQ(1u, doc->getPageCount());
+    EXPECT_GT(doc->getPdfPageCount(), 0u);
 }
 
 TEST(ControlLoadHandler, testLayers) {

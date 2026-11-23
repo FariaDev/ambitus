@@ -1,6 +1,6 @@
 #include "LoadHandler.h"
 
-#include <algorithm>      // for copy
+#include <algorithm>      // for copy, max
 #include <array>          // for array
 #include <cmath>          // for isnan
 #include <cstddef>        // for byte
@@ -50,6 +50,7 @@
 #include "util/raii/GLibGuards.h"       // for GErrorGuard
 #include "util/raii/GObjectSPtr.h"      // for GObjectSPtr
 
+#include "config.h"      // for FILE_FORMAT_VERSION
 #include "filesystem.h"  // for path, is_regular_file
 
 
@@ -80,6 +81,10 @@ auto LoadHandler::isAttachedPdfMissing() const -> bool { return this->attachedPd
 auto LoadHandler::getMissingPdfFilename() const -> const fs::path& { return this->missingPdf; }
 
 auto LoadHandler::getFileVersion() const -> int { return this->fileVersion; }
+
+auto LoadHandler::isFileFormatNewerThanSupported() const -> bool {
+    return std::max(this->fileVersion, this->minimalFileVersion) > FILE_FORMAT_VERSION;
+}
 
 void LoadHandler::addDocument(std::u8string creator, int fileVersion) {
     this->creator = std::move(creator);
@@ -144,15 +149,16 @@ void LoadHandler::addAudioAttachment(const fs::path& filename) {
     }
 
     // Extract audio to temporary file
-    GFileIOStream* fileStream = nullptr;
-    const xoj::util::GObjectSPtr<GFile> tmpFile(g_file_new_tmp("xournal_audio_XXXXXX.tmp", &fileStream, nullptr),
+    GFileIOStream* rawFileStream = nullptr;
+    const xoj::util::GObjectSPtr<GFile> tmpFile(g_file_new_tmp("xournal_audio_XXXXXX.tmp", &rawFileStream, nullptr),
                                                 xoj::util::adopt);
+    const xoj::util::GObjectSPtr<GFileIOStream> fileStream(rawFileStream, xoj::util::adopt);
     if (!tmpFile) {
         logError(_("Unable to create temporary file for audio attachment"));
         return;
     }
 
-    GOutputStream* outputStream = g_io_stream_get_output_stream(G_IO_STREAM(fileStream));
+    GOutputStream* outputStream = g_io_stream_get_output_stream(G_IO_STREAM(fileStream.get()));
 
     auto data = std::make_unique<std::array<std::byte, 1024>>();
     zip_int64_t readBytes = 0;
@@ -558,7 +564,7 @@ auto LoadHandler::openFile(fs::path const& filepath) -> std::unique_ptr<xoj::uti
         std::array<char, MAX_MIMETYPE_LENGTH + 1> mimetype = {};
         // read the mimetype and a few more bytes to make sure we do not only read a subset
         zip_fread(mimetypeFp.get(), mimetype.data(), MAX_MIMETYPE_LENGTH);
-        if (!strcmp(mimetype.data(), "application/xournal++")) {
+        if (StringUtils::trim(mimetype.data()) != "application/xournal++") {
             throw std::runtime_error{FS(_F("The file \"{1}\" is no valid .xopp file (Mimetype wrong): \"{2}\"") %
                                         filepath.u8string() % mimetype.data())};
         }
@@ -573,7 +579,7 @@ auto LoadHandler::openFile(fs::path const& filepath) -> std::unique_ptr<xoj::uti
         std::array<char, MAX_VERSION_LENGTH + 1> versionString = {};
         const auto length = std::max(zip_fread(versionFp.get(), versionString.data(), MAX_VERSION_LENGTH),
                                      static_cast<zip_int64_t>(0));
-        const std::regex versionRegex{"current=(\\d+?)(?:\n|\r\n)min=(\\d+?)"};
+        const std::regex versionRegex{"current=(\\d+?)(?:\n|\r\n)min=(\\d+)"};
         std::match_results<char*> match;
         if (std::regex_search(versionString.data(), versionString.data() + length, match, versionRegex)) {
             this->fileVersion = std::stoi(match.str(1));
@@ -596,10 +602,15 @@ void LoadHandler::closeFile() noexcept { this->zipFp.reset(); }
 
 XOJ_GIO_GUARD_GENERATOR_TYPE(GMarkupParseContext, g_markup_parse_context_free);
 
-void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStream) {
+void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStream, std::optional<size_t> exportPage) {
     xoj_assert(xmlContentStream);
 
-    XmlParser parserInterface{*this};
+    XmlParser parserInterface{*this, exportPage, [this] {
+                                  return std::none_of(this->pages.begin(), this->pages.end(), [this](const auto& page) {
+                                      return page->getBackgroundType().isPdfPage() &&
+                                             page->getPdfPageNr() >= this->doc->getPdfPageCount();
+                                  });
+                              }};
     auto context = GMarkupParseContextGuard{g_markup_parse_context_new(
             &XmlParser::interface, static_cast<GMarkupParseFlags>(0), &parserInterface, nullptr)};
 
@@ -622,6 +633,10 @@ void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStr
         }
 
         auto valid = g_markup_parse_context_parse(context.get(), buffer.data(), len, xoj::util::out_ptr(error));
+        if (parserInterface.isExportPageComplete()) {
+            parserInterface.closeOpenNodes();
+            break;
+        }
         handleGError(std::move(error));
         if (!valid) {
             throw std::runtime_error{_("Invalid XML data read")};
@@ -629,7 +644,8 @@ void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStr
     }
 
     // Sanity checks for document validity
-    if (!g_markup_parse_context_end_parse(context.get(), xoj::util::out_ptr(error)) || !this->parsingComplete) {
+    if (!parserInterface.isExportPageComplete() &&
+        (!g_markup_parse_context_end_parse(context.get(), xoj::util::out_ptr(error)) || !this->parsingComplete)) {
         handleGError(std::move(error));
 
         // The end may be cut off. Attempt to recover contents by closing the remaining open nodes.
@@ -653,9 +669,9 @@ void LoadHandler::parseXml(std::unique_ptr<xoj::util::InputStream> xmlContentStr
 }
 
 
-auto LoadHandler::loadDocument(fs::path const& filepath) -> std::unique_ptr<Document> {
+auto LoadHandler::loadDocument(fs::path const& filepath, std::optional<size_t> exportPage) -> std::unique_ptr<Document> {
     auto xmlContentStream = openFile(filepath);
-    parseXml(std::move(xmlContentStream));
+    parseXml(std::move(xmlContentStream), exportPage);
     closeFile();
 
     xoj_assert(this->doc);

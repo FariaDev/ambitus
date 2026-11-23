@@ -3059,15 +3059,15 @@ static int applib_getPageLabel(lua_State* L) {
     const Control* control = plugin->getControl();
     const XojPdfDocument& doc = control->getDocument()->getPdfDocument();
 
-    const size_t pagenr = static_cast<size_t>(luaL_checkinteger(L, 1)) - 1;
+    const lua_Integer pagenr = luaL_checkinteger(L, 1);
 
-    if (pagenr >= doc.getPageCount()) {
+    if (pagenr < 1 || static_cast<lua_Unsigned>(pagenr) > doc.getPageCount()) {
         lua_pushnil(L);
-        lua_pushfstring(L, "page nr %zu is out of range", pagenr);
+        lua_pushfstring(L, "page nr %I is out of range", pagenr);
         return 2;
     }
 
-    std::string label = doc.getPage(pagenr)->getPageLabel();
+    std::string label = doc.getPage(static_cast<size_t>(pagenr - 1))->getPageLabel();
     lua_pushlstring(L, label.c_str(), label.length());
     return 1;
 }
@@ -3084,10 +3084,10 @@ static int applib_getPageLabel(lua_State* L) {
 static int applib_setCurrentPage(lua_State* L) {
     Plugin* plugin = Plugin::getPluginFromLua(L);
     Control* control = plugin->getControl();
-    size_t pageId = as_unsigned(luaL_checkinteger(L, 1));
-    const size_t first = 1;
-    const size_t last = control->getDocument()->getPageCount();
-    control->firePageSelected(std::clamp(pageId, first, last) - 1);
+    const lua_Integer pageNr = luaL_checkinteger(L, 1);
+    const lua_Integer first = 1;
+    const auto last = strict_cast<lua_Integer>(control->getDocument()->getPageCount());
+    control->firePageSelected(strict_cast<size_t>(std::clamp(pageNr, first, last) - 1));
 
     return 0;
 }
@@ -3348,7 +3348,11 @@ static int applib_export(lua_State* L) {
     lua_getfield(L, 1, "progressiveMode");
     lua_getfield(L, 1, "pngDpi");
     lua_getfield(L, 1, "pngWidth");
-    lua_getfield(L, 1, "dpiHeight");
+    lua_getfield(L, 1, "pngHeight");
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_getfield(L, 1, "dpiHeight");
+    }
 
     // stack now has following:
     //    1 = param table
@@ -3360,7 +3364,7 @@ static int applib_export(lua_State* L) {
     //   -4 = progressiveMode
     //   -3 = pngDpi
     //   -2 = pngWidth
-    //   -1 = dpiHeight
+    //   -1 = pngHeight (or legacy dpiHeight)
 
     const char* outputFile = luaL_optstring(L, -8, nullptr);
     const char* range = luaL_optstring(L, -7, nullptr);
@@ -3392,20 +3396,27 @@ static int applib_export(lua_State* L) {
         return luaL_error(L, "Missing output file!");
     }
 
-    fs::path file = fs::path(outputFile);
-    auto extension = file.extension();
+    {
+        fs::path file = fs::path(outputFile);
+        auto extension = StringUtils::toLowerCase(file.extension().string());
 
-    try {
-        if (extension == ".pdf") {
-            ExportHelper::exportPdf(doc, outputFile, range, layerRange, bgType, progressiveMode, backendType);
-        } else if (extension == ".svg" || extension == ".png") {
-            ExportHelper::exportImg(doc, outputFile, range, layerRange, pngDpi, pngWidth, pngHeight, bgType);
+        try {
+            if (extension == ".pdf") {
+                ExportHelper::exportPdf(doc, outputFile, range, layerRange, bgType, progressiveMode, backendType);
+                return 0;
+            } else if (extension == ".svg" || extension == ".png") {
+                ExportHelper::exportImg(doc, outputFile, range, layerRange, pngDpi, pngWidth, pngHeight, bgType);
+                return 0;
+            } else {
+                lua_pushfstring(L, "Unsupported export extension '%s'. Supported extensions: .pdf, .svg, .png",
+                                file.extension().string().c_str());
+            }
+        } catch (const std::exception& e) {
+            return luaL_error(L, "Error exporting document: %s", e.what());
         }
-    } catch (const std::exception& e) {
-        return luaL_error(L, "Error exporting document: %s", e.what());
     }
 
-    return 0;
+    return lua_error(L);
 }
 
 

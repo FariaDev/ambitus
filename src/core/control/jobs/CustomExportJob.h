@@ -37,8 +37,6 @@ public:
     }
 
 protected:
-    void afterRun() override;
-
     /**
      * Create one Graphics file per page
      */
@@ -47,8 +45,6 @@ protected:
 
 private:
     std::unique_ptr<ExportParameters> parameters;
-
-    std::string lastError;
 
     std::function<void(bool, const std::string&)> onPdfDone;
 };

@@ -37,6 +37,9 @@ auto Image::clone() const -> ElementPtr {
 
     img->data = this->data;
     img->image = this->image;
+    if (this->format) {
+        img->format = gdk_pixbuf_format_copy(this->format);
+    }
 
     return img;
 }
@@ -129,7 +132,7 @@ auto Image::renderBuffer() const -> std::optional<std::string> {
                              gint maxWidth = floor_cast<gint>(maxHeight * ratio);
                              g_warning("Trying to open an image too big %d x %d. Resizing it to %d x %d", width, height,
                                        maxWidth, maxHeight);
-                             gdk_pixbuf_loader_set_size(self, maxHeight, maxWidth);
+                             gdk_pixbuf_loader_set_size(self, maxWidth, maxHeight);
                          }
                      }),
                      nullptr);
@@ -139,7 +142,7 @@ auto Image::renderBuffer() const -> std::optional<std::string> {
     if (!success) {
         if (err != nullptr) {
             std::string msg = std::string(_("Failed to load image")) + "\n" + _("Error: ") + err->message;
-            g_free(err);
+            g_error_free(err);
             return msg;
         } else {
             return std::string(_("Failed to load image")) + "\n" + _("Unrecoverable error");
@@ -149,7 +152,7 @@ auto Image::renderBuffer() const -> std::optional<std::string> {
     if (!success) {
         if (err != nullptr) {
             std::string msg = std::string(_("Failed to close image stream")) + "\n" + _("Error: ") + err->message;
-            g_free(err);
+            g_error_free(err);
             return msg;
         } else {
             return std::string(_("Failed to close image stream")) + "\n" + _("Unrecoverable error");

@@ -140,9 +140,6 @@ public:
     /// Get the zoom-dependent padding, added to center the page when zoomed out
     xoj::util::Point<int> getCenteringPadding() const;
 
-    /// Returns a list of the indices of the visible pages
-    std::vector<size_t> getVisiblePages() const;
-
     xoj::util::Point<int> getPixelCoordinatesOfEntry(xoj::util::Point<int> gridCoords) const;
     xoj::util::Point<int> getPixelCoordinatesOfEntry(size_t n) const;
 

@@ -358,8 +358,6 @@ public:
      */
     bool pointActiveToolToToolbarTool();
 
-    [[maybe_unused]] std::array<std::unique_ptr<Tool>, TOOL_COUNT> const& getTools() const;
-
     /**
      * Change the selection tools capabilities, depending on the selected elements
      */

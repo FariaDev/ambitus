@@ -11,6 +11,7 @@
 #include "gui/Builder.h"
 #include "util/ElementRange.h"  // for parse, PageRangeVector
 #include "util/gtk4_helper.h"
+#include "util/i18n.h"  // for _
 
 class GladeSearchpath;
 
@@ -36,6 +37,21 @@ static ExportFormat readFormat(GtkComboBox* cb) {
     return EXPORT_GRAPHICS_UNDEFINED;
 }
 
+static void setPageRangeError(Builder& builder, size_t pageCount, bool invalid) {
+    auto* txtPages = builder.get("txtPages");
+    if (invalid) {
+        gtk_widget_add_css_class(txtPages, "error");
+    } else {
+        gtk_widget_remove_css_class(txtPages, "error");
+    }
+    gtk_widget_set_sensitive(builder.get("btOk"), !invalid);
+    if (pageCount == 1) {
+        gtk_stack_set_visible_child(GTK_STACK(builder.get("pageRangeHelp")),
+                                    builder.get(invalid ? "pageRangeSpacer" : "lbPageRangeExample"));
+        gtk_widget_set_visible(builder.get("lbPageRangeHint"), invalid);
+    }
+}
+
 ExportDialog::ExportDialog(GladeSearchpath* gladeSearchPath, size_t currentPage, size_t pageCount,
                            bool hasPdfBackground, std::function<void(std::unique_ptr<ExportParameters>)> callbackFun):
         currentPage(currentPage), pageCount(pageCount), builder(gladeSearchPath, UI_FILE), callbackFun(callbackFun) {
@@ -48,6 +64,10 @@ ExportDialog::ExportDialog(GladeSearchpath* gladeSearchPath, size_t currentPage,
     // Widgets are visible by default in gtk4
     gtk_widget_show_all(builder.get("dialog-main-box"));
 #endif
+
+    if (pageCount == 1) {
+        gtk_label_set_text(GTK_LABEL(builder.get("lbPageRangeHint")), _("This document has one page. Enter 1."));
+    }
 
     auto visibilityCb = +[](GtkComboBox* cb, ExportDialog* self) {
         auto fmt = readFormat(cb);
@@ -80,22 +100,18 @@ ExportDialog::ExportDialog(GladeSearchpath* gladeSearchPath, size_t currentPage,
     // invalid user data. The error goes away when the text form is de-selected.
     auto toggledHandler = G_CALLBACK(+[](GtkCheckButton* button, ExportDialog* self) {
         auto active = gtk_check_button_get_active(button);
-        auto btOk = self->builder.get("btOk");
         auto txtPages = self->builder.get("txtPages");
         gtk_widget_set_sensitive(txtPages, active);
         if (active) {
             const std::string text_form(gtk_editable_get_text(GTK_EDITABLE(txtPages)));
             try {
                 ElementRange::parse(text_form, self->pageCount);
-                gtk_widget_remove_css_class(txtPages, "error");
-                gtk_widget_set_sensitive(btOk, true);
+                setPageRangeError(self->builder, self->pageCount, false);
             } catch (const std::invalid_argument&) {
-                gtk_widget_add_css_class(txtPages, "error");
-                gtk_widget_set_sensitive(btOk, false);
+                setPageRangeError(self->builder, self->pageCount, true);
             }
         } else {
-            gtk_widget_remove_css_class(txtPages, "error");
-            gtk_widget_set_sensitive(btOk, true);
+            setPageRangeError(self->builder, self->pageCount, false);
         }
     });
     // txtPages changed signal handler
@@ -105,14 +121,11 @@ ExportDialog::ExportDialog(GladeSearchpath* gladeSearchPath, size_t currentPage,
     // reversed when the text form contains a valid page range.
     auto changedHandler = G_CALLBACK(+[](GtkEditable* txtPages, ExportDialog* self) {
         const std::string text_form(gtk_editable_get_text(txtPages));
-        auto btOk = self->builder.get("btOk");
         try {
             ElementRange::parse(text_form, self->pageCount);
-            gtk_widget_remove_css_class(GTK_WIDGET(txtPages), "error");
-            gtk_widget_set_sensitive(btOk, true);
-        } catch (const std::invalid_argument& e) {
-            gtk_widget_add_css_class(GTK_WIDGET(txtPages), "error");
-            gtk_widget_set_sensitive(btOk, false);
+            setPageRangeError(self->builder, self->pageCount, false);
+        } catch (const std::invalid_argument&) {
+            setPageRangeError(self->builder, self->pageCount, true);
         }
     });
 

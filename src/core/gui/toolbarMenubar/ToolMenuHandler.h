@@ -97,7 +97,6 @@ public:
 
     void setPageInfo(size_t currentPage, size_t pageCount, size_t pdfpage);
 
-    [[maybe_unused]] void removeColorToolItem(AbstractToolItem* it);
     void addColorToolItem(std::unique_ptr<ColorToolItem> it);
 
     ToolbarModel* getModel();

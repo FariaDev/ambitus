@@ -1833,7 +1833,7 @@ static auto formatErrorMessages(const std::vector<std::string>& errorMessages) -
 void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<void(bool)> callback) {
     std::unique_ptr<Document> doc{};
     std::optional<MissingPdfData> missingPdf{};
-    int fileVersion{};
+    bool fileFormatNewerThanSupported{};
     std::vector<std::string> errorMessages{};
 
     try {
@@ -1843,7 +1843,7 @@ void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<vo
         if (!loadHandler.getMissingPdfFilename().empty() || loadHandler.isAttachedPdfMissing()) {
             missingPdf = {loadHandler.isAttachedPdfMissing(), loadHandler.getMissingPdfFilename()};
         }
-        fileVersion = loadHandler.getFileVersion();
+        fileFormatNewerThanSupported = loadHandler.isFileFormatNewerThanSupported();
     } catch (std::exception& e) {
         g_warning("LoadHandler failed to load document: %s", e.what());
 
@@ -1875,7 +1875,7 @@ void Control::openXoppFile(fs::path filepath, int scrollToPage, std::function<vo
         }
     };
 
-    if (fileVersion > FILE_FORMAT_VERSION) {
+    if (fileFormatNewerThanSupported) {
         enum { YES = 1, NO };
         std::vector<XojMsgBox::Button> buttons = {{_("Yes"), YES}, {_("No"), NO}};
         XojMsgBox::askQuestion(
