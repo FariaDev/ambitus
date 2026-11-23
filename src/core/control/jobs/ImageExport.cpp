@@ -9,6 +9,7 @@
 #include <cairo-svg.h>  // for cairo_svg_surface_create
 
 #include "control/jobs/BaseExportJob.h"  // for EXPORT_BACKGROUND_NONE, EXPO...
+#include "control/jobs/PngExport.h"
 #include "model/Document.h"              // for Document
 #include "model/PageRef.h"               // for PageRef
 #include "model/PageType.h"              // for PageType
@@ -121,7 +122,7 @@ auto ImageExport::freeSurface(size_t id) -> bool {
     cairo_status_t status = CAIRO_STATUS_SUCCESS;
     if (format == EXPORT_GRAPHICS_PNG) {
         auto filepath = getFilenameWithNumber(id);
-        status = cairo_surface_write_to_png(surface, char_cast(filepath.u8string().c_str()));
+        status = PngExport::writeSurface(surface, filepath);
     }
     cairo_surface_finish(surface);
     if (status == CAIRO_STATUS_SUCCESS) {
