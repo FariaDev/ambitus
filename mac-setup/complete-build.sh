@@ -32,12 +32,15 @@ pushd "$build_dir"
 # Link the Lua built by jhbuild (static liblua.a), not Homebrew's: LuaGObject's .so takes the
 # lua_* symbols from the host binary. The headerpad lets gtk-mac-bundler rewrite the install names;
 # without it install_name_tool fails inside the bundler and the script still exits 0.
+# The Command Line Tools libc++ has no floating point std::from_chars, so configure fails without the OFF.
 $ENSURE_JHBUILD cmake .. -GNinja \
     -DLUA_INCLUDE_DIR="$prefix_parent"/inst/include \
     -DLUA_LIBRARY="$prefix_parent"/inst/lib/liblua.a \
-    -DCMAKE_EXE_LINKER_FLAGS=-Wl,-headerpad_max_install_names
+    -DCMAKE_EXE_LINKER_FLAGS=-Wl,-headerpad_max_install_names \
+    -DENABLE_FLOAT_FROM_CHARS=OFF
 $ENSURE_JHBUILD cmake --build .
 $ENSURE_JHBUILD cmake --install . --prefix "$prefix_parent"/inst
 popd
 
-$ENSURE_JHBUILD bash ./build-app.sh "$prefix_parent"
+# By path: after popd the shell is back where the script started, not in mac-setup/
+$ENSURE_JHBUILD bash "$root_dir"/mac-setup/build-app.sh "$prefix_parent"
