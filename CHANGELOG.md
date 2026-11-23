@@ -1,6 +1,52 @@
 # Changelog
 
-## 1.3.8+dev (Unreleased)
+## 1.4.0
+
+### Ambitus
+
+* Fix audio attachment files left open after loading (#7)
+* Fix SVG export write error reporting (#8)
+* Fix loading packaged XOPP files (#9)
+* Complete Brazilian Portuguese translations for recoloring, page moves and zoom settings (#10)
+* Fix crash when loading corrupt embedded images (#18)
+* Fix progressive PDF layer ranges and bookmark destinations (#19)
+* Fix image format ownership when cloning (#20)
+* Fix swapped dimensions when downsampling large images (#21)
+* Fix page controls after undoing page insertion or deletion (#22)
+* Warn when opening files requiring a newer file format (#23)
+* Point About links at Ambitus (#24)
+* Fix Lua PNG exports ignoring pngHeight (#25)
+* Fix finding text added after a search with no results (#26)
+* Reject CLI exports and saves that overwrite their input (#27)
+* Fix undo/redo crashes when moving selections between layers (#28)
+* Report custom export failures (#29)
+* Fix Lua page-label range errors and preserve non-PDF Beamer pages (#30)
+* Report unsupported Lua export extensions (#31)
+* Clamp negative page numbers in Lua app.setCurrentPage (#32)
+* Explain out-of-range exports for one-page documents (#33)
+* Read only the requested page for single-page image exports (#41)
+* Stop reading notebooks after the last requested export page (#44)
+* Speed up PNG encoding (#45)
+* Remove unused code (#4, #5, #6, #11, #12, #13, #14, #15, #16, #17, #34, #35, #36, #37, #38, #39, #40)
+* Update dependencies, including macOS Poppler and Brotli (#42, #43)
+
+### From Xournal++ master
+
+* Add text wrapping, alignment and justification (xournalpp#7594)
+* Add a URL link tool and editable links (xournalpp#4772)
+* Add Move Page Up and Down actions (xournalpp#7762)
+* Use native file dialogs for opening, saving and exporting
+* Use 2D matrices for element positioning, retaining compatibility for pure scaling
+* Add Lua link, text wrapping, alignment, scroll-position and document-wide element APIs (xournalpp#7278)
+* Add hierarchical plugin menus (xournalpp#7225, xournalpp#7323)
+* Add mouse buttons 4/5 and a keep-current-color button mapping option (xournalpp#7156, xournalpp#7752)
+* Add navigation history and full paths in Recent Documents (xournalpp#6994, xournalpp#7486)
+* Add zoom-to-fit on load, configurable page shadows and a tablet toolbar (xournalpp#6952, xournalpp#7205)
+* Improve large-document layout performance and selection outside page boundaries (xournalpp#7333)
+* Improve LaTeX tool integration and template variables (xournalpp#6823, xournalpp#7157)
+* Fix clipboard pasting, invalid image DPI, saved zoom, audio setup and page-template crashes (xournalpp#7839, xournalpp#7838, xournalpp#7809, xournalpp#7870, xournalpp#7888)
+* Load system-wide settings as fallback; update Windows, Debian ARM64 and RPM packaging (xournalpp#7539, xournalpp#7866, xournalpp#7848)
+* Update translations
 
 ## 1.3.8
 
