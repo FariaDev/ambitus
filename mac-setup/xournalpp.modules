@@ -13,6 +13,7 @@
   <repository type="tarball" name="xiph" href="https://downloads.xiph.org/releases/"/>
   <repository type="tarball" name="portaudio" href="http://files.portaudio.com/archives/"/>
   <repository type="tarball" name="lua" href="http://www.lua.org/ftp/"/>
+  <repository type="tarball" name="gnome-sources" href="https://download.gnome.org/sources/"/>
 
   <cmake id="openjpeg">
     <branch repo="github-tarball"
@@ -160,6 +161,17 @@
     </dependencies>
   </autotools>
 
+  <!-- Ambitus reads the Summa config.json through json-glib (CMakeLists.txt: json-glib-1.0 >= 1.4) -->
+  <meson id="json-glib" mesonargs="-Dintrospection=disabled -Ddocumentation=disabled -Dman=false -Dtests=false -Dconformance=false -Dinstalled_tests=false -Dnls=disabled">
+    <branch repo="gnome-sources"
+            version="1.10.8"
+            module="json-glib/1.10/json-glib-1.10.8.tar.xz"
+            hash="sha256:55c5c141a564245b8f8fbe7698663c87a45a7333c2a2c56f06f811ab73b212dd"/>
+    <dependencies>
+      <dep package="glib"/>
+    </dependencies>
+  </meson>
+
   <metamodule id="meta-xournalpp-deps">
     <dependencies>
       <dep package="libqpdf"/>
@@ -168,6 +180,7 @@
       <dep package="portaudio"/>
       <dep package="libsndfile"/>
       <dep package="lua-gobject"/>
+      <dep package="json-glib"/>
     </dependencies>
   </metamodule>
 

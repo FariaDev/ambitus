@@ -29,7 +29,13 @@ build_dir="$root_dir"/build
 mkdir -p "$build_dir"
 
 pushd "$build_dir"
-$ENSURE_JHBUILD cmake .. -GNinja
+# Link the Lua built by jhbuild (static liblua.a), not Homebrew's: LuaGObject's .so takes the
+# lua_* symbols from the host binary. The headerpad lets gtk-mac-bundler rewrite the install names;
+# without it install_name_tool fails inside the bundler and the script still exits 0.
+$ENSURE_JHBUILD cmake .. -GNinja \
+    -DLUA_INCLUDE_DIR="$prefix_parent"/inst/include \
+    -DLUA_LIBRARY="$prefix_parent"/inst/lib/liblua.a \
+    -DCMAKE_EXE_LINKER_FLAGS=-Wl,-headerpad_max_install_names
 $ENSURE_JHBUILD cmake --build .
 $ENSURE_JHBUILD cmake --install . --prefix "$prefix_parent"/inst
 popd
