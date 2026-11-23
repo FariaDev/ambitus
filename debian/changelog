@@ -1,8 +1,47 @@
-xournalpp (1.3.8+dev-1) UNRELEASED; urgency=medium
+xournalpp (1.4.0-1) unstable; urgency=medium
 
-  *
+  * Fix audio attachment files left open after loading
+  * Fix SVG export write error reporting
+  * Fix loading packaged XOPP files
+  * Complete Brazilian Portuguese translations for recoloring, page moves and zoom settings
+  * Fix crash when loading corrupt embedded images
+  * Fix progressive PDF layer ranges and bookmark destinations
+  * Fix image format ownership when cloning
+  * Fix swapped dimensions when downsampling large images
+  * Fix page controls after undoing page insertion or deletion
+  * Warn when opening files requiring a newer file format
+  * Point About links at Ambitus
+  * Fix Lua PNG exports ignoring pngHeight
+  * Fix finding text added after a search with no results
+  * Reject CLI exports and saves that overwrite their input
+  * Fix undo/redo crashes when moving selections between layers
+  * Report custom export failures
+  * Fix Lua page-label range errors and preserve non-PDF Beamer pages
+  * Report unsupported Lua export extensions
+  * Clamp negative page numbers in Lua app.setCurrentPage
+  * Explain out-of-range exports for one-page documents
+  * Read only the requested page for single-page image exports
+  * Stop reading notebooks after the last requested export page
+  * Speed up PNG encoding
+  * Remove unused code
+  * Update dependencies, including macOS Poppler and Brotli
+  * Add text wrapping, alignment and justification
+  * Add a URL link tool and editable links
+  * Add Move Page Up and Down actions
+  * Use native file dialogs for opening, saving and exporting
+  * Use 2D matrices for element positioning, retaining compatibility for pure scaling
+  * Add Lua link, text wrapping, alignment, scroll-position and document-wide element APIs
+  * Add hierarchical plugin menus
+  * Add mouse buttons 4/5 and a keep-current-color button mapping option
+  * Add navigation history and full paths in Recent Documents
+  * Add zoom-to-fit on load, configurable page shadows and a tablet toolbar
+  * Improve large-document layout performance and selection outside page boundaries
+  * Improve LaTeX tool integration and template variables
+  * Fix clipboard pasting, invalid image DPI, saved zoom, audio setup and page-template crashes
+  * Load system-wide settings as fallback; update Windows, Debian ARM64 and RPM packaging
+  * Update translations
 
- -- Benjamin Hennion <17818041+bhennion@users.noreply.github.com>  Fri, 25 Sep 2026 08:12:37 +0200
+ -- Lucas Faria <97044017+FariaDev@users.noreply.github.com>  Mon, 23 Nov 2026 00:05:59 +0000
 
 xournalpp (1.3.8-1) unstable; urgency=medium
 
